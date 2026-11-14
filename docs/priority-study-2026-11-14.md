@@ -71,3 +71,5 @@ dotnet tools\QBox.PriorityStudy\bin\Release\net10.0\QBox.PriorityStudy.dll work\
 提取脚本另用错误哈希的临时输入核对过拒绝路径，确认不能对其他版本静默套用固定地址。产品源码、检查源码和已归档版本均无改动，因此本次未重复运行整个产品测试集；验证范围为新增离线工具及上述真实数据实验。
 
 部署中的 EXE SHA-256 仍为 `f2fc3d61ff5971e9eb88c8550bff2b6d059ca8d5a0d64abdd2799f831f28da4c`。本次没有重新发布或替换它。
+
+后续原始指令研究已恢复合并和引擎键的计算，见 `priority-computation-2026-11-14.md`。A/B 继续作为简单跨桶降级的被否决方案保留，不代表原程序的实际执行方式。

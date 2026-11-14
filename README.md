@@ -86,3 +86,5 @@ dotnet run --project src\QBox.Cli -c Release -- search --catalog samples\catalog
 实施清单见 `docs/plans/2026-11-13-search-implementation.md`。研究资料在 `work/research`，不属于产品运行依赖。
 
 Listary 优先级默认表及九类查询的完整集合离线对照见 `docs/priority-study-2026-11-14.md`。简单降级会损害 `.codex` 排名，因此本轮仅保留分析工具与证据，未将实验规则接入 0.1.3。
+
+后续已恢复规则合并及 64 位引擎排序键的计算，并通过 500 + 780 组原始指令对照，见 `docs/priority-computation-2026-11-14.md`。设置编码、来源封装及完整行为仍待闭合，当前产品规则保持不变。
