@@ -42,7 +42,12 @@ public partial class MainWindow : Window
     private int _limit = 9, _total;
     private bool _loading, _searching, _loaded, _quitting, _opening;
     private bool _monitorRunning;
+    private bool _realtime;
+    private bool _catalogRefreshing;
     private DateTimeOffset _catalogRefreshAt = DateTimeOffset.UtcNow;
+    private DateTimeOffset _indexRetryAt = DateTimeOffset.MaxValue;
+    private int _indexPathCount;
+    private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -72,7 +77,7 @@ public partial class MainWindow : Window
             _notice = "快捷键暂不可用，可从托盘或双击程序打开。";
             _store.Log(new Win32Exception(_hotkey.LastError, "全局快捷键注册失败"));
         }
-        HotkeyText.Text = _hotkey.Display;
+        HotkeyText.Text = "Enter 打开 · " + _hotkey.Display;
         SetupTray();
         if (_options.StartHidden) Hide(); else ShowSearch();
         await ReloadAsync();
@@ -145,15 +150,36 @@ public partial class MainWindow : Window
         try
         {
             var directory = _indexDirectory;
+            var previous = _liveIndexes.ToDictionary(source => source.Path, StringComparer.OrdinalIgnoreCase);
             var snapshot = await Task.Run(() =>
             {
                 var paths = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.qbi").Order(StringComparer.Ordinal).ToArray() : [];
-                var live = paths.Select(path => LiveIndexFile.Load(path, request.Token)).ToArray();
+                var loaded = new List<LiveIndexFile>(); var failures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var warnings = new List<string>();
+                foreach (var path in paths)
+                {
+                    try
+                    {
+                        previous.TryGetValue(path, out var saved);
+                        var source = LiveIndexFile.Load(path, request.Token, saved);
+                        loaded.Add(source);
+                        if (source.Warning != null) { warnings.Add(source.Warning); failures.Add(path); }
+                    }
+                    catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException)
+                    {
+                        warnings.Add(Path.GetFileName(path) + "：" + error.Message); failures.Add(path);
+                        // 单卷损坏不拖垮其他卷和系统应用；已有完整视图继续提供搜索，后台定期重试。
+                        if (previous.TryGetValue(path, out var saved)) loaded.Add(saved);
+                    }
+                }
+                var live = loaded.ToArray();
                 var result = live.Select(source => source.View.Base).ToArray();
                 if (result.Select(i => i.Geometry.Serial).Distinct().Count() != result.Length)
                     throw new InvalidDataException("同一个磁盘存在重复索引，请选择正确的索引目录");
                 foreach (var index in result) index.PrepareSearch(request.Token);
-                return (Indexes: result, Live: live, Shortcuts: ShortcutCatalog.Load(live.Select(source => source.View).ToArray(), request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
+                return (Indexes: result, Live: live, Failures: failures, PathCount: paths.Length,
+                    Warning: warnings.Count == 0 ? null : "部分索引暂不可用：" + string.Join("；", warnings),
+                    Shortcuts: ShortcutCatalog.Load(live.Select(source => source.View).ToArray(), request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
             }, request.Token);
             if (!_loads.IsCurrent(request)) return;
             var indexes = snapshot.Indexes;
@@ -161,10 +187,12 @@ public partial class MainWindow : Window
                 _liveIndexes.Select(source => source.View).ToArray(), snapshot.Live.Select(source => source.View).ToArray());
             _indexes = indexes;
             _liveIndexes = snapshot.Live;
+            _failedIndexes = snapshot.Failures; _indexPathCount = snapshot.PathCount;
+            _indexRetryAt = _failedIndexes.Count == 0 ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.AddSeconds(30);
             _shortcuts = snapshot.Shortcuts;
             _catalogRefreshAt = DateTimeOffset.UtcNow;
-            if (snapshot.Applications.Warning == null || snapshot.Applications.Count != 0) _applications = snapshot.Applications;
-            _notice = snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
+            if (snapshot.Applications.Warning == null || _applications.Count == 0) _applications = snapshot.Applications;
+            _notice = snapshot.Warning ?? snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
             if (indexes.Length != 0)
             {
                 var volumes = string.Join(" · ", indexes.Select(i => i.Geometry.Root[..2]));
@@ -243,7 +271,7 @@ public partial class MainWindow : Window
             _total = response.TotalMatches;
             _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
                 (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
-                    hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"))).ToArray();
+                    hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"), _settings.ResultShortcuts)).ToArray();
             Results.ItemsSource = _rows;
             Results.IsEnabled = true;
             Results.SelectedIndex = _rows.Length == 0 ? -1 : 0;
@@ -309,7 +337,8 @@ public partial class MainWindow : Window
         var modifiers = Keyboard.Modifiers;
         if (key == Key.Escape) { Hide(); e.Handled = true; }
         else if (modifiers == ModifierKeys.Control && key == Key.R) { e.Handled = true; await ReloadAsync(); }
-        else if ((modifiers == ModifierKeys.Alt || modifiers == ModifierKeys.Control) && key >= Key.D1 && key <= Key.D9)
+        // 本机数字组合键已与截图工具冲突；只有用户启用后才提供 Alt 数字入口。
+        else if (_settings.ResultShortcuts && modifiers == ModifierKeys.Alt && key >= Key.D1 && key <= Key.D9)
         { e.Handled = true; await OpenAsync((int)key - (int)Key.D1); }
         else if (modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && key == Key.C && CurrentResults && Results.SelectedItem is ResultRow selected)
         {
@@ -353,8 +382,9 @@ public partial class MainWindow : Window
     private void RefreshStatus()
     {
         if (!IsInitialized) return;
+        var snapshot = _snapshotText + (_realtime ? " · 实时更新" : "");
         StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
-            (_searching ? "正在搜索…" : QueryBox.Text.Length == 0 ? _snapshotText : $"{_total:N0} 项 · 显示 {_rows.Length} · {_snapshotText}"));
+            (_searching ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
         StatusText.ToolTip = StatusText.Text;
     }
 
@@ -377,6 +407,11 @@ public partial class MainWindow : Window
             else _ = UpdateAsync();
         });
         Item("重新载入索引    Ctrl+R", async () => await ReloadAsync());
+        Item(_settings.ResultShortcuts ? "关闭 Alt+1～9 结果快捷键" : "启用 Alt+1～9 结果快捷键", async () =>
+        {
+            _settings = _settings with { ResultShortcuts = !_settings.ResultShortcuts };
+            SaveSettings(); await SearchAsync();
+        });
         Item("选择索引目录…", async () => await ChooseIndexDirectoryAsync(), _update == null);
         var keys = new MenuItem { Header = "唤起快捷键" };
         foreach (var setting in new[] { "DoubleCtrl", "Ctrl+Alt+Space", "Ctrl+Shift+Space", "Ctrl+Space" })
@@ -388,7 +423,7 @@ public partial class MainWindow : Window
                 {
                     _settings = _settings with { Hotkey = setting };
                     SaveSettings();
-                    HotkeyText.Text = _hotkey.Display;
+                    HotkeyText.Text = "Enter 打开 · " + _hotkey.Display;
                     if (_tray != null) _tray.Text = "QBox · " + _hotkey.Display;
                     _notice = null;
                 }
@@ -452,6 +487,7 @@ public partial class MainWindow : Window
                     if (status.State == "Watching")
                     {
                         var failures = status.Drives.Where(d => d.Error != null).ToArray();
+                        _realtime = failures.Length == 0 && status.Drives.Length != 0;
                         _workerWarning = failures.Length == 0 ? null : string.Join("；", failures.Select(d => d.Drive + " " + d.Error));
                     }
                     RefreshStatus();
@@ -475,7 +511,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { }
         catch (Win32Exception error) when (error.NativeErrorCode == 1223) { _notice = "已取消管理员授权。"; }
         catch (Exception error) { _store.Log(error); _notice = "索引更新未完成：" + error.Message; }
-        finally { _update?.Dispose(); _update = null; _updateText = null; BuildButton.IsEnabled = true; RefreshStatus(); }
+        finally { _update?.Dispose(); _update = null; _updateText = null; _realtime = false; BuildButton.IsEnabled = true; RefreshStatus(); }
     }
 
     private async Task MonitorIndexesAsync()
@@ -489,13 +525,14 @@ public partial class MainWindow : Window
                 await Task.Delay(500, _lifetime.Token);
                 if (_loading) continue;
                 var before = _liveIndexes; var directory = _indexDirectory;
+                var failed = _failedIndexes; var pathCount = _indexPathCount; var retryAt = _indexRetryAt;
                 try
                 {
                     var after = await Task.Run(() =>
                     {
                         var count = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.qbi").Length : 0;
-                        if (count != before.Length) throw new IndexBaseChangedException();
-                        return before.Select(source => source.Refresh(_lifetime.Token)).ToArray();
+                        if (count != pathCount || DateTimeOffset.UtcNow >= retryAt) throw new IndexBaseChangedException();
+                        return before.Select(source => failed.Contains(source.Path) ? source : source.Refresh(_lifetime.Token)).ToArray();
                     }, _lifetime.Token);
                     if (!ReferenceEquals(before, _liveIndexes) || directory != _indexDirectory) continue;
                     if (after.Where((source, i) => !ReferenceEquals(source, before[i])).Any())
@@ -507,7 +544,7 @@ public partial class MainWindow : Window
                         // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
                         await SearchAsync();
                     }
-                    if (DateTimeOffset.UtcNow - _catalogRefreshAt > TimeSpan.FromSeconds(30)) await RefreshCatalogsAsync();
+                    if (!_catalogRefreshing && DateTimeOffset.UtcNow - _catalogRefreshAt > TimeSpan.FromSeconds(30)) _ = RefreshCatalogsAsync();
                 }
                 catch (IndexBaseChangedException) { await ReloadAsync(true); }
                 catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
@@ -530,6 +567,8 @@ public partial class MainWindow : Window
 
     private async Task RefreshCatalogsAsync()
     {
+        if (_catalogRefreshing) return;
+        _catalogRefreshing = true;
         using var request = _catalogs.Begin();
         var indexes = _indexes; var live = _liveIndexes.Select(source => source.View).ToArray();
         try
@@ -545,7 +584,7 @@ public partial class MainWindow : Window
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
         { _store.Log(error); _notice = "应用列表稍后重试：" + error.Message; }
-        finally { _catalogRefreshAt = DateTimeOffset.UtcNow; }
+        finally { _catalogRefreshAt = DateTimeOffset.UtcNow; _catalogRefreshing = false; }
     }
 
     private void OnClosing(object? sender, CancelEventArgs e) { if (!_quitting) { e.Cancel = true; Hide(); } }

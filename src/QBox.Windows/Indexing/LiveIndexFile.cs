@@ -2,7 +2,7 @@ namespace QBox.Windows.Indexing;
 
 public sealed record LiveIndexFile(string Path, LiveVolumeIndex View, long Cursor, long Length, DateTime WrittenAt, string? Warning = null)
 {
-    public static LiveIndexFile Load(string path, CancellationToken token = default)
+    public static LiveIndexFile Load(string path, CancellationToken token = default, LiveIndexFile? lastGood = null)
     {
         var stamp = new FileInfo(path);
         var index = VolumeIndexStore.Load(path, token);
@@ -11,7 +11,10 @@ public sealed record LiveIndexFile(string Path, LiveVolumeIndex View, long Curso
         try { return source.Refresh(token); }
         catch (IndexBaseChangedException) { return source; }
         catch (Exception error) when (error is InvalidDataException or System.Text.Json.JsonException)
-        { return source with { Warning = "增量日志不可用，先使用完整快照：" + error.Message }; }
+        {
+            // 已经载入的完整变更视图比基础快照更新，日志损坏时不能把它回退掉。
+            return (lastGood ?? source) with { Warning = "增量日志不可用，保留上次可用索引：" + error.Message };
+        }
     }
 
     public bool NeedsReload()

@@ -97,8 +97,15 @@ internal static class LiveIndexWorker
                 try
                 {
                     var builder = new NtfsIndexBuilder(_volume);
-                    var index = File.Exists(path) ? VolumeIndexStore.Load(path, token) : builder.Build(new ProgressSink(progress), token);
-                    if (!File.Exists(path)) VolumeIndexStore.Save(path, index, token);
+                    VolumeIndex index;
+                    var built = false;
+                    if (File.Exists(path))
+                    {
+                        try { index = VolumeIndexStore.Load(path, token); }
+                        catch (InvalidDataException) { index = builder.Build(new ProgressSink(progress), token); built = true; }
+                    }
+                    else { index = builder.Build(new ProgressSink(progress), token); built = true; }
+                    if (built) VolumeIndexStore.Save(path, index, token);
                     View = new(index);
                     long cursor = 0;
                     try
@@ -122,6 +129,8 @@ internal static class LiveIndexWorker
 
         public void Poll(CancellationToken token)
         {
+            if (NativeFileIdentity.Read(_volume.Geometry.Root).VolumeSerial != _volume.Geometry.Serial)
+                throw new IOException("磁盘挂载身份已变化，重新连接后再追赶日志");
             IndexChangeSet batch;
             try { batch = new NtfsChangeReader(_volume).Read(View, token); }
             catch (JournalGapException) { Compact(token, true); return; }

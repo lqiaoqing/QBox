@@ -512,6 +512,16 @@ internal static class NtfsIndexChecks
             next = old.Apply([new(new(7, 110), [new(linked.File, linked)])]);
             Equal(0, IndexHistoryMigration.Plan(history.Snapshot, [old], [next]).Count);
         });
+        checks.Run("DOS 别名的链接计数不妨碍单路径历史迁移", () =>
+        {
+            var originalFile = File(21, "original-name.txt") with { LinkCount = 2,
+                Names = [new(Root, "original-name.txt", 1, 0), new(Root, "ORIGIN~1.TXT", 2, 0)] };
+            var old = new LiveVolumeIndex(Snapshot(originalFile));
+            var history = new SelectionHistory(); history.RecordSelection(Search(old, "original-name").Items.Single().Candidate.Id, "name");
+            var renamed = originalFile with { Names = [new(Root, "renamed-name.txt", 1, 0), new(Root, "RENAME~1.TXT", 2, 0)] };
+            var next = old.Apply([new(new(7, 110), [new(renamed.File, renamed)])]);
+            Equal(1, IndexHistoryMigration.Plan(history.Snapshot, [old], [next]).Count);
+        });
         checks.Run("实时视图覆盖改名并保持旧查询快照不变", () =>
         {
             var old = new LiveVolumeIndex(original);
@@ -583,6 +593,17 @@ internal static class NtfsIndexChecks
             using var volume = new FakeVolume(); volume.Bounds = _ => new(8, 1, 1, 110);
             Throws<JournalGapException>(() => new NtfsChangeReader(volume).Read(new(original)));
         });
+        checks.Run("实时 USN 属性扩展事件刷新所属主文件", () =>
+        {
+            using var volume = new FakeVolume();
+            volume.Current[21] = Record(21, "renamed.txt") with { LinkCount = 1 };
+            volume.Current[30] = Record(30, "unused") with { BaseFile = Id(21) };
+            volume.Bounds = _ => new(7, 1, 1, 110);
+            volume.Batches[100] = new(110, [Change(30, 105, UsnReason.DataOverwrite)]);
+            var batch = new NtfsChangeReader(volume).Read(new(original));
+            Equal(Id(21), batch.Changes.Single().File);
+            Equal("renamed.txt", batch.Changes.Single().Value!.Names.Single().Name);
+        });
         checks.Run("增量日志跨重启恢复并忽略半写尾帧", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "X.qbd"); IndexChangeLog.Reset(path, original);
@@ -603,6 +624,17 @@ internal static class NtfsIndexChecks
             long cursor = 0;
             Throws<InvalidDataException>(() => IndexChangeLog.Read(path, original, ref cursor, true));
             True(bytes.SequenceEqual(System.IO.File.ReadAllBytes(path)));
+        }));
+        checks.Run("重载坏增量日志保留已载入的最新视图", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbi"); VolumeIndexStore.Save(path, original);
+            var log = IndexChangeLog.PathFor(path); IndexChangeLog.Reset(log, original);
+            IndexChangeLog.Append(log, new(new(7, 110), [new(Id(21), File(21, "latest.txt", Id(20)))]));
+            var saved = LiveIndexFile.Load(path);
+            var bytes = System.IO.File.ReadAllBytes(log); bytes[^1] ^= 1; System.IO.File.WriteAllBytes(log, bytes);
+            var reloaded = LiveIndexFile.Load(path, lastGood: saved);
+            True(ReferenceEquals(saved.View, reloaded.View)); True(reloaded.Warning != null);
+            Equal(1, Search(reloaded.View, "latest").TotalMatches);
         }));
         checks.Run("增量日志不会应用到另一份基础索引", () => WithDirectory(directory =>
         {

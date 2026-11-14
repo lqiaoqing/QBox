@@ -47,11 +47,12 @@ public sealed class LiveVolumeIndex
         _changedDirectories = changes.Values.Any(c => c.Value?.IsDirectory == true || index.FindFile(c.File)?.IsDirectory == true);
         if (changes.Count == 0) return;
         var files = new Dictionary<FileReference, IndexedFile>();
-        void Include(IndexedFile file)
+        void Include(IndexedFile file, int depth = 0)
         {
+            if (depth >= 1024) throw new InvalidDataException("增量目录层级超过安全范围");
             if (!files.TryAdd(file.File, file)) return;
             foreach (var name in file.Names)
-                if (FindFile(name.Parent) is { IsDirectory: true } parent) Include(parent);
+                if (FindFile(name.Parent) is { IsDirectory: true } parent) Include(parent, depth + 1);
         }
         foreach (var change in changes.Values)
             if (change.Value is { } file) Include(file);

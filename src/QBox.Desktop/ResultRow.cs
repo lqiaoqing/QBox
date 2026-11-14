@@ -9,14 +9,14 @@ using QBox.Core.Search;
 
 namespace QBox.Desktop;
 
-internal sealed class ResultRow(SearchHit hit, int index, ImageSource placeholder) : INotifyPropertyChanged
+internal sealed class ResultRow(SearchHit hit, int index, ImageSource placeholder, bool resultShortcuts = false) : INotifyPropertyChanged
 {
     private ImageSource _icon = placeholder;
     public SearchHit Hit { get; } = hit;
     public string Name => Hit.Candidate.Name;
     public string Target => Hit.Candidate.AppUserModelId == null ? Hit.Candidate.Target : "已安装应用";
     public IReadOnlyList<TextRange> Highlights => Hit.Match.Highlights;
-    public string KeyHint => index < 9 ? $"Alt+{index + 1}" : "";
+    public string KeyHint => resultShortcuts && index < 9 ? $"Alt+{index + 1}" : "";
     public string HistoryHint => Hit.History.ExactQuery != null || Hit.History.PrefixQuery != null ? "常用" : "";
     public ImageSource Icon { get => _icon; set { _icon = value; PropertyChanged?.Invoke(this, new(nameof(Icon))); } }
     public event PropertyChangedEventHandler? PropertyChanged;

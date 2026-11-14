@@ -2,7 +2,8 @@ using System.Text.Json;
 
 namespace QBox.Desktop;
 
-public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = "DoubleCtrl", bool AutoUpdate = true);
+public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = "DoubleCtrl", bool AutoUpdate = true,
+    bool ResultShortcuts = false);
 
 public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob, bool WatchWorker = false)
 {

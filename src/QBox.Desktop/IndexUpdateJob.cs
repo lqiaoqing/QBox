@@ -56,7 +56,10 @@ internal sealed class IndexUpdateJob : IDisposable
         try
         {
             var path = Path.Combine(_jobDirectory, "status.json");
-            return File.Exists(path) ? JsonSerializer.Deserialize<UpdateStatus>(File.ReadAllBytes(path), Json) : null;
+            if (!File.Exists(path)) return null;
+            // 状态通过原子替换发布，读句柄必须允许删除共享，不能偶发阻塞工作进程换文件。
+            using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return JsonSerializer.Deserialize<UpdateStatus>(file, Json);
         }
         catch (Exception error) when (error is IOException or JsonException) { return null; }
     }

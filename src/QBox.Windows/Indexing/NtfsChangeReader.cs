@@ -25,6 +25,14 @@ public sealed class NtfsChangeReader(INtfsVolume volume)
             if (!visiting.Add(requested)) throw new InvalidDataException("USN 父目录关系存在循环");
             // 按物理记录读取当前序列，旧序列的删除通知不能遮住复用后的新文件。
             var current = volume.ReadRecord(requested.RecordNumber, cancellationToken);
+            if (current is { BaseFile: var baseFile } && baseFile != default)
+            {
+                var owner = volume.ReadRecord(baseFile.RecordNumber, cancellationToken);
+                if (owner == null || owner.File != baseFile) throw new InvalidDataException("USN 扩展记录的主文件身份已改变，请稍后重试");
+                Refresh(baseFile);
+                visiting.Remove(requested);
+                return;
+            }
             var resolved = current == null ? null : _resolver.Resolve(current.File, cancellationToken);
             var file = resolved == null || resolved.Names.Count == 0 ? null : new IndexedFile(resolved.Base.File,
                 resolved.Base.IsDirectory, resolved.Base.LastUsn, resolved.Base.LinkCount,

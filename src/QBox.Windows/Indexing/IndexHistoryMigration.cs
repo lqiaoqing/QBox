@@ -19,8 +19,8 @@ public static class IndexHistoryMigration
                 !ulong.TryParse(fields[3], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parent)) continue;
             var old = before.FirstOrDefault(view => view.Base.Geometry.Serial == serial)?.FindFile(new(file));
             var next = after.FirstOrDefault(view => view.Base.Geometry.Serial == serial)?.FindFile(new(file));
-            // 只迁移前后均为单一长名称的同一完整 FRN，硬链接增删和序列复用不能猜测归属。
-            if (old == null || next == null || old.LinkCount != 1 || next.LinkCount != 1) continue;
+            // 一个长名及其同目录 DOS 别名仍是一条路径，不能把别名计数当成硬链接歧义。
+            if (old == null || next == null || !SinglePath(old) || !SinglePath(next)) continue;
             var oldNames = old.Names.Where(name => name.Namespace != 2).ToArray();
             var newNames = next.Names.Where(name => name.Namespace != 2).ToArray();
             if (oldNames.Length != 1 || newNames.Length != 1 || oldNames[0].Parent.Low != parent ||
@@ -30,5 +30,12 @@ public static class IndexHistoryMigration
             if (identity != target.TargetId) mapping[target.TargetId] = identity;
         }
         return mapping;
+    }
+
+    private static bool SinglePath(IndexedFile file)
+    {
+        var names = file.Names.Where(name => name.Namespace != 2).ToArray();
+        return names.Length == 1 && file.LinkCount >= 1 && file.LinkCount <= file.Names.Count &&
+            file.Names.All(name => name.Namespace != 2 || name.Parent == names[0].Parent);
     }
 }
