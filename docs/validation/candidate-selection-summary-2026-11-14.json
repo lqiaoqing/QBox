@@ -1,0 +1,21 @@
+{
+  "cases": 333,
+  "allEqual": true,
+  "identityPermutationPreserved": true,
+  "prefixPartitionEqual": true,
+  "keyModes": [
+    0,
+    1
+  ],
+  "signedScoreMode": 2,
+  "externalHelperReplacements": 0,
+  "fullQueryExecutionVerified": false,
+  "invalidIndexPanicVerified": false,
+  "executedFunctionEntries": {
+    "141f8d210": 159,
+    "141fb7f20": 333,
+    "141fb92b0": 648,
+    "141fbe120": 394
+  },
+  "oracleJsonSha256": "a48b48912ce5d9c11d83d8d119a592f5124581d4e99f3224717b29ba6ef0528d"
+}

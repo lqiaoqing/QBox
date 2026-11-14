@@ -46,7 +46,7 @@ sealed class NativePriorityModel
     public object Study(SearchResponse response, int[] original, Func<SearchCandidate, bool> isTarget)
     {
         var hits = response.Items;
-        var decisions = hits.Select(Describe).ToArray();
+        var decisions = hits.Select(hit => Describe(hit)).ToArray();
         var slots = original.Where(i => !Protected(hits[i]) && hits[i].Candidate.Kind != SearchItemKind.Directory).ToArray();
         // 只替换原混合桶已有位置，保留强目录、混合前十、弱目录、混合尾部的原布局。
         var baseline = slots.OrderByDescending(i => PublishedKey(hits[i])).ThenBy(i => i).ToArray();
@@ -69,8 +69,39 @@ sealed class NativePriorityModel
             RegisteredSuffixEntries = decisions.Count(decision => decision.Applied && decision.RegisteredSuffix),
             TargetRanks = original.Where(i => isTarget(hits[i].Candidate)).Select(i => new
                 { hits[i].Candidate.Name, hits[i].Candidate.Target, Before = i + 1, After = ranks[i], Decision = decisions[i] }).ToArray(),
-            FirstNine = Rows(after.Take(9)), MixedBefore = Rows(slots.Take(9)), MixedAfter = Rows(ordered.Take(9))
+            FirstNine = Rows(after.Take(9)), MixedBefore = Rows(slots.Take(9)), MixedAfter = Rows(ordered.Take(9)),
+            DirectExecutableSourceProposal = StudyDirectSource()
         };
+
+        object StudyDirectSource()
+        {
+            if (hits.Any(hit => hit.History.ExactQuery != null || hit.History.PrefixQuery != null || hit.History.LastUsed != null))
+                throw new InvalidDataException("来源分桶实验限定为空历史，不能隐式改变历史桶");
+            var direct = original.Where(i => hits[i].Candidate.IsDirectExecutable).ToArray();
+            var keys = decisions.Select(decision => decision.Key).ToArray();
+            foreach (var i in direct) keys[i] = Describe(hits[i], true).Key;
+            // 独立方案 D 只取消直接 EXE 的专用提前桶；显示匹配、应用入口和目录桶全部沿用当前输入。
+            var mixed = slots.Concat(direct).OrderByDescending(i => keys[i]).ThenBy(i => i).ToArray();
+            var proposal = original.Where(i => hits[i].Candidate.IsApplicationEntry && !hits[i].Candidate.IsDirectExecutable)
+                .Concat(original.Where(i => hits[i].Candidate.Kind == SearchItemKind.Directory && hits[i].Match.AlignmentScore > 1))
+                .Concat(mixed.Take(10))
+                .Concat(original.Where(i => hits[i].Candidate.Kind == SearchItemKind.Directory && hits[i].Match.AlignmentScore <= 1))
+                .Concat(mixed.Skip(10)).ToArray();
+            if (!proposal.Order().SequenceEqual(original)) throw new InvalidDataException("来源分桶模拟改变了召回集合");
+            var proposedRanks = new int[proposal.Length];
+            for (var i = 0; i < proposal.Length; i++) proposedRanks[proposal[i]] = i + 1;
+            return new
+            {
+                Scope = "D: direct EXEs moved to ordinary mixed files; current display matching retained; no context or tail; not proven full Listary source policy",
+                RecallSetUnchanged = true, DirectExecutableEntries = direct.Length,
+                FirstNineUnchanged = proposal.Take(9).SequenceEqual(original.Take(9)),
+                TargetRanks = original.Where(i => isTarget(hits[i].Candidate)).Select(i => new
+                    { hits[i].Candidate.Name, hits[i].Candidate.Target, Before = i + 1, After = proposedRanks[i] }).ToArray(),
+                FirstNine = proposal.Take(9).Select(i => new
+                    { OriginalRank = i + 1, AfterRank = proposedRanks[i], hits[i].Candidate.Name, hits[i].Candidate.Target,
+                      hits[i].Candidate.Kind, Score = hits[i].Match.AlignmentScore }).ToArray()
+            };
+        }
 
         object[] Rows(IEnumerable<int> selected) => selected.Select(i => (object)new
         {
@@ -79,10 +110,11 @@ sealed class NativePriorityModel
         }).ToArray();
     }
 
-    private NativeDecision Describe(SearchHit hit)
+    private NativeDecision Describe(SearchHit hit, bool includeDirectExecutable = false)
     {
         var candidate = hit.Candidate;
-        if (Protected(hit)) return new(false, 0, false, PublishedKey(hit));
+        if (Protected(hit) && !(includeDirectExecutable && candidate.IsDirectExecutable))
+            return new(false, 0, false, PublishedKey(hit));
         var fields = candidate.Id.Split(':');
         if (fields.Length != 5 || fields[0] != "ntfs")
         {
