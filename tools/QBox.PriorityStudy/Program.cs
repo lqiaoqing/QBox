@@ -9,7 +9,7 @@ using QBox.Windows.Applications;
 using QBox.Windows.Indexing;
 using QBox.Windows.Shortcuts;
 
-if (args.Length != 3) throw new ArgumentException("用法：<索引目录> <默认表 JSON> <输出 JSON>");
+if (args.Length is not (3 or 4)) throw new ArgumentException("用法：<索引目录> <默认表 JSON> <输出 JSON> [注册后缀快照 JSON]");
 if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("本机应用入口与路径对照需要 Windows");
 var json = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 {
@@ -24,6 +24,7 @@ var paths = Directory.GetFiles(args[0], "*.qbi").Order(StringComparer.Ordinal).T
 if (paths.Length == 0) throw new InvalidDataException("没有索引快照");
 var fingerprints = paths.Select(path => new { Name = Path.GetFileName(path), Sha256 = Hash(path) }).ToArray();
 var indexes = paths.Select(path => VolumeIndexStore.Load(path)).ToArray();
+var native = args.Length == 4 ? new NativePriorityModel(defaults.Copies[0], indexes, args[3]) : null;
 foreach (var index in indexes) index.PrepareSearch();
 var shortcuts = ShortcutCatalog.Load(indexes);
 var applications = PackagedApplicationCatalog.Load();
@@ -41,7 +42,7 @@ var report = new
 {
     Version = "0.1.3 offline priority proposal", CreatedUtc = DateTimeOffset.UtcNow,
     History = "fresh in-memory history; no user history read or written",
-    Scope = "complete current matches; stable partition only; no candidates filtered or index changes",
+    Scope = "complete current matches; offline proposals only; no candidates filtered or index changes",
     Assumptions = new[] {
         "A: longest boundary-matching configured path wins; also demote node_modules ancestors; protect app/history entries",
         "B: A plus all five name patterns on the target basename using recovered file/folder flags",
@@ -49,7 +50,7 @@ var report = new
     },
     ListaryBinarySha256 = defaults.BinarySha256, Indexes = fingerprints,
     Applications = applications.Count, ShortcutActions = shortcuts.ActionCount, ExpandedPaths = rules.ExpandedPaths,
-    BoundaryChecks = 10, Cases = cases
+    BoundaryChecks = 10, NativeModel = native?.Summary, Cases = cases
 };
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(args[2]))!);
 File.WriteAllText(args[2], JsonSerializer.Serialize(report, json) + Environment.NewLine);
@@ -67,6 +68,7 @@ object Study(string query)
     var original = Enumerable.Range(0, before.Items.Count).ToArray();
     var a = original.OrderBy(i => decisions[i].PathReason == null ? 0 : 1).ToArray();
     var b = original.OrderBy(i => decisions[i].PathReason == null && decisions[i].NameReason == null ? 0 : 1).ToArray();
+    var nativeResult = native?.Study(before, original, item => IsTarget(query, item));
     // 稳定分区必须完整保留原身份；在此直接核对原序号排列，不能只比较总数。
     foreach (var variant in new[] { a, b })
         if (!variant.Order().SequenceEqual(original)) throw new InvalidDataException("模拟改变了召回集合");
@@ -99,7 +101,8 @@ object Study(string query)
         AdditionalNameDemotions = decisions.Count(d => d.PathReason == null && d.NameReason != null),
         PathOnlyFirstNineUnchanged = a.Take(9).SequenceEqual(original.Take(9)),
         AllNamePatternsFirstNineUnchanged = b.Take(9).SequenceEqual(original.Take(9)),
-        Before = Rows(original), PathOnly = Rows(a), AllNamePatterns = Rows(b), Targets = targets, MemoryLearningChecks = learned
+        Before = Rows(original), PathOnly = Rows(a), AllNamePatterns = Rows(b), Targets = targets, MemoryLearningChecks = learned,
+        NativeKeysWithinExistingBuckets = nativeResult
     };
     Console.WriteLine($"{query}: {before.TotalMatches} 命中；目标 {string.Join(", ", targets.Select(t => $"{t.Name} {t.Before}->{t.PathOnly}/{t.AllNamePatterns}"))}");
     return result;
@@ -154,7 +157,7 @@ static string Hash(string path)
 sealed record DefaultTables(string BinarySha256, TableCopy[] Copies);
 sealed record TableCopy(PathRule[] Paths, NameRule[] Patterns);
 sealed record PathRule(int Priority, string Path);
-sealed record NameRule(string Pattern, bool ApplyToFolders, bool ApplyToFiles);
+sealed record NameRule(string Pattern, bool ApplyToFolders, bool ApplyToFiles, int Priority = 2);
 sealed record Decision(string? PathReason, string? NameReason, bool ProtectedEntry);
 
 sealed class ProposedRules
