@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "example:build-console",
+      "name": "BuildConsole",
+      "target": "C:\\Example\\BuildConsole",
+      "kind": "Directory"
+    },
+    {
+      "id": "example:download-manager",
+      "name": "Example Download Manager",
+      "target": "C:\\Example\\DownloadManager.exe",
+      "kind": "Application"
+    },
+    {
+      "id": "example:workspace",
+      "name": "Editor Workspace",
+      "target": "C:\\Example\\project.code-workspace",
+      "kind": "File"
+    },
+    {
+      "id": "example:documents",
+      "name": "开发资料",
+      "target": "C:\\Example\\开发资料",
+      "kind": "Directory"
+    }
+  ]
+}

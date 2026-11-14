@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../QBox.Core/QBox.Core.csproj" />
+    <ProjectReference Include="../QBox.Windows/QBox.Windows.csproj" />
+  </ItemGroup>
+</Project>

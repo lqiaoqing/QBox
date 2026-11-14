@@ -1,0 +1,11 @@
+{
+  "version": "0.1.2.0",
+  "sha256": "260c2bcab2d7fcc482b9481a73217e1fdbe4653479523b6151ee02bf594b834f",
+  "bytes": 445709,
+  "sdk": "10.0.110",
+  "runtime": "Microsoft.WindowsDesktop.App 10.0.x",
+  "matchingChecks": 685,
+  "behaviorChecks": 2756,
+  "validation": "docs/application-validation-2026-11-14.md",
+  "purpose": "用户确认效果基本符合预期，新增拼音功能前保存的基线"
+}

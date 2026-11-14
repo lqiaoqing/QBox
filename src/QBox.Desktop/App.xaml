@@ -1,0 +1,33 @@
+<Application x:Class="QBox.Desktop.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" ShutdownMode="OnExplicitShutdown">
+  <Application.Resources>
+    <SolidColorBrush x:Key="Accent" Color="#2466D1" />
+    <Style TargetType="Button">
+      <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="#586579"/><Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Padding" Value="10,6"/><Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border><ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#EAF0F8"/></Trigger>
+          <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <DrawingImage x:Key="FolderIcon"><DrawingImage.Drawing><DrawingGroup>
+      <GeometryDrawing Brush="#EDB44E" Geometry="M2,8 L2,5 Q2,3 4,3 L11,3 L14,7 L28,7 Q30,7 30,9 L30,12 L2,12 Z"/>
+      <GeometryDrawing Brush="#F5C662" Geometry="M2,10 L30,10 L30,25 Q30,28 27,28 L5,28 Q2,28 2,25 Z"/>
+    </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+    <DrawingImage x:Key="FileIcon"><DrawingImage.Drawing><DrawingGroup>
+      <GeometryDrawing Brush="#E6EBF3" Geometry="M7,2 L20,2 L27,9 L27,29 L7,29 Z"/>
+      <GeometryDrawing Brush="#AABAD0" Geometry="M20,2 L20,10 L27,10 Z"/>
+      <GeometryDrawing Brush="#8A9BB5" Geometry="M12,16 L22,16 L22,18 L12,18 Z M12,21 L22,21 L22,23 L12,23 Z"/>
+    </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+    <DrawingImage x:Key="AppIcon"><DrawingImage.Drawing><DrawingGroup>
+      <GeometryDrawing Brush="#2466D1" Geometry="M4,3 L28,3 Q31,3 31,6 L31,28 Q31,31 28,31 L4,31 Q1,31 1,28 L1,6 Q1,3 4,3 Z"/>
+      <GeometryDrawing Brush="White" Geometry="M9,11 L22,11 L22,23 L9,23 Z"/>
+      <GeometryDrawing Brush="#2466D1" Geometry="M12,14 L19,14 L19,20 L12,20 Z M18,19 L24,25 L22,27 L16,21 Z"/>
+    </DrawingGroup></DrawingImage.Drawing></DrawingImage>
+  </Application.Resources>
+</Application>

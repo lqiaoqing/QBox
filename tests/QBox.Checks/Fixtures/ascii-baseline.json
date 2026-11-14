@@ -1,0 +1,161 @@
+{
+  "scope": "Controlled p-code emulation of selected fuzzy routine with synthetic ASCII matcher inputs; not live Listary results",
+  "limitations": [
+    "Query constructor and case-equivalence sets supplied by harness",
+    "Allocator, memory helpers and UTF-8 count modeled",
+    "No final ranking, history, indexing, Unicode or pinyin equivalence claim",
+    "No performance measurements"
+  ],
+  "cases": [
+    {
+      "query": "any",
+      "candidate": "ANYconsole",
+      "completed": true,
+      "score": 2794,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 2,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "any",
+      "candidate": "any",
+      "completed": true,
+      "score": 2864,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 1,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "any",
+      "candidate": "Antigravity",
+      "completed": true,
+      "score": 2368,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 1,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "800Q",
+      "candidate": "EG800Q",
+      "completed": true,
+      "score": 3812,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 3,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": ".code",
+      "candidate": ".codex",
+      "completed": true,
+      "score": 4820,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 2,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "nd",
+      "candidate": "Neat Download Manager",
+      "completed": true,
+      "score": 1640,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 5,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "nd",
+      "candidate": "Node.js",
+      "completed": true,
+      "score": 1426,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 3,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "nd",
+      "candidate": "nd",
+      "completed": true,
+      "score": 1878,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 1,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "nd",
+      "candidate": "Notepad++",
+      "completed": true,
+      "score": 1398,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 3,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "Tra",
+      "candidate": "Trae CN",
+      "completed": true,
+      "score": 2824,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 3,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "Tra",
+      "candidate": "trace",
+      "completed": true,
+      "score": 2844,
+      "helper_hits": {
+        "140373d90": 2,
+        "140021020": 4,
+        "140020fe0": 4,
+        "1426cab80": 1,
+        "140020ff0": 4
+      }
+    },
+    {
+      "query": "xyz",
+      "candidate": "ANYconsole",
+      "completed": true,
+      "score": 0,
+      "helper_hits": {}
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/QBox.Core/QBox.Core.csproj" />
+    <Project Path="src/QBox.Cli/QBox.Cli.csproj" />
+    <Project Path="src/QBox.Windows/QBox.Windows.csproj" />
+    <Project Path="src/QBox.Desktop/QBox.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/QBox.Checks/QBox.Checks.csproj" />
+  </Folder>
+</Solution>

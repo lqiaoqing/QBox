@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>QBox</AssemblyName>
+    <Version>0.1.2</Version>
+    <Product>QBox</Product>
+    <Description>Windows 文件与应用搜索</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../QBox.Core/QBox.Core.csproj" />
+    <ProjectReference Include="../QBox.Windows/QBox.Windows.csproj" />
+  </ItemGroup>
+</Project>
