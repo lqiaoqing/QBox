@@ -1,0 +1,212 @@
+{
+  "binarySha256": "f728593f86597b95d9ee79c03f8e7d313ca4c79a4bab8cf31f3768febeb8063f",
+  "evidence": "static PE tables and selected instruction references; not runtime observation",
+  "constructor": "0x1402f7ed0",
+  "nameConverter": "0x14154a220",
+  "nameSerializer": "0x1402f7940",
+  "convertedPriorityBytes": {
+    "normalEnum1": 0,
+    "uncommonEnum2": -1
+  },
+  "limitations": [
+    "Does not establish path overlap precedence, ancestor name inheritance, launcher filtering or ranking-key generation."
+  ],
+  "copies": [
+    {
+      "folderTable": "0x1427c4328",
+      "nameTable": "0x1427c44a8",
+      "paths": [
+        {
+          "address": "0x1427c4328",
+          "priority": 2,
+          "path": "%SystemDrive%\\Windows.old"
+        },
+        {
+          "address": "0x1427c4348",
+          "priority": 2,
+          "path": "%SystemDrive%\\$WINDOWS.~BT"
+        },
+        {
+          "address": "0x1427c4368",
+          "priority": 2,
+          "path": "%SystemDrive%\\$Windows.~WS"
+        },
+        {
+          "address": "0x1427c4388",
+          "priority": 2,
+          "path": "%ProgramData%"
+        },
+        {
+          "address": "0x1427c43a8",
+          "priority": 2,
+          "path": "%SystemRoot%"
+        },
+        {
+          "address": "0x1427c43c8",
+          "priority": 2,
+          "path": "%USERPROFILE%\\AppData"
+        },
+        {
+          "address": "0x1427c43e8",
+          "priority": 2,
+          "path": "%ProgramW6432%"
+        },
+        {
+          "address": "0x1427c4408",
+          "priority": 2,
+          "path": "%ProgramFiles(x86)%"
+        },
+        {
+          "address": "0x1427c4428",
+          "priority": 1,
+          "path": "%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Internet Explorer"
+        },
+        {
+          "address": "0x1427c4448",
+          "priority": 1,
+          "path": "%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows"
+        },
+        {
+          "address": "0x1427c4468",
+          "priority": 1,
+          "path": "%ProgramData%\\Microsoft\\Windows\\Start Menu"
+        }
+      ],
+      "patterns": [
+        {
+          "address": "0x1427c44a8",
+          "priority": 2,
+          "pattern": "^\\.",
+          "applyToFolders": true,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x1427c44d0",
+          "priority": 2,
+          "pattern": "^~",
+          "applyToFolders": true,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x1427c44f8",
+          "priority": 2,
+          "pattern": "^[^.]+$",
+          "applyToFolders": false,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x1427c4520",
+          "priority": 2,
+          "pattern": "^node_modules$",
+          "applyToFolders": true,
+          "applyToFiles": false
+        },
+        {
+          "address": "0x1427c4548",
+          "priority": 2,
+          "pattern": "^\\$",
+          "applyToFolders": true,
+          "applyToFiles": true
+        }
+      ]
+    },
+    {
+      "folderTable": "0x14280ccd8",
+      "nameTable": "0x14280ce58",
+      "paths": [
+        {
+          "address": "0x14280ccd8",
+          "priority": 2,
+          "path": "%SystemDrive%\\Windows.old"
+        },
+        {
+          "address": "0x14280ccf8",
+          "priority": 2,
+          "path": "%SystemDrive%\\$WINDOWS.~BT"
+        },
+        {
+          "address": "0x14280cd18",
+          "priority": 2,
+          "path": "%SystemDrive%\\$Windows.~WS"
+        },
+        {
+          "address": "0x14280cd38",
+          "priority": 2,
+          "path": "%ProgramData%"
+        },
+        {
+          "address": "0x14280cd58",
+          "priority": 2,
+          "path": "%SystemRoot%"
+        },
+        {
+          "address": "0x14280cd78",
+          "priority": 2,
+          "path": "%USERPROFILE%\\AppData"
+        },
+        {
+          "address": "0x14280cd98",
+          "priority": 2,
+          "path": "%ProgramW6432%"
+        },
+        {
+          "address": "0x14280cdb8",
+          "priority": 2,
+          "path": "%ProgramFiles(x86)%"
+        },
+        {
+          "address": "0x14280cdd8",
+          "priority": 1,
+          "path": "%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Internet Explorer"
+        },
+        {
+          "address": "0x14280cdf8",
+          "priority": 1,
+          "path": "%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows"
+        },
+        {
+          "address": "0x14280ce18",
+          "priority": 1,
+          "path": "%ProgramData%\\Microsoft\\Windows\\Start Menu"
+        }
+      ],
+      "patterns": [
+        {
+          "address": "0x14280ce58",
+          "priority": 2,
+          "pattern": "^\\.",
+          "applyToFolders": true,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x14280ce80",
+          "priority": 2,
+          "pattern": "^~",
+          "applyToFolders": true,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x14280cea8",
+          "priority": 2,
+          "pattern": "^[^.]+$",
+          "applyToFolders": false,
+          "applyToFiles": true
+        },
+        {
+          "address": "0x14280ced0",
+          "priority": 2,
+          "pattern": "^node_modules$",
+          "applyToFolders": true,
+          "applyToFiles": false
+        },
+        {
+          "address": "0x14280cef8",
+          "priority": 2,
+          "pattern": "^\\$",
+          "applyToFolders": true,
+          "applyToFiles": true
+        }
+      ]
+    }
+  ]
+}

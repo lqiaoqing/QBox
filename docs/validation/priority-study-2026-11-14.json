@@ -1,0 +1,3845 @@
+{
+  "version": "0.1.3 offline priority proposal",
+  "createdUtc": "2026-11-14T01:46:21.8245783+00:00",
+  "history": "fresh in-memory history; no user history read or written",
+  "scope": "complete current matches; stable partition only; no candidates filtered or index changes",
+  "assumptions": [
+    "A: longest boundary-matching configured path wins; also demote node_modules ancestors; protect app/history entries",
+    "B: A plus all five name patterns on the target basename using recovered file/folder flags",
+    "These are QBox proposals, not proven Listary runtime semantics; system/hidden attribute filtering is excluded"
+  ],
+  "listaryBinarySha256": "f728593f86597b95d9ee79c03f8e7d313ca4c79a4bab8cf31f3768febeb8063f",
+  "indexes": [
+    {
+      "name": "C.qbi",
+      "sha256": "05c17d83127d67d24dfa654a0f9bb1dcf46ffba7fe8d5e6cd9720989aa30b790"
+    },
+    {
+      "name": "D.qbi",
+      "sha256": "652d12edc5524791d3236312cd905db9af952341f330a88a1c2f5c2113538cfc"
+    }
+  ],
+  "applications": 46,
+  "shortcutActions": 222,
+  "expandedPaths": [
+    {
+      "priority": 1,
+      "path": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Internet Explorer"
+    },
+    {
+      "priority": 1,
+      "path": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows"
+    },
+    {
+      "priority": 1,
+      "path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\Program Files (x86)"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\Users\\zsj\\AppData"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\Program Files"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\$WINDOWS.~BT"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\$Windows.~WS"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\Windows.old"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\ProgramData"
+    },
+    {
+      "priority": 2,
+      "path": "C:\\Windows"
+    }
+  ],
+  "boundaryChecks": 10,
+  "cases": [
+    {
+      "query": "Any",
+      "totalMatches": 185880,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 118717,
+      "additionalNameDemotions": 1020,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2211-any.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2644,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2564,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2002-t41-anyconnect.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41-anyconnect.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2510,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Antigravity",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Antigravity.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2368,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc\\bin\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2211-any.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2644,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2564,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2002-t41-anyconnect.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41-anyconnect.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2510,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Antigravity",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Antigravity.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2368,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc\\bin\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2211-any.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2644,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2564,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2002-t41-anyconnect.siproj - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41-anyconnect.siproj - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2510,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Antigravity",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Antigravity.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2368,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-master\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsole\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsoleRelease\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc\\bin\\ANYconsole.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2794,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsole",
+          "before": 84,
+          "pathOnly": 43,
+          "allNamePatterns": 43,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          },
+          "protectedEntriesAhead": 28,
+          "pathDemotedEntriesAhead": 41
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "ANYconsole",
+          "target": "D:\\Work\\烧录固件\\production_tools_pc-ANYconsole_V2.1.00\\ANYconsole",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "800Q",
+      "totalMatches": 667,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 462,
+      "additionalNameDemotions": 32,
+      "pathOnlyFirstNineUnchanged": false,
+      "allNamePatternsFirstNineUnchanged": false,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "EG800Q",
+          "target": "D:\\Work\\资料\\EG800Q",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3812,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "EG800Q系列",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\WeDrive\\AnyTrek\\开发文档\\VT1711开发文档\\硬件设计\\EG800Q系列",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3792,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "DEkW8eY5m0JYQCORs0q3u",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\uv\\cache\\archive-v0\\DEkW8eY5m0JYQCORs0q3u",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3394,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "target": "C:\\Users\\zsj\\.qoderwork\\logs\\runs\\2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3070,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "target": "C:\\Users\\zsj\\.qoder-cn\\logs\\runs\\2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3060,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "target": "C:\\Users\\zsj\\.codex\\state\\plugins\\codex-security\\scans\\sscom-re\\86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 2652,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "EG800Q.zip",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\Cache\\File\\2025-03\\EG800Q.zip",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 3772,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "EG800Q",
+          "target": "D:\\Work\\资料\\EG800Q",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3812,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "EG800Q系列",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\WeDrive\\AnyTrek\\开发文档\\VT1711开发文档\\硬件设计\\EG800Q系列",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3792,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 6,
+          "name": "2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "target": "C:\\Users\\zsj\\.qoderwork\\logs\\runs\\2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3070,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 7,
+          "name": "2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "target": "C:\\Users\\zsj\\.qoder-cn\\logs\\runs\\2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3060,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 8,
+          "name": "86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "target": "C:\\Users\\zsj\\.codex\\state\\plugins\\codex-security\\scans\\sscom-re\\86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 2652,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 9,
+          "name": "EG800Q.zip",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\Cache\\File\\2025-03\\EG800Q.zip",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 3772,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 10,
+          "name": "EG800Q.zip",
+          "target": "D:\\Work\\资料\\移远模组\\EG800Q.zip",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 3772,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "EG800Q",
+          "target": "D:\\Work\\资料\\EG800Q",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3812,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "EG800Q系列",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\WeDrive\\AnyTrek\\开发文档\\VT1711开发文档\\硬件设计\\EG800Q系列",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3792,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "EG800QNALCR01A06M04_01.005.01.005",
+          "target": "C:\\Users\\zsj\\Desktop\\EG800QNALCR01A06M04_01.005.01.005\\EG800QNALCR01A06M04_01.005.01.005",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3542,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 6,
+          "name": "2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "target": "C:\\Users\\zsj\\.qoderwork\\logs\\runs\\2026-06-29T16-59-05-856+08-00-q79ggw-p9868",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3070,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 7,
+          "name": "2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "target": "C:\\Users\\zsj\\.qoder-cn\\logs\\runs\\2026-10-21T09-20-32-839+08-00-qrfuba-p20356",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 3060,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 8,
+          "name": "86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "target": "C:\\Users\\zsj\\.codex\\state\\plugins\\codex-security\\scans\\sscom-re\\86c83b41c9d901f26c5aba422286040054ca019f_20261112T012809Z_qmqks3gq",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 2652,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 9,
+          "name": "EG800Q.zip",
+          "target": "C:\\Users\\zsj\\Documents\\WXWork\\1688858438700618\\Cache\\File\\2025-03\\EG800Q.zip",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 3772,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 10,
+          "name": "EG800Q.zip",
+          "target": "D:\\Work\\资料\\移远模组\\EG800Q.zip",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 3772,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "EG800Q",
+          "target": "D:\\Work\\资料\\EG800Q",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "EG800Q",
+          "target": "D:\\Work\\资料\\EG800Q",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": ".code",
+      "totalMatches": 38301,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 33825,
+      "additionalNameDemotions": 2461,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2216.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4588,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "1711.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\1711.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4548,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2310C43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2310C43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4534,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "2002-t43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "2002-t41.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "VS2308_A27.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\VS2308_A27.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4440,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "2216-canclean.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216-canclean.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost",
+          "target": "C:\\Program Files\\dotnet\\sdk\\10.0.110\\DotnetTools\\dotnet-watch\\10.0.110\\tools\\net10.0\\any\\BuildHost-net472\\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 4298,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2216.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4588,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "1711.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\1711.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4548,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2310C43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2310C43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4534,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "2002-t43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "2002-t41.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "VS2308_A27.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\VS2308_A27.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4440,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "2216-canclean.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216-canclean.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost",
+          "target": "C:\\Program Files\\dotnet\\sdk\\10.0.110\\DotnetTools\\dotnet-watch\\10.0.110\\tools\\net10.0\\any\\BuildHost-net472\\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 4298,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "2216.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4588,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "1711.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\1711.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4548,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "2310C43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2310C43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4534,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "2002-t43.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t43.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "2211-any.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2211-any.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "2002-t41.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2002-t41.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4516,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "VS2308_A27.code-workspace - 快捷方式 (2)",
+          "target": "C:\\Users\\zsj\\Desktop\\VS2308_A27.code-workspace - 快捷方式 (2).lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4440,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "2216-canclean.code-workspace - 快捷方式",
+          "target": "C:\\Users\\zsj\\Desktop\\2216-canclean.code-workspace - 快捷方式.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 4426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost",
+          "target": "C:\\Program Files\\dotnet\\sdk\\10.0.110\\DotnetTools\\dotnet-watch\\10.0.110\\tools\\net10.0\\any\\BuildHost-net472\\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 4298,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": ".codex",
+          "target": "C:\\Users\\zsj\\.codex",
+          "before": 21,
+          "pathOnly": 20,
+          "allNamePatterns": 2018,
+          "decision": {
+            "pathReason": null,
+            "nameReason": "name: ^\\.",
+            "protectedEntry": false
+          },
+          "protectedEntriesAhead": 18,
+          "pathDemotedEntriesAhead": 1
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": ".codex",
+          "target": "C:\\Users\\zsj\\.codex",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "nd",
+      "totalMatches": 586193,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 433923,
+      "additionalNameDemotions": 7601,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Neat Download Manager",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Neat Download Manager.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1640,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Notepad++",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Notepad++.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1398,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Add a new dco-win virtual network adapter",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\OpenVPN\\Utilities\\Add a new dco-win virtual network adapter.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1358,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Uninstall Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Uninstall Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1286,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Node.js command prompt",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js command prompt.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1276,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "Install Additional Tools for Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Install Additional Tools for Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1020,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "NetDiag",
+          "target": "C:\\Program Files\\Huorong\\Sysdiag\\bin\\NetDiag.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1830,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ndadmin",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-newdev_31bf3856ad364e35_10.0.26100.1_none_18be9e06ed967433\\ndadmin.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1828,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Neat Download Manager",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Neat Download Manager.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1640,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Notepad++",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Notepad++.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1398,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Add a new dco-win virtual network adapter",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\OpenVPN\\Utilities\\Add a new dco-win virtual network adapter.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1358,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Uninstall Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Uninstall Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1286,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Node.js command prompt",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js command prompt.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1276,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "Install Additional Tools for Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Install Additional Tools for Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1020,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "NetDiag",
+          "target": "C:\\Program Files\\Huorong\\Sysdiag\\bin\\NetDiag.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1830,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ndadmin",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-newdev_31bf3856ad364e35_10.0.26100.1_none_18be9e06ed967433\\ndadmin.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1828,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Neat Download Manager",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Neat Download Manager.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1640,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1426,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Notepad++",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Notepad++.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1398,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Add a new dco-win virtual network adapter",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\OpenVPN\\Utilities\\Add a new dco-win virtual network adapter.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1358,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Uninstall Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Uninstall Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1286,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Node.js command prompt",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Node.js command prompt.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1276,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "Install Additional Tools for Node.js",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Node.js\\Install Additional Tools for Node.js.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1020,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "NetDiag",
+          "target": "C:\\Program Files\\Huorong\\Sysdiag\\bin\\NetDiag.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1830,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "ndadmin",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-newdev_31bf3856ad364e35_10.0.26100.1_none_18be9e06ed967433\\ndadmin.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1828,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "Neat Download Manager",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Neat Download Manager.lnk",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "Neat Download Manager",
+          "target": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Neat Download Manager.lnk",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "Tra",
+      "totalMatches": 400350,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 287994,
+      "additionalNameDemotions": 6803,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Trae CN",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Trae CN\\Trae CN.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.1_none_b079f7ba2cc824d5\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\System32\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\SysWOW64\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "TrayBox",
+          "target": "C:\\Program Files (x86)\\Lenovo\\SLBrowser\\9.0.8.9131\\TrayBox.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Trae CN",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Trae CN\\Trae CN.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.1_none_b079f7ba2cc824d5\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\System32\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\SysWOW64\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "TrayBox",
+          "target": "C:\\Program Files (x86)\\Lenovo\\SLBrowser\\9.0.8.9131\\TrayBox.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "Trae CN",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Trae CN\\Trae CN.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.1_none_b079f7ba2cc824d5\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\System32\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\amd64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_45148fb83fc8b7b2\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\SysWOW64\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "TRACERT",
+          "target": "C:\\Windows\\WinSxS\\wow64_microsoft-windows-ping-utilities_31bf3856ad364e35_10.0.26100.8115_none_4f693a0a742979ad\\r\\TRACERT.EXE",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "TrayBox",
+          "target": "C:\\Program Files (x86)\\Lenovo\\SLBrowser\\9.0.8.9131\\TrayBox.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2824,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "Trae CN",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Trae CN\\Trae CN.lnk",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "Trae CN",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Trae CN\\Trae CN.lnk",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "chatgpt",
+      "totalMatches": 646,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 289,
+      "additionalNameDemotions": 1,
+      "pathOnlyFirstNineUnchanged": false,
+      "allNamePatternsFirstNineUnchanged": false,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "ChatGPT",
+          "target": "shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 6788,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\OpenAI.Codex_2p2nqsd0c76g0\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "chatgpt-apps",
+          "target": "C:\\Users\\zsj\\.codex\\vendor_imports\\skills\\skills\\.curated\\chatgpt-apps",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "chatgpt_pets",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_pets",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "chatgpt_space",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_space",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6728,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "chatgpt-exchange",
+          "target": "C:\\$Recycle.Bin\\S-1-5-21-413853354-344499552-1206818110-1001\\$RK9DW67\\docs\\public\\catalog\\items\\chatgpt-exchange",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6698,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "chatgpt-exchange",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Temp\\codex\\skill-install-yzlwncbx\\hyperframes-183614bda3df15812d9f18fd4a71ee77a7da6387\\docs\\public\\catalog\\items\\chatgpt-exchange",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6698,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": ".chatgpt-projects",
+          "target": "C:\\Users\\zsj\\.codex\\.chatgpt-projects",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6674,
+          "decision": {
+            "pathReason": null,
+            "nameReason": "name: ^\\.",
+            "protectedEntry": false
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "ChatGPT",
+          "target": "shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 6788,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\OpenAI.Codex_2p2nqsd0c76g0\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "chatgpt-apps",
+          "target": "C:\\Users\\zsj\\.codex\\vendor_imports\\skills\\skills\\.curated\\chatgpt-apps",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "chatgpt_pets",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_pets",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "chatgpt_space",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_space",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6728,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "chatgpt-exchange",
+          "target": "C:\\$Recycle.Bin\\S-1-5-21-413853354-344499552-1206818110-1001\\$RK9DW67\\docs\\public\\catalog\\items\\chatgpt-exchange",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6698,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 9,
+          "name": ".chatgpt-projects",
+          "target": "C:\\Users\\zsj\\.codex\\.chatgpt-projects",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6674,
+          "decision": {
+            "pathReason": null,
+            "nameReason": "name: ^\\.",
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 10,
+          "name": "chatgpt-4yr-tribute",
+          "target": "C:\\Users\\zsj\\Projects\\chatgpt-4yr-tribute",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6668,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "ChatGPT",
+          "target": "shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 6788,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "chatgpt-desktop",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\WindowsApps\\OpenAI.Codex_2p2nqsd0c76g0\\chatgpt-desktop.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 6708,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "chatgpt-apps",
+          "target": "C:\\Users\\zsj\\.codex\\vendor_imports\\skills\\skills\\.curated\\chatgpt-apps",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "chatgpt_pets",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_pets",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6738,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "chatgpt_space",
+          "target": "C:\\Users\\zsj\\.vscode\\extensions\\openai.chatgpt-26.1021.22027-win32-x64\\webview\\images\\ecosystem\\apps\\chatgpt_space",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6728,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "chatgpt-exchange",
+          "target": "C:\\$Recycle.Bin\\S-1-5-21-413853354-344499552-1206818110-1001\\$RK9DW67\\docs\\public\\catalog\\items\\chatgpt-exchange",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6698,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 10,
+          "name": "chatgpt-4yr-tribute",
+          "target": "C:\\Users\\zsj\\Projects\\chatgpt-4yr-tribute",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6668,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 11,
+          "name": "chatgpt-app-submission",
+          "target": "C:\\Users\\zsj\\.codex\\.tmp\\plugins\\plugins\\openai-developers\\skills\\chatgpt-app-submission",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6638,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "ChatGPT",
+          "target": "shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "ChatGPT",
+          "target": "shell:AppsFolder\\OpenAI.Codex_2p2nqsd0c76g0!App",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "rtt",
+      "totalMatches": 345882,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 255497,
+      "additionalNameDemotions": 3971,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "JLinkRTTClient",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTClient.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "JLinkRTTLogger",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTLogger.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "JLinkRTTViewer",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTViewer.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "request_game_parser_test",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\BorderlessSpace\\1.60.3200.18\\request_game_parser_test.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2108,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-cbs_31bf3856ad364e35_10.0.26100.1591_none_60aad032a4073cbd\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "RestartAgent",
+          "target": "C:\\Program Files\\WSL\\wslsettings\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9711_none_449032228a2e28d3\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9444_none_44b35e6c8a136de8\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9818_none_4484c2be8a36f82b\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "JLinkRTTClient",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTClient.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "JLinkRTTLogger",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTLogger.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "JLinkRTTViewer",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTViewer.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "request_game_parser_test",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\BorderlessSpace\\1.60.3200.18\\request_game_parser_test.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2108,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-cbs_31bf3856ad364e35_10.0.26100.1591_none_60aad032a4073cbd\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "RestartAgent",
+          "target": "C:\\Program Files\\WSL\\wslsettings\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9711_none_449032228a2e28d3\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9444_none_44b35e6c8a136de8\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9818_none_4484c2be8a36f82b\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "JLinkRTTClient",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTClient.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "JLinkRTTLogger",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTLogger.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "JLinkRTTViewer",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTViewer.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2724,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "request_game_parser_test",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\BorderlessSpace\\1.60.3200.18\\request_game_parser_test.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 2108,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-cbs_31bf3856ad364e35_10.0.26100.1591_none_60aad032a4073cbd\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "RestartAgent",
+          "target": "C:\\Program Files\\WSL\\wslsettings\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9711_none_449032228a2e28d3\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9444_none_44b35e6c8a136de8\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "RestartAgent",
+          "target": "C:\\Windows\\WinSxS\\amd64_winappsdk-vnext-cbs_31bf3856ad364e35_10.0.26100.9818_none_4484c2be8a36f82b\\RestartAgent.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 1962,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "JLinkRTTViewer",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTViewer.exe",
+          "before": 3,
+          "pathOnly": 3,
+          "allNamePatterns": 3,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 2,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "JLinkRTTViewer",
+          "target": "C:\\Users\\zsj\\.eide\\tools\\jlink\\JLinkRTTViewer.exe",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "doubao",
+      "totalMatches": 33891,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 33576,
+      "additionalNameDemotions": 44,
+      "pathOnlyFirstNineUnchanged": true,
+      "allNamePatternsFirstNineUnchanged": true,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "豆包",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "豆包工作",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包工作.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app.backup.20261112-070251-615Z\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\launcher\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\launcher\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Doubao_proxy",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao_proxy.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5750,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "豆包",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "豆包工作",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包工作.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app.backup.20261112-070251-615Z\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\launcher\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\launcher\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Doubao_proxy",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao_proxy.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5750,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "豆包",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "豆包工作",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包工作.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app.backup.20261112-070251-615Z\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "Doubao",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\launcher\\Doubao.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5810,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\launcher\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "DoubaoWork",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\DoubaoWork\\Application\\app\\DoubaoWork.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5770,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "Doubao_proxy",
+          "target": "D:\\电脑管家迁移文件\\Doubao\\application\\app\\Doubao_proxy.exe",
+          "kind": "Application",
+          "group": "ExecutableEntry",
+          "score": 5750,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "豆包",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包.lnk",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        },
+        {
+          "name": "豆包工作",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包工作.lnk",
+          "before": 2,
+          "pathOnly": 2,
+          "allNamePatterns": 2,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 1,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "豆包",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包.lnk",
+          "rankAfterOneMemorySelection": 1
+        },
+        {
+          "name": "豆包工作",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\豆包工作.lnk",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    },
+    {
+      "query": "qianwen",
+      "totalMatches": 143,
+      "boundedFirstNineEqual": true,
+      "recallSetUnchanged": true,
+      "pathDemotions": 117,
+      "additionalNameDemotions": 1,
+      "pathOnlyFirstNineUnchanged": false,
+      "allNamePatternsFirstNineUnchanged": false,
+      "before": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "千问办公",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\千问办公.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 2,
+          "name": "Qianwen",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Programs\\Qianwen",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6788,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 3,
+          "name": "Qianwen",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Qianwen",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6788,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 4,
+          "name": "QianwenUpdater",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\QianwenUpdater",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6718,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 5,
+          "name": "https_www.qianwen.com_0.indexeddb.leveldb",
+          "target": "C:\\Users\\zsj\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\IndexedDB\\https_www.qianwen.com_0.indexeddb.leveldb",
+          "kind": "Directory",
+          "group": "Ordinary",
+          "score": 6308,
+          "decision": {
+            "pathReason": "path: C:\\Users\\zsj\\AppData",
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 6,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private-promo-preview\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 7,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 8,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3300.765\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 9,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\MarvisData\\Component\\MarvisAgent\\MarvisAgent\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "pathOnly": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "千问办公",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\千问办公.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 6,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private-promo-preview\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 7,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 8,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3300.765\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 9,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\MarvisData\\Component\\MarvisAgent\\MarvisAgent\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 10,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3000.716\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 11,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\Knowledgebase\\1.60.3300.34\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 12,
+          "name": "table_question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3300.765\\_internal\\huggingface_hub\\inference\\_generated\\types\\table_question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4706,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 13,
+          "name": "table_question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\MarvisData\\Component\\MarvisAgent\\MarvisAgent\\_internal\\huggingface_hub\\inference\\_generated\\types\\table_question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4706,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "allNamePatterns": [
+        {
+          "rank": 1,
+          "originalRank": 1,
+          "name": "千问办公",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\千问办公.lnk",
+          "kind": "Application",
+          "group": "ApplicationEntry",
+          "score": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          }
+        },
+        {
+          "rank": 2,
+          "originalRank": 6,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private-promo-preview\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 3,
+          "originalRank": 7,
+          "name": "qianwen.svg",
+          "target": "D:\\Work\\workspace\\AIHOT-private\\assets\\model-providers\\qianwen.svg",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 6748,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 4,
+          "originalRank": 8,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3300.765\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 5,
+          "originalRank": 9,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\MarvisData\\Component\\MarvisAgent\\MarvisAgent\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 6,
+          "originalRank": 10,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3000.716\\_internal\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 7,
+          "originalRank": 11,
+          "name": "question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\Knowledgebase\\1.60.3300.34\\huggingface_hub\\inference\\_generated\\types\\question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4850,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 8,
+          "originalRank": 12,
+          "name": "table_question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\Marvis\\MarvisAgent\\1.60.3300.765\\_internal\\huggingface_hub\\inference\\_generated\\types\\table_question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4706,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        },
+        {
+          "rank": 9,
+          "originalRank": 13,
+          "name": "table_question_answering.pyc",
+          "target": "D:\\Program Files\\Tencent\\MarvisData\\Component\\MarvisAgent\\MarvisAgent\\_internal\\huggingface_hub\\inference\\_generated\\types\\table_question_answering.pyc",
+          "kind": "File",
+          "group": "Ordinary",
+          "score": 4706,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": false
+          }
+        }
+      ],
+      "targets": [
+        {
+          "name": "千问办公",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\千问办公.lnk",
+          "before": 1,
+          "pathOnly": 1,
+          "allNamePatterns": 1,
+          "decision": {
+            "pathReason": null,
+            "nameReason": null,
+            "protectedEntry": true
+          },
+          "protectedEntriesAhead": 0,
+          "pathDemotedEntriesAhead": 0
+        }
+      ],
+      "memoryLearningChecks": [
+        {
+          "name": "千问办公",
+          "target": "C:\\Users\\zsj\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\千问办公.lnk",
+          "rankAfterOneMemorySelection": 1
+        }
+      ]
+    }
+  ]
+}
