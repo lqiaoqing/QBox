@@ -42,7 +42,7 @@ public sealed class VolumeIndex
     private IEnumerable<int> SearchNames(string query, CancellationToken cancellationToken)
     {
         PrepareSearch(cancellationToken);
-        if (query.Length == 0 || !Ascii.IsValid(query)) return Enumerable.Range(0, Names.Length);
+        if (query.Length == 0) return Enumerable.Range(0, Names.Length);
         return _presence!.Select(query, cancellationToken);
     }
 

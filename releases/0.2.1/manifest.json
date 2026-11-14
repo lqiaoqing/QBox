@@ -1,0 +1,12 @@
+{
+  "version": "0.2.1.0",
+  "sha256": "c330dfc202a890e88891fadaed50fce3f25de71d29bf09c138fbbe35783534fc",
+  "bytes": 1018125,
+  "sdk": "10.0.110",
+  "runtime": "Microsoft.WindowsDesktop.App 10.0.x",
+  "matchingChecks": 685,
+  "behaviorChecks": 2897,
+  "baseline": "51a2cf4 / 0.2.0",
+  "validation": "docs/2026-11-14-搜索补全/unicode-prefilter-validation.json",
+  "purpose": "补充 Unicode 稀疏名称预筛，修复汉字查询全索引遍历延迟；匹配与排序规则保持原样"
+}

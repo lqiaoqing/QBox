@@ -400,6 +400,50 @@ internal static class NtfsIndexChecks
                     Equal(expected.TotalMatches, actual.TotalMatches);
                     True(expected.Items.Select(hit => hit.Candidate).SequenceEqual(actual.Items.Select(hit => hit.Candidate)));
                 });
+        var unicodeIndex = Snapshot(new[] { "资料", "工作资料资料.txt", "料资.txt", "中文A文件.txt", "😀中文.txt", "𠀀𠮷资料.txt",
+            "ſı_资料.txt", "İ资料.txt", "Ⱥⱥ资料.txt", "𐐀𐐨资料.txt", "e\u0301资料.txt" }
+            .Select((name, i) => File((ulong)(100 + i), name, directory: i % 3 == 0))
+            .Append(File(200, "long-report.txt") with { Names = [new(Root, "long-report.txt", 1, 0), new(Root, "中文~1.TXT", 2, 0)] }).ToArray());
+        foreach (var query in new[] { "资料", "资", "料资", "资料资料", "资料资", "中文A", "😀", "𠀀", "𠮷", "𠀀𠮷", "𐐨", "ı", "ſ", "İ", "ⱥ", "Ⱥ", "e\u0301", "中文~1", "无匹配探针" })
+            foreach (var limit in new[] { 0, 1, 9, 100 })
+                checks.Run($"Unicode 预筛与原完整遍历的结果及高亮一致 [{query}] / {limit}", () =>
+                {
+                    var reference = new SearchEngine(new()).Search(query, unicodeIndex.Candidates(query), limit);
+                    var collector = new SearchCollector(query, limit);
+                    unicodeIndex.SearchInto(collector, new SelectionHistory().ForQuery(query));
+                    var actual = collector.Finish();
+                    Equal(reference.TotalMatches, actual.TotalMatches); Equal(reference.Items.Count, actual.Items.Count);
+                    for (var i = 0; i < reference.Items.Count; i++)
+                    {
+                        Equal(reference.Items[i].Candidate, actual.Items[i].Candidate);
+                        Equal(reference.Items[i].Group, actual.Items[i].Group);
+                        Equal(reference.Items[i].Match.AlignmentScore, actual.Items[i].Match.AlignmentScore);
+                        True(reference.Items[i].Match.Highlights.SequenceEqual(actual.Items[i].Match.Highlights));
+                    }
+                });
+        checks.Run("中文 DOS 别名跨位图边界时仍返回长名身份与路径", () =>
+        {
+            var index = Snapshot(Enumerable.Range(20, 63).Select(i => File((ulong)i, "filler" + i)).Append(
+                File(83, "long-report.txt") with { Names = [new(Root, "long-report.txt", 1, 0), new(Root, "中文~1.TXT", 2, 0)] }).ToArray());
+            var collector = new SearchCollector("中文"); index.SearchInto(collector, new SelectionHistory().ForQuery("中文"));
+            var result = collector.Finish();
+            Equal(1, result.TotalMatches); Equal(@"X:\long-report.txt", result.Items.Single().Candidate.Target);
+            Equal(index.Candidates("中文").Single().Id, result.Items.Single().Candidate.Id);
+        });
+        checks.Run("中文实时覆盖层的新增改名仍使用相同检索结果", () =>
+        {
+            var old = new LiveVolumeIndex(Snapshot(File(20, "旧资料.txt")));
+            var next = old.Apply([new(new(7, 110), [new(Id(20), File(20, "新工作资料.txt"))])]);
+            var collector = new SearchCollector("工作资料"); next.SearchInto(collector, new SelectionHistory().ForQuery("工作资料"));
+            Equal(@"X:\新工作资料.txt", collector.Finish().Items.Single().Candidate.Target);
+        });
+        checks.Run("取消 Unicode 索引构建后不缓存半成品", () =>
+        {
+            var index = Snapshot(File(20, "资料.txt"));
+            Throws<OperationCanceledException>(() => index.PrepareSearch(new(true))); index.PrepareSearch();
+            var collector = new SearchCollector("资料"); index.SearchInto(collector, new SelectionHistory().ForQuery("资料"));
+            Equal(1, collector.Finish().TotalMatches);
+        });
         checks.Run("取消位图构建后可以重新建立，不缓存半成品", () =>
         {
             var index = Snapshot(File(20, "Alpha"));

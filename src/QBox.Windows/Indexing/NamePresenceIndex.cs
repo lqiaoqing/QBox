@@ -7,6 +7,7 @@ namespace QBox.Windows.Indexing;
 internal sealed class NamePresenceIndex
 {
     private readonly ulong[]?[] _ascii = new ulong[128][];
+    private readonly Dictionary<int, int[]> _unicode;
     private readonly int[] _owners;
     private readonly int _words;
     private readonly VolumeIndex _volume;
@@ -16,6 +17,7 @@ internal sealed class NamePresenceIndex
         _volume = volume;
         _words = (volume.Names.Length + 63) / 64;
         _owners = new int[volume.Names.Length];
+        var unicode = new Dictionary<int, List<int>>();
         for (var nodeIndex = 0; nodeIndex < volume.Nodes.Length; nodeIndex++)
         {
             if ((nodeIndex & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
@@ -29,7 +31,13 @@ internal sealed class NamePresenceIndex
                 {
                     // 与匹配器使用同一 Rune 大写映射，保留长 s、无点 i 等可匹配 ASCII 的名称。
                     var upper = Rune.ToUpperInvariant(rune).Value;
-                    if (upper >= 128) continue;
+                    if (upper >= 128)
+                    {
+                        // 非 ASCII 字符只保存有序名称编号，避免每个汉字各占一张全盘位图。
+                        if (!unicode.TryGetValue(upper, out var names)) unicode[upper] = names = [];
+                        if (names.Count == 0 || names[^1] != index) names.Add(index);
+                        continue;
+                    }
                     var bit = 1UL << (upper & 63);
                     ref var seen = ref (upper < 64 ? ref seenLow : ref seenHigh);
                     if ((seen & bit) != 0) continue;
@@ -39,25 +47,59 @@ internal sealed class NamePresenceIndex
                 }
             }
         }
+        cancellationToken.ThrowIfCancellationRequested();
+        _unicode = unicode.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray());
     }
 
     public int Owner(int name) => _owners[name];
 
     public IEnumerable<int> Select(string query, CancellationToken cancellationToken)
     {
-        var letters = query.Select(letter => char.ToUpperInvariant(letter)).Distinct().ToArray();
-        var maps = letters.Select(letter => _ascii[letter]).ToArray();
-        if (maps.Any(map => map == null)) yield break;
+        // 与 CanMatch 一样按 Rune 折叠大小写，补充平面字符不能拆成两个代理项筛选。
+        var letters = query.EnumerateRunes().Select(rune => Rune.ToUpperInvariant(rune).Value).Distinct().ToArray();
+        var maps = new List<ulong[]>();
+        var sparse = new List<int[]>();
+        foreach (var letter in letters)
+        {
+            if (letter < 128)
+            {
+                if (_ascii[letter] is not { } map) yield break;
+                maps.Add(map);
+            }
+            else
+            {
+                if (!_unicode.TryGetValue(letter, out var names)) yield break;
+                sparse.Add(names);
+            }
+        }
+        var dense = maps.ToArray();
         var selected = ArrayPool<ulong>.Shared.Rent(_words);
         try
         {
-            // 字符交集只提供必要条件，重复字符数量和先后关系仍由完整匹配器核对。
-            for (var word = 0; word < _words; word++)
+            if (sparse.Count == 0)
             {
-                if ((word & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
-                var bits = ulong.MaxValue;
-                foreach (var map in maps) bits &= map![word];
-                selected[word] = bits;
+                for (var word = 0; word < _words; word++)
+                {
+                    if ((word & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                    var bits = ulong.MaxValue;
+                    foreach (var map in dense) bits &= map[word];
+                    selected[word] = bits;
+                }
+            }
+            else
+            {
+                selected.AsSpan(0, _words).Clear();
+                var smallest = sparse.MinBy(names => names.Length)!;
+                var scanned = 0;
+                foreach (var name in smallest)
+                {
+                    if ((scanned++ & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                    var bit = 1UL << (name & 63);
+                    if (dense.Any(map => (map[name >> 6] & bit) == 0) ||
+                        sparse.Any(names => !ReferenceEquals(names, smallest) && Array.BinarySearch(names, name) < 0)) continue;
+                    // 交集只排除缺字名称；字序、重复次数和匹配分值仍由原匹配器确定。
+                    selected[name >> 6] |= bit;
+                }
             }
             for (var word = 0; word < _words; word++)
             {

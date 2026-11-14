@@ -1,0 +1,493 @@
+{
+  "baselineCommit": "51a2cf4",
+  "fixedVersion": "0.2.1",
+  "sameSourceMetadata": true,
+  "sources": [
+    {
+      "root": "C:\\",
+      "serial": 2361124850835546704,
+      "createdAt": "2026-11-14T17:57:59.780208+08:00",
+      "checkpoint": {
+        "journalId": 133701719248863987,
+        "nextUsn": 66834776272
+      },
+      "fileCount": 1990791,
+      "nameCount": 3435385
+    },
+    {
+      "root": "D:\\",
+      "serial": 1741393326942968400,
+      "createdAt": "2026-11-13T21:30:14.6662531+08:00",
+      "checkpoint": {
+        "journalId": 134369420436806823,
+        "nextUsn": 294695552
+      },
+      "fileCount": 1023020,
+      "nameCount": 1072641
+    }
+  ],
+  "cases": [
+    {
+      "query": "豆包",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 3,
+      "totalMatches": 3,
+      "beforeTimesMs": [
+        1728.2477,
+        1605.5618,
+        1527.2585,
+        1562.1014,
+        1541.8885
+      ],
+      "afterTimesMs": [
+        60.0696,
+        0.7125,
+        0.4475,
+        0.3981,
+        0.4574
+      ]
+    },
+    {
+      "query": "千问",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 2,
+      "totalMatches": 2,
+      "beforeTimesMs": [
+        1553.3769,
+        1538.7619,
+        1537.4351,
+        1528.6699,
+        1563.1613
+      ],
+      "afterTimesMs": [
+        6.1615,
+        0.5037,
+        0.3522,
+        0.3781,
+        0.3464
+      ]
+    },
+    {
+      "query": "资料",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 82,
+      "totalMatches": 82,
+      "beforeTimesMs": [
+        1534.3768,
+        1595.497,
+        1608.1524,
+        1572.9483,
+        1564.5235
+      ],
+      "afterTimesMs": [
+        2.0994,
+        0.9508,
+        1.1852,
+        0.8705,
+        0.7237
+      ]
+    },
+    {
+      "query": "工作",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 45,
+      "totalMatches": 45,
+      "beforeTimesMs": [
+        1644.1705,
+        1596.4936,
+        1619.9699,
+        1582.5528,
+        1586.6106
+      ],
+      "afterTimesMs": [
+        1.4046,
+        3.4996,
+        1.1293,
+        0.7371,
+        0.6947
+      ]
+    },
+    {
+      "query": "中",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 106,
+      "totalMatches": 109,
+      "beforeTimesMs": [
+        1602.5121,
+        1587.0404,
+        1586.2922,
+        1596.0185,
+        1621.3358
+      ],
+      "afterTimesMs": [
+        7.3635,
+        0.9643,
+        0.7719,
+        0.7477,
+        0.7191
+      ]
+    },
+    {
+      "query": "任意中文不存在探针",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 0,
+      "totalMatches": 0,
+      "beforeTimesMs": [
+        1583.1149,
+        1609.0775,
+        1879.1761,
+        2042.1829,
+        1613.8389
+      ],
+      "afterTimesMs": [
+        2.2004,
+        0.2665,
+        0.283,
+        0.2553,
+        0.2516
+      ]
+    },
+    {
+      "query": "豆",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 4,
+      "totalMatches": 4,
+      "beforeTimesMs": [
+        1785.6064,
+        2085.0412,
+        2202.0318,
+        2142.6764,
+        2110.8592
+      ],
+      "afterTimesMs": [
+        0.6366,
+        0.5943,
+        0.5059,
+        0.5407,
+        0.5923
+      ]
+    },
+    {
+      "query": "资",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 119,
+      "totalMatches": 120,
+      "beforeTimesMs": [
+        2131.473,
+        2212.0575,
+        2112.8375,
+        2102.7113,
+        2097.6059
+      ],
+      "afterTimesMs": [
+        1.2205,
+        1.1827,
+        1.0325,
+        0.9562,
+        0.9794
+      ]
+    },
+    {
+      "query": "😀",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 0,
+      "totalMatches": 0,
+      "beforeTimesMs": [
+        2267.0305,
+        2199.6389,
+        2224.4608,
+        2263.8719,
+        2243.6163
+      ],
+      "afterTimesMs": [
+        0.5298,
+        0.3414,
+        0.3361,
+        0.3248,
+        0.3259
+      ]
+    },
+    {
+      "query": "𠀀",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 0,
+      "totalMatches": 0,
+      "beforeTimesMs": [
+        2256.2017,
+        2305.5455,
+        2258.7046,
+        2229.6676,
+        2265.8516
+      ],
+      "afterTimesMs": [
+        0.402,
+        0.3191,
+        0.4064,
+        0.3419,
+        0.3119
+      ]
+    },
+    {
+      "query": "文a",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 81,
+      "totalMatches": 45,
+      "beforeTimesMs": [
+        2107.0481,
+        2211.7759,
+        2137.2985,
+        2132.5655,
+        2120.4681
+      ],
+      "afterTimesMs": [
+        3.3805,
+        1.1727,
+        1.0125,
+        1.3326,
+        1.039
+      ]
+    },
+    {
+      "query": "ſ",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 1851720,
+      "totalMatches": 1851732,
+      "beforeTimesMs": [
+        1326.1477,
+        1317.0283,
+        1303.6495,
+        1312.1157,
+        1303.7465
+      ],
+      "afterTimesMs": [
+        548.1368,
+        493.7033,
+        428.1496,
+        416.5695,
+        433.3852
+      ]
+    },
+    {
+      "query": "ı",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 4508026,
+      "afterSelectedNames": 0,
+      "totalMatches": 0,
+      "beforeTimesMs": [
+        2318.6531,
+        2551.4397,
+        2573.4171,
+        2843.3931,
+        2743.0061
+      ],
+      "afterTimesMs": [
+        0.3712,
+        0.2127,
+        0.3007,
+        0.2396,
+        0.2173
+      ]
+    },
+    {
+      "query": "Any",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 293550,
+      "afterSelectedNames": 293550,
+      "totalMatches": 188322,
+      "beforeTimesMs": [
+        81.719,
+        70.7467,
+        68.4766,
+        68.73,
+        67.5965
+      ],
+      "afterTimesMs": [
+        65.4907,
+        57.396,
+        52.8691,
+        63.9496,
+        60.726
+      ]
+    },
+    {
+      "query": "800Q",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 6644,
+      "afterSelectedNames": 6644,
+      "totalMatches": 667,
+      "beforeTimesMs": [
+        10.7151,
+        8.8283,
+        7.0557,
+        7.447,
+        8.2487
+      ],
+      "afterTimesMs": [
+        14.0204,
+        11.9685,
+        12.4403,
+        12.1274,
+        11.9408
+      ]
+    },
+    {
+      "query": ".code",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 459460,
+      "afterSelectedNames": 459460,
+      "totalMatches": 38366,
+      "beforeTimesMs": [
+        63.3016,
+        55.4345,
+        60.9682,
+        64.7615,
+        60.1377
+      ],
+      "afterTimesMs": [
+        51.6931,
+        49.7945,
+        51.6937,
+        56.1365,
+        72.4076
+      ]
+    },
+    {
+      "query": "nd",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 733524,
+      "afterSelectedNames": 733524,
+      "totalMatches": 589857,
+      "beforeTimesMs": [
+        123.3258,
+        92.6097,
+        78.0766,
+        79.2301,
+        96.0913
+      ],
+      "afterTimesMs": [
+        77.4188,
+        85.1916,
+        74.311,
+        76.0882,
+        74.8382
+      ]
+    },
+    {
+      "query": "Tra",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 746029,
+      "afterSelectedNames": 746029,
+      "totalMatches": 402499,
+      "beforeTimesMs": [
+        106.864,
+        106.2799,
+        75.079,
+        86.7223,
+        102.3475
+      ],
+      "afterTimesMs": [
+        84.9486,
+        76.416,
+        74.8228,
+        77.3326,
+        74.0071
+      ]
+    },
+    {
+      "query": "chatgpt",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 63549,
+      "afterSelectedNames": 63549,
+      "totalMatches": 654,
+      "beforeTimesMs": [
+        18.9272,
+        17.9812,
+        20.6328,
+        19.8673,
+        17.0285
+      ],
+      "afterTimesMs": [
+        17.0201,
+        13.8026,
+        13.1334,
+        14.5398,
+        15.7121
+      ]
+    },
+    {
+      "query": "rtt",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 997600,
+      "afterSelectedNames": 997600,
+      "totalMatches": 347618,
+      "beforeTimesMs": [
+        173.8543,
+        143.9071,
+        149.0046,
+        137.4587,
+        130.0102
+      ],
+      "afterTimesMs": [
+        106.8268,
+        101.0617,
+        103.2923,
+        101.1881,
+        104.2937
+      ]
+    },
+    {
+      "query": "doubao",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 132305,
+      "afterSelectedNames": 132305,
+      "totalMatches": 33891,
+      "beforeTimesMs": [
+        55.2892,
+        55.9453,
+        52.2647,
+        52.1762,
+        57.2136
+      ],
+      "afterTimesMs": [
+        39.3556,
+        40.0471,
+        39.8107,
+        38.4488,
+        39.4964
+      ]
+    },
+    {
+      "query": "qianwen",
+      "fullResponseUnchanged": true,
+      "beforeSelectedNames": 5998,
+      "afterSelectedNames": 5998,
+      "totalMatches": 144,
+      "beforeTimesMs": [
+        4.6817,
+        3.6945,
+        3.6161,
+        5.263,
+        5.53
+      ],
+      "afterTimesMs": [
+        3.7467,
+        3.463,
+        3.2179,
+        3.1269,
+        2.9984
+      ]
+    }
+  ]
+}
