@@ -14,6 +14,7 @@ internal static class NtfsIndexChecks
 
     public static void Run(CheckSuite checks)
     {
+        RunLive(checks);
         checks.Run("USN V0 原生请求 ABI 布局", () =>
         {
             var input = NtfsControlBuffers.ReadJournal(new(0xfedcba9876543210, 0x1020304050607080));
@@ -455,6 +456,117 @@ internal static class NtfsIndexChecks
                     Equal(expected.TotalMatches, actual.TotalMatches);
                     True(expected.Items.Select(hit => hit.Candidate).SequenceEqual(actual.Items.Select(hit => hit.Candidate)));
                 });
+    }
+
+    private static void RunLive(CheckSuite checks)
+    {
+        static SearchResponse Search(LiveVolumeIndex view, string query)
+        {
+            var collector = new SearchCollector(query, 100);
+            view.SearchInto(collector, new SelectionHistory().ForQuery(query));
+            return collector.Finish();
+        }
+        var original = Snapshot(File(20, "folder", directory: true), File(21, "alpha.txt", Id(20)), File(22, "other", directory: true));
+        checks.Run("实时视图覆盖改名并保持旧查询快照不变", () =>
+        {
+            var old = new LiveVolumeIndex(original);
+            var next = old.Apply([new(new(7, 110), [new(Id(21), File(21, "beta.txt", Id(20)))])]);
+            Equal(0, Search(next, "alpha").TotalMatches);
+            Equal(@"X:\folder\beta.txt", Search(next, "beta").Items.Single().Candidate.Target);
+            Equal(1, Search(old, "alpha").TotalMatches);
+        });
+        checks.Run("实时目录移动直接更新未修改子文件路径", () =>
+        {
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "renamed", Id(22), true))])]);
+            Equal(@"X:\other\renamed\alpha.txt", Search(next, "alpha").Items.Single().Candidate.Target);
+        });
+        checks.Run("实时删除父目录不返回子项旧路径", () =>
+        {
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), null)])]);
+            Equal(0, Search(next, "alpha").TotalMatches);
+        });
+        checks.Run("实时新目录与新文件可以同一批入索引", () =>
+        {
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(30), File(30, "newdir", directory: true)),
+                new(Id(31), File(31, "newfile.txt", Id(30)))])]);
+            Equal(@"X:\newdir\newfile.txt", Search(next, "newfile").Items.Single().Candidate.Target);
+        });
+        checks.Run("实时记录复用不保留旧文件或继承旧身份", () =>
+        {
+            var newer = File(21, "reused.txt") with { File = Id(21, 8) };
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(newer.File, newer)])]);
+            Equal(0, Search(next, "alpha").TotalMatches);
+            True(Search(next, "reused").Items.Single().Candidate.Id.Contains($":{newer.File.Low:x16}:"));
+        });
+        checks.Run("实时硬链接删除一条仍保留其他路径", () =>
+        {
+            var linked = File(21, "alpha.txt", Id(20)) with { LinkCount = 2,
+                Names = [new(Id(20), "alpha.txt", 1, 0), new(Id(22), "alpha-link.txt", 1, 0)] };
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(21), linked), new(Id(20), null)])]);
+            var found = Search(next, "alpha");
+            Equal(1, found.TotalMatches); Equal(@"X:\other\alpha-link.txt", found.Items.Single().Candidate.Target);
+        });
+        checks.Run("实时查询无变化时逐项保持原有结果和分值", () =>
+        {
+            var baseCollector = new SearchCollector("al", 9);
+            original.SearchInto(baseCollector, new SelectionHistory().ForQuery("al"));
+            var expected = baseCollector.Finish(); var actual = Search(new(original), "al");
+            True(expected.Items.Select(h => h.Candidate).SequenceEqual(actual.Items.Select(h => h.Candidate)));
+            Equal(expected.TotalMatches, actual.TotalMatches);
+        });
+        checks.Run("实时 USN 只写数据不产生名称变更", () =>
+        {
+            using var volume = new FakeVolume();
+            volume.Current[21] = Record(21, "alpha.txt", Id(20)) with { LastUsn = 105, LinkCount = 1 };
+            volume.Bounds = _ => new(7, 1, 1, 110);
+            volume.Batches[100] = new(110, [Change(21, 105, UsnReason.DataOverwrite)]);
+            var batch = new NtfsChangeReader(volume).Read(new(original));
+            Equal(0, batch.Changes.Length); Equal(110L, batch.Checkpoint.NextUsn);
+        });
+        checks.Run("实时 USN 删除通知读取当前复用序列", () =>
+        {
+            using var volume = new FakeVolume();
+            volume.Current[21] = Record(21, "new.txt") with { File = Id(21, 8), LinkCount = 1 };
+            volume.Bounds = _ => new(7, 1, 1, 110);
+            volume.Batches[100] = new(110, [Change(21, 105, UsnReason.FileDelete)]);
+            var batch = new NtfsChangeReader(volume).Read(new(original));
+            Equal(Id(21, 8), batch.Changes.Single().File);
+            Equal("new.txt", batch.Changes.Single().Value!.Names.Single().Name);
+        });
+        checks.Run("实时 USN 断档拒绝继续追加", () =>
+        {
+            using var volume = new FakeVolume(); volume.Bounds = _ => new(8, 1, 1, 110);
+            Throws<JournalGapException>(() => new NtfsChangeReader(volume).Read(new(original)));
+        });
+        checks.Run("增量日志跨重启恢复并忽略半写尾帧", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbd"); IndexChangeLog.Reset(path, original);
+            IndexChangeLog.Append(path, new(new(7, 110), [new(Id(21), File(21, "beta.txt", Id(20)))]));
+            long cursor = 0;
+            var view = new LiveVolumeIndex(original).Apply(IndexChangeLog.Read(path, original, ref cursor));
+            Equal(1, Search(view, "beta").TotalMatches);
+            var complete = cursor;
+            using (var file = new FileStream(path, FileMode.Append)) file.Write(new byte[] { 100, 0, 0, 0, 1, 2, 3 });
+            Equal(0, IndexChangeLog.Read(path, original, ref cursor).Count); Equal(complete, cursor);
+            IndexChangeLog.Read(path, original, ref cursor, repairTail: true); Equal(complete, new FileInfo(path).Length);
+        }));
+        checks.Run("增量日志完整帧损坏拒绝修复跳过", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbd"); IndexChangeLog.Reset(path, original);
+            IndexChangeLog.Append(path, new(new(7, 110), [new(Id(21), null)]));
+            var bytes = System.IO.File.ReadAllBytes(path); bytes[^1] ^= 1; System.IO.File.WriteAllBytes(path, bytes);
+            long cursor = 0;
+            Throws<InvalidDataException>(() => IndexChangeLog.Read(path, original, ref cursor, true));
+            True(bytes.SequenceEqual(System.IO.File.ReadAllBytes(path)));
+        }));
+        checks.Run("增量日志不会应用到另一份基础索引", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbd"); IndexChangeLog.Reset(path, original); long cursor = 0;
+            var newer = Snapshot(File(30, "different"));
+            Throws<IndexBaseChangedException>(() => IndexChangeLog.Read(path, newer, ref cursor));
+        }));
+        checks.Run("实时增量检查点回退被拒绝", () =>
+            Throws<InvalidDataException>(() => new LiveVolumeIndex(original).Apply([new(new(7, 99), [])])));
     }
 
     private static FileReference Id(ulong number, ushort sequence = 7) => new(number | ((ulong)sequence << 48));

@@ -1,0 +1,6 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QBox 搜索补全</title>
+<style>body{font:16px/1.7 system-ui,sans-serif;background:#f4f6fa;color:#17243b;margin:0}main{max-width:960px;margin:auto;padding:36px 22px}h1{font-size:30px}section{background:white;border:1px solid #dce3ee;border-radius:12px;padding:20px;margin:18px 0}.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.flow div{padding:16px;background:#eaf0fc;border-radius:8px}small{color:#52627b}a{color:#215ac0}@media(max-width:650px){.flow{grid-template-columns:1fr}}</style>
+<main><h1>QBox 搜索补全</h1><p>从 0.1.3 继续完善日常可用性，保留已认可的英文、数字匹配与排序。</p>
+<section><h2>三块工作</h2><div class="flow"><div><b>1 · 后台更新</b><p>USN 变更 → 校验日志 → 增量搜索视图</p><small>进行中；验证后自动提交</small></div><div><b>2 · 覆盖补全</b><p>文件/目录拼音、应用刷新、历史迁移</p><small>未开始</small></div><div><b>3 · 验收与发布</b><p>异常恢复、真实回归、响应与窗口检查</p><small>未开始</small></div></div></section>
+<section><h2>更新如何生效</h2><div class="flow"><div><b>普通权限窗口</b><p>旧快照继续提供搜索；新查询读取一致的变更视图。</p></div><div><b>管理员工作进程</b><p>只读 USN 和文件记录，追赶新增、删除、改名与移动。</p></div><div><b>本地持久化</b><p>先写完整校验帧，再发布新视图；断档重建，失败保留旧数据。</p></div></div></section>
+<section><h2>进度与证据</h2><p><a href="TASK.md">当前任务、设计边界与验收记录</a></p><p>本页是实施入口，当前不表示三块工作已经验收通过。具体构建、自动检查、真实运行和用户确认在任务记录中分别标明。</p></section></main></html>

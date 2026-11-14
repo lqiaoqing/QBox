@@ -16,6 +16,7 @@ internal sealed class IndexUpdateJob : IDisposable
     private readonly DesktopOptions _options;
     private readonly string _indexes;
     private Process? _process;
+    private Timer? _heartbeat;
     public bool HasExited => _process?.HasExited == true;
     public IndexUpdateJob(DesktopOptions options, string indexes)
     {
@@ -27,6 +28,13 @@ internal sealed class IndexUpdateJob : IDisposable
 
     public void Start()
     {
+        void Beat(object? state)
+        {
+            try { File.WriteAllText(Path.Combine(_jobDirectory, "lease"), "active"); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+        }
+        Beat(null);
+        _heartbeat = new Timer(Beat, null, 1000, 1000);
         var process = new ProcessStartInfo
         {
             FileName = Environment.ProcessPath ?? throw new IOException("无法定位 QBox.exe"),
@@ -37,9 +45,10 @@ internal sealed class IndexUpdateJob : IDisposable
         process.ArgumentList.Add("--state-directory"); process.ArgumentList.Add(_options.StateDirectory);
         process.ArgumentList.Add("--index-directory"); process.ArgumentList.Add(_indexes);
         process.ArgumentList.Add("--sync-worker"); process.ArgumentList.Add(_jobDirectory);
+        process.ArgumentList.Add("--watch-worker");
         _process = Process.Start(process) ?? throw new IOException("索引更新进程未启动");
     }
-    public void Dispose() => _process?.Dispose();
+    public void Dispose() { _heartbeat?.Dispose(); _process?.Dispose(); }
 
     public void Cancel() => File.WriteAllText(Path.Combine(_jobDirectory, "cancel"), "");
     public UpdateStatus? Read()
@@ -49,7 +58,7 @@ internal sealed class IndexUpdateJob : IDisposable
             var path = Path.Combine(_jobDirectory, "status.json");
             return File.Exists(path) ? JsonSerializer.Deserialize<UpdateStatus>(File.ReadAllBytes(path), Json) : null;
         }
-        catch (IOException) { return null; }
+        catch (Exception error) when (error is IOException or JsonException) { return null; }
     }
 
     public static int RunWorker(DesktopOptions options)
@@ -58,6 +67,7 @@ internal sealed class IndexUpdateJob : IDisposable
         var jobsRoot = Path.Combine(options.StateDirectory, "jobs") + Path.DirectorySeparatorChar;
         if (!directory.StartsWith(jobsRoot, StringComparison.OrdinalIgnoreCase) || options.IndexDirectory == null)
             throw new ArgumentException("更新任务目录或索引目录无效");
+        if (options.WatchWorker) return LiveIndexWorker.Run(options);
         var statusPath = Path.Combine(directory, "status.json");
         var drives = new List<UpdateDrive>();
         using var cancellation = new CancellationTokenSource();

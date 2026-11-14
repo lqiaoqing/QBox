@@ -2,18 +2,19 @@ using System.Text.Json;
 
 namespace QBox.Desktop;
 
-public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = "DoubleCtrl");
+public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = "DoubleCtrl", bool AutoUpdate = true);
 
-public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob)
+public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob, bool WatchWorker = false)
 {
     public static DesktopOptions Parse(string[] args)
     {
         var state = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "QBox");
         string? indexes = null, workerJob = null;
-        var hidden = false;
+        var hidden = false; var watch = false;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--start-hidden") { hidden = true; continue; }
+            if (args[i] == "--watch-worker") { watch = true; continue; }
             var key = args[i];
             if (key is not ("--state-directory" or "--index-directory" or "--sync-worker") || ++i == args.Length)
                 throw new ArgumentException($"无效的启动参数：{key}");
@@ -22,7 +23,7 @@ public sealed record DesktopOptions(string StateDirectory, string? IndexDirector
             else workerJob = args[i];
         }
         return new(Path.GetFullPath(state), indexes == null ? null : Path.GetFullPath(indexes), hidden,
-            workerJob == null ? null : Path.GetFullPath(workerJob));
+            workerJob == null ? null : Path.GetFullPath(workerJob), watch);
     }
 }
 

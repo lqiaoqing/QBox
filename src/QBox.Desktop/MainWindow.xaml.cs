@@ -28,17 +28,19 @@ public partial class MainWindow : Window
     private readonly CancellationTokenSource _lifetime = new();
     private readonly ShellIconLoader _icons = new();
     private VolumeIndex[] _indexes = [];
+    private LiveIndexFile[] _liveIndexes = [];
     private ShortcutCatalog _shortcuts = ShortcutCatalog.Empty;
     private PackagedApplicationCatalog _applications = PackagedApplicationCatalog.Empty;
     private ResultRow[] _rows = [];
     private HotkeyRegistration? _hotkey;
     private System.Windows.Forms.NotifyIcon? _tray;
     private IndexUpdateJob? _update;
-    private string? _updateText, _notice;
+    private string? _updateText, _notice, _workerWarning;
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
     private int _limit = 9, _total;
     private bool _loading, _searching, _loaded, _quitting, _opening;
+    private bool _monitorRunning;
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -72,6 +74,8 @@ public partial class MainWindow : Window
         SetupTray();
         if (_options.StartHidden) Hide(); else ShowSearch();
         await ReloadAsync();
+        _ = MonitorIndexesAsync();
+        if (_settings.AutoUpdate) await UpdateAsync();
     }
 
     private void SetupTray()
@@ -129,11 +133,11 @@ public partial class MainWindow : Window
         DragMove();
     }
 
-    private async Task ReloadAsync()
+    private async Task ReloadAsync(bool background = false)
     {
         using var request = _loads.Begin();
-        _loading = true;
-        Results.IsEnabled = false;
+        _loading = !background || _indexes.Length == 0;
+        if (_loading) Results.IsEnabled = false;
         RefreshStatus();
         if (_indexes.Length == 0) SetEmpty("正在载入索引", "载入完成后，输入即可搜索。", false);
         try
@@ -142,18 +146,20 @@ public partial class MainWindow : Window
             var snapshot = await Task.Run(() =>
             {
                 var paths = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.qbi").Order(StringComparer.Ordinal).ToArray() : [];
-                var result = paths.Select(path => VolumeIndexStore.Load(path, request.Token)).ToArray();
+                var live = paths.Select(path => LiveIndexFile.Load(path, request.Token)).ToArray();
+                var result = live.Select(source => source.View.Base).ToArray();
                 if (result.Select(i => i.Geometry.Serial).Distinct().Count() != result.Length)
                     throw new InvalidDataException("同一个磁盘存在重复索引，请选择正确的索引目录");
                 foreach (var index in result) index.PrepareSearch(request.Token);
-                return (Indexes: result, Shortcuts: ShortcutCatalog.Load(result, request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
+                return (Indexes: result, Live: live, Shortcuts: ShortcutCatalog.Load(result, request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
             }, request.Token);
             if (!_loads.IsCurrent(request)) return;
             var indexes = snapshot.Indexes;
             _indexes = indexes;
+            _liveIndexes = snapshot.Live;
             _shortcuts = snapshot.Shortcuts;
             if (snapshot.Applications.Warning == null || snapshot.Applications.Count != 0) _applications = snapshot.Applications;
-            _notice = snapshot.Applications.Warning;
+            _notice = snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
             if (indexes.Length != 0)
             {
                 var volumes = string.Join(" · ", indexes.Select(i => i.Geometry.Root[..2]));
@@ -208,7 +214,7 @@ public partial class MainWindow : Window
         }
         _searching = true;
         RefreshStatus();
-        var indexes = _indexes;
+        var indexes = _liveIndexes;
         var shortcuts = _shortcuts;
         var applications = _applications;
         var limit = _limit;
@@ -222,7 +228,7 @@ public partial class MainWindow : Window
                 shortcuts.SearchInto(collector, history, request.Token);
                 var replaced = shortcuts.ReplacedIds(query);
                 var representedExecutables = shortcuts.MatchedExecutableTargets(query);
-                foreach (var index in indexes) index.SearchInto(collector, history, request.Token, replaced, representedExecutables);
+                foreach (var index in indexes) index.View.SearchInto(collector, history, request.Token, replaced, representedExecutables);
                 return collector.Finish();
             }, request.Token);
             // UI 线程上的版本复核同时约束展示和打开，取消来不及的旧查询也不能抢回结果。
@@ -342,7 +348,7 @@ public partial class MainWindow : Window
     private void RefreshStatus()
     {
         if (!IsInitialized) return;
-        StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ??
+        StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
             (_searching ? "正在搜索…" : QueryBox.Text.Length == 0 ? _snapshotText : $"{_total:N0} 项 · 显示 {_rows.Length} · {_snapshotText}"));
         StatusText.ToolTip = StatusText.Text;
     }
@@ -358,6 +364,13 @@ public partial class MainWindow : Window
         }
         Item("更新索引", async () => await UpdateAsync(), _update == null);
         Item("取消索引更新", () => _update?.Cancel(), _update != null);
+        Item(_settings.AutoUpdate ? "关闭启动时实时更新" : "开启启动时实时更新", () =>
+        {
+            _settings = _settings with { AutoUpdate = !_settings.AutoUpdate };
+            SaveSettings();
+            if (!_settings.AutoUpdate) _update?.Cancel();
+            else _ = UpdateAsync();
+        });
         Item("重新载入索引    Ctrl+R", async () => await ReloadAsync());
         Item("选择索引目录…", async () => await ChooseIndexDirectoryAsync(), _update == null);
         var keys = new MenuItem { Header = "唤起快捷键" };
@@ -423,16 +436,21 @@ public partial class MainWindow : Window
             while (!_lifetime.IsCancellationRequested)
             {
                 var status = _update.Read();
-                if (_update.HasExited && (status == null || status.State == "Running"))
+                if (_update.HasExited && (status == null || status.State is "Running" or "Watching"))
                 {
                     if (++exitedPolls >= 3) throw new IOException("索引更新进程提前退出，请查看数据目录中的日志");
                 }
                 if (status != null)
                 {
                     var current = status.Drives.LastOrDefault();
-                    _updateText = current == null ? "正在准备更新…" : $"{current.Drive} {current.Stage} · {current.Files:N0} 项";
+                    _updateText = status.State == "Watching" ? null : current == null ? "正在准备更新…" : $"{current.Drive} {current.Stage} · {current.Files:N0} 项";
+                    if (status.State == "Watching")
+                    {
+                        var failures = status.Drives.Where(d => d.Error != null).ToArray();
+                        _workerWarning = failures.Length == 0 ? null : string.Join("；", failures.Select(d => d.Drive + " " + d.Error));
+                    }
                     RefreshStatus();
-                    if (status.State != "Running")
+                    if (status.State is not ("Running" or "Watching"))
                     {
                         _notice = status.State switch
                         {
@@ -453,6 +471,45 @@ public partial class MainWindow : Window
         catch (Win32Exception error) when (error.NativeErrorCode == 1223) { _notice = "已取消管理员授权。"; }
         catch (Exception error) { _store.Log(error); _notice = "索引更新未完成：" + error.Message; }
         finally { _update?.Dispose(); _update = null; _updateText = null; BuildButton.IsEnabled = true; RefreshStatus(); }
+    }
+
+    private async Task MonitorIndexesAsync()
+    {
+        if (_monitorRunning) return;
+        _monitorRunning = true;
+        try
+        {
+            while (!_lifetime.IsCancellationRequested)
+            {
+                await Task.Delay(500, _lifetime.Token);
+                if (_loading) continue;
+                var before = _liveIndexes; var directory = _indexDirectory;
+                try
+                {
+                    var after = await Task.Run(() =>
+                    {
+                        var count = Directory.Exists(directory) ? Directory.GetFiles(directory, "*.qbi").Length : 0;
+                        if (count != before.Length) throw new IndexBaseChangedException();
+                        return before.Select(source => source.Refresh(_lifetime.Token)).ToArray();
+                    }, _lifetime.Token);
+                    if (!ReferenceEquals(before, _liveIndexes) || directory != _indexDirectory) continue;
+                    if (after.Where((source, i) => !ReferenceEquals(source, before[i])).Any())
+                    {
+                        _liveIndexes = after;
+                        // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
+                        await SearchAsync();
+                    }
+                }
+                catch (IndexBaseChangedException) { await ReloadAsync(true); }
+                catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
+                {
+                    _notice = "实时索引暂不可读，保留上次结果：" + error.Message; RefreshStatus();
+                    await Task.Delay(2500, _lifetime.Token);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally { _monitorRunning = false; }
     }
 
     private void OnClosing(object? sender, CancelEventArgs e) { if (!_quitting) { e.Cancel = true; Hide(); } }

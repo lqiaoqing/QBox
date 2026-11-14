@@ -2,7 +2,11 @@ using System.Buffers.Binary;
 
 namespace QBox.Windows.Ntfs;
 
-public readonly record struct FileReference(ulong Low, ulong High = 0);
+public readonly record struct FileReference(ulong Low, ulong High = 0)
+{
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ulong RecordNumber => Low & 0x0000ffffffffffffUL;
+}
 
 [Flags]
 public enum UsnReason : uint

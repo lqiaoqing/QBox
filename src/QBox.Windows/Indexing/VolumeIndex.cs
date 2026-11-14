@@ -102,6 +102,27 @@ public sealed class VolumeIndex
         }
     }
 
+    public IndexedFile? FindFile(FileReference id)
+    {
+        if (id.High != 0) return null;
+        var low = 0; var high = Nodes.Length - 1;
+        while (low <= high)
+        {
+            var at = low + (high - low) / 2;
+            var node = Nodes[at];
+            if (node.File < id.Low) { low = at + 1; continue; }
+            if (node.File > id.Low) { high = at - 1; continue; }
+            var names = new IndexedName[node.NameCount];
+            for (var i = 0; i < names.Length; i++)
+            {
+                var name = Names[node.FirstName + i];
+                names[i] = new(new(Nodes[name.Parent].File), Text.Substring(name.Offset, name.Length), name.Namespace, name.Attributes);
+            }
+            return new(id, node.IsDirectory, node.LastUsn, node.LinkCount, names);
+        }
+        return null;
+    }
+
     public IEnumerable<SearchCandidate> Candidates(string query, CancellationToken cancellationToken = default, IReadOnlySet<string>? representedExecutables = null)
     {
         var prepared = new FuzzyMatcher().Prepare(query);
@@ -167,15 +188,21 @@ public sealed class VolumeIndex
 
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default,
         ISet<string>? replacedShortcutIds = null, IReadOnlySet<string>? representedExecutables = null)
+        => SearchInto(collector, history, cancellationToken, replacedShortcutIds, representedExecutables, null, false, false);
+
+    internal void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken,
+        ISet<string>? replacedShortcutIds, IReadOnlySet<string>? representedExecutables,
+        LiveVolumeIndex? live, bool overlay, bool resolvePaths)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var source = new IndexSearchSource(this, history);
+        var source = new IndexSearchSource(this, history, resolvePaths ? live : null);
         foreach (var i in SearchNames(collector.Query.Text, cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var nodeIndex = _presence!.Owner(i);
             if (nodeIndex == RootNode) continue;
             var node = Nodes[nodeIndex];
+            if (live != null && !(overlay ? live.IncludesOverlay(node.File) : live.IncludesBase(node.File))) continue;
             var name = Names[i];
             if (name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
             var raw = Text.AsMemory(name.Offset, name.Length);
@@ -193,9 +220,11 @@ public sealed class VolumeIndex
                 display = Text.AsMemory(Names[alias].Offset, Names[alias].Length);
             }
             // 无开始菜单入口的便携 EXE 仍可直接启动；包目录中的 EXE 由注册入口负责激活。
+            var livePath = resolvePaths ? live!.PathFor(this, i) : null;
+            if (resolvePaths && livePath == null) continue;
             var application = executable && friendlyMatch && !collector.Query.Text.Contains(".exe", StringComparison.OrdinalIgnoreCase) &&
-                !InPackageDirectory(name.Parent) && collector.Query.Score(display.Span, cancellationToken) > 1 &&
-                representedExecutables?.Contains(PathFor(i)) != true;
+                !(resolvePaths ? InPackagePath(livePath!) : InPackageDirectory(name.Parent)) && collector.Query.Score(display.Span, cancellationToken) > 1 &&
+                representedExecutables?.Contains(livePath ?? PathFor(i)) != true;
             var kind = node.IsDirectory ? SearchItemKind.Directory : shortcut ? SearchItemKind.Shortcut :
                 application ? SearchItemKind.Application : SearchItemKind.File;
             var key = ((ulong)(uint)nodeIndex << 32) | (uint)i;
@@ -203,6 +232,9 @@ public sealed class VolumeIndex
             collector.AddMatched(source, key, display, kind, 0, source.Signals(node, name), application, application);
         }
     }
+
+    private bool InPackagePath(string path) => path.StartsWith(Geometry.Root + @"WindowsApps\", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith(Geometry.Root + @"Program Files\WindowsApps\", StringComparison.OrdinalIgnoreCase);
 
     private bool InPackageDirectory(int parent)
     {
@@ -223,11 +255,13 @@ public sealed class VolumeIndex
     private sealed class IndexSearchSource : IUniqueSearchSource
     {
         private readonly VolumeIndex _index;
+        private readonly LiveVolumeIndex? _live;
         private readonly Dictionary<(ulong File, ulong Parent), List<(string Hash, HistorySignals Signals)>> _history = [];
 
-        public IndexSearchSource(VolumeIndex index, HistoryView history)
+        public IndexSearchSource(VolumeIndex index, HistoryView history, LiveVolumeIndex? live = null)
         {
             _index = index;
+            _live = live;
             foreach (var entry in history.EnumerateSignals())
             {
                 var fields = entry.TargetId.Split(':');
@@ -251,7 +285,7 @@ public sealed class VolumeIndex
         public SearchCandidate Materialize(ulong key, ReadOnlyMemory<char> display, SearchItemKind kind, ulong priority)
         {
             var nameIndex = (int)(uint)key;
-            return new(Identity(key), display.ToString(), _index.PathFor(nameIndex), kind, NormalPriority: priority);
+            return new(Identity(key), display.ToString(), _live?.PathFor(_index, nameIndex) ?? _index.PathFor(nameIndex), kind, NormalPriority: priority);
         }
 
         public string Identity(ulong key)
@@ -305,8 +339,12 @@ public sealed class VolumeIndex
             throw new InvalidDataException("索引卷身份或根目录无效");
         var physical = new HashSet<ulong>();
         var end = 0;
+        ulong? previousFile = null;
         foreach (var node in Nodes)
         {
+            if (previousFile is { } previous && node.File <= previous)
+                throw new InvalidDataException("索引文件身份顺序无效");
+            previousFile = node.File;
             if (!physical.Add(node.File & 0x0000ffffffffffffUL) || node.FirstName != end || node.NameCount <= 0 ||
                 node.NameCount > Names.Length - end)
                 throw new InvalidDataException("索引文件记录或名称范围无效");
