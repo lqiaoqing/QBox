@@ -1,1 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="Matching/Data/pinyin.tsv" LogicalName="QBox.Core.PinyinData" />
+    <EmbeddedResource Include="../../third_party/pinyin-data/LICENSE" LogicalName="QBox.Core.PinyinData.License" />
+  </ItemGroup>
+</Project>

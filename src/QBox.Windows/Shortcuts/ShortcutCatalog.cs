@@ -12,10 +12,17 @@ public sealed class ShortcutCatalog
     private sealed record Entry(SearchCandidate Canonical, SearchCandidate[] Aliases, string ExecutableTarget);
     private readonly Entry[] _entries;
     private readonly HashSet<string> _replaced;
+    private readonly Dictionary<string, PreparedApplicationName> _names;
     public static ShortcutCatalog Empty { get; } = new([], []);
     public int ActionCount => _entries.Length;
     public int ShortcutCount => _replaced.Count;
-    private ShortcutCatalog(Entry[] entries, HashSet<string> replaced) { _entries = entries; _replaced = replaced; }
+    private ShortcutCatalog(Entry[] entries, HashSet<string> replaced)
+    {
+        _entries = entries;
+        _replaced = replaced;
+        _names = entries.SelectMany(entry => entry.Aliases).Select(alias => alias.Name).Distinct(StringComparer.Ordinal)
+            .ToDictionary(name => name, name => new PreparedApplicationName(name), StringComparer.Ordinal);
+    }
 
     public static ShortcutCatalog Load(VolumeIndex[] indexes, CancellationToken cancellationToken = default)
     {
@@ -69,34 +76,37 @@ public sealed class ShortcutCatalog
     {
         if (IsLiteralLinkQuery(collector.Query.Text)) return;
         var source = new CatalogSource(_entries);
-        var matches = new List<(int Index, string Name, int Score, HistorySignals History)>();
+        var matches = new List<(int Index, string Name, ApplicationNameMatch Match, HistorySignals History)>();
         for (var index = 0; index < _entries.Length; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var entry = _entries[index];
             SearchCandidate? best = null;
-            var score = 0;
+            var bestMatch = default(ApplicationNameMatch);
             var signals = default(HistorySignals);
             foreach (var alias in entry.Aliases)
             {
                 var usage = history.Get(alias.Id);
                 signals = new(Latest(signals.ExactQuery, usage.ExactQuery), Latest(signals.PrefixQuery, usage.PrefixQuery), Latest(signals.LastUsed, usage.LastUsed));
-                var value = collector.Query.Score(alias.Name, cancellationToken);
-                if (value > score || value != 0 && value == score && StringComparer.OrdinalIgnoreCase.Compare(alias.Name, best?.Name) < 0)
-                { best = alias; score = value; }
+                var value = _names[alias.Name].Match(collector.Query, cancellationToken);
+                if (value.Score > bestMatch.Score || value.Score > 0 && value.Score == bestMatch.Score &&
+                    (value.IsPhonetic.CompareTo(bestMatch.IsPhonetic) < 0 || value.IsPhonetic == bestMatch.IsPhonetic &&
+                     StringComparer.OrdinalIgnoreCase.Compare(alias.Name, best?.Name) < 0))
+                { best = alias; bestMatch = value; }
             }
-            if (best != null) matches.Add((index, best.Name, score, signals));
+            if (best != null) matches.Add((index, best.Name, bestMatch, signals));
         }
         // Launcher 同时间条目保持来源顺序；QBox 的快捷方式来源先按最佳别名分数排列。
-        foreach (var match in matches.OrderByDescending(match => match.Score).ThenBy(match => match.Index))
-            collector.AddMatched(source, (ulong)match.Index, match.Name.AsMemory(), SearchItemKind.Application, 0, match.History, match.Score > 1);
+        foreach (var match in matches.OrderByDescending(match => match.Match.Score).ThenBy(match => match.Match.IsPhonetic).ThenBy(match => match.Index))
+            collector.AddMatched(source, (ulong)match.Index, match.Name.AsMemory(), SearchItemKind.Application, 0, match.History,
+                match.Match.Score > 1 || match.Match.IsPhonetic, displayMatch: match.Match.PhoneticMatch);
     }
     public ISet<string>? ReplacedIds(string query)
     {
         if (IsLiteralLinkQuery(query)) return null;
         var prepared = new FuzzyMatcher().Prepare(query);
         // 仅用已命中的动作替换原始入口；只匹配 .lnk 扩展名片段的查询仍能找到原文件。
-        return _entries.Where(entry => entry.Aliases.Any(alias => prepared.CanMatch(alias.Name)))
+        return _entries.Where(entry => entry.Aliases.Any(alias => _names[alias.Name].Match(prepared).Score > 0))
             .SelectMany(entry => entry.Aliases).Select(alias => alias.Id).ToHashSet(StringComparer.Ordinal);
     }
     public IReadOnlySet<string> MatchedExecutableTargets(string query)
@@ -105,7 +115,7 @@ public sealed class ShortcutCatalog
         var prepared = new FuzzyMatcher().Prepare(query);
         // 仅当快捷方式本身提供了强匹配入口时，才将同目标的直接 EXE 留在普通文件区。
         return _entries.Where(entry => entry.ExecutableTarget.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
-                entry.Aliases.Any(alias => prepared.Score(alias.Name) > 1))
+                entry.Aliases.Any(alias => { var match = _names[alias.Name].Match(prepared); return match.Score > 1 || match.IsPhonetic; }))
             .Select(entry => entry.ExecutableTarget).ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
     private static bool IsLiteralLinkQuery(string query) => query.Contains(".lnk", StringComparison.OrdinalIgnoreCase);

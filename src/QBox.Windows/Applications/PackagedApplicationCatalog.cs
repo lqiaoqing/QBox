@@ -4,6 +4,7 @@ using System.Text;
 using System.Runtime.Versioning;
 using QBox.Core.History;
 using QBox.Core.Search;
+using QBox.Core.Matching;
 
 namespace QBox.Windows.Applications;
 
@@ -12,10 +13,16 @@ public sealed record RegisteredApplication(string Name, string AppUserModelId);
 public sealed class PackagedApplicationCatalog
 {
     private readonly SearchCandidate[] _entries;
+    private readonly Dictionary<string, PreparedApplicationName> _names;
     public static PackagedApplicationCatalog Empty { get; } = new([]);
     public int Count => _entries.Length;
     public string? Warning { get; private init; }
-    private PackagedApplicationCatalog(SearchCandidate[] entries) => _entries = entries;
+    private PackagedApplicationCatalog(SearchCandidate[] entries)
+    {
+        _entries = entries;
+        _names = entries.Select(entry => entry.Name).Distinct(StringComparer.Ordinal)
+            .ToDictionary(name => name, name => new PreparedApplicationName(name), StringComparer.Ordinal);
+    }
 
     public static bool IsPackagedId(string? id) => !string.IsNullOrWhiteSpace(id) && id.Length <= 512 &&
         id.IndexOf('!') > 0 && id.LastIndexOf('!') == id.IndexOf('!') && !id.EndsWith('!') &&
@@ -96,16 +103,16 @@ public sealed class PackagedApplicationCatalog
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default)
     {
         // 同一 AUMID 可以有本地化名称别名；先择最佳匹配名称，再提交唯一动作。
-        var matches = _entries.Select(candidate => (Candidate: candidate, Score: collector.Query.Score(candidate.Name, cancellationToken)))
-            .Where(hit => hit.Score > 0).GroupBy(hit => hit.Candidate.Id, StringComparer.Ordinal)
-            .Select(group => group.OrderByDescending(hit => hit.Score).First())
-            .OrderByDescending(hit => hit.Score).ThenBy(hit => hit.Candidate.Id, StringComparer.Ordinal).ToArray();
+        var matches = _entries.Select(candidate => (Candidate: candidate, Match: _names[candidate.Name].Match(collector.Query, cancellationToken)))
+            .Where(hit => hit.Match.Score > 0).GroupBy(hit => hit.Candidate.Id, StringComparer.Ordinal)
+            .Select(group => group.OrderByDescending(hit => hit.Match.Score).ThenBy(hit => hit.Match.IsPhonetic).First())
+            .OrderByDescending(hit => hit.Match.Score).ThenBy(hit => hit.Match.IsPhonetic).ThenBy(hit => hit.Candidate.Id, StringComparer.Ordinal).ToArray();
         var source = new Source(matches.Select(hit => hit.Candidate).ToArray());
         for (var index = 0; index < matches.Length; index++)
         {
             var match = matches[index];
             collector.AddMatched(source, (ulong)index, match.Candidate.Name.AsMemory(), SearchItemKind.Application, 0,
-                history.Get(match.Candidate.Id), match.Score > 1);
+                history.Get(match.Candidate.Id), match.Match.Score > 1 || match.Match.IsPhonetic, displayMatch: match.Match.PhoneticMatch);
         }
     }
     private sealed class Source(SearchCandidate[] entries) : IUniqueSearchSource

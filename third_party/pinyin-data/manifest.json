@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/mozillazg/pinyin-data",
+  "commit": "fe29ad32bdf352b31a02b9936e537f575432e9a6",
+  "license": "MIT",
+  "inputSha256": "2342a6f98c85dbc3c8d26aef31744876a36326c6466e51e9a0f16898c36c2011",
+  "outputSha256": "d144d1eb44bae2cc0b203347b9cc3fb397045153c758ad61e32e15e509af84bc",
+  "characters": 44440
+}

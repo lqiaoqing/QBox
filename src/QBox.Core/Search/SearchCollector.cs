@@ -38,31 +38,33 @@ public sealed class SearchCollector
 
     // 调用方已用同一个 Query 核实名称或别名匹配，避免全盘命中在收集阶段重复扫描。
     public void AddMatched(IUniqueSearchSource source, ulong key, ReadOnlyMemory<char> name, SearchItemKind kind,
-        ulong priority, HistorySignals history, bool applicationEntry = false, bool directExecutable = false)
+        ulong priority, HistorySignals history, bool applicationEntry = false, bool directExecutable = false, MatchResult? displayMatch = null)
     {
         _cancellationToken.ThrowIfCancellationRequested();
+        if (displayMatch != null && (!displayMatch.IsMatch || displayMatch.AlignmentScore <= 0))
+            throw new ArgumentException("补充匹配必须具有有效分值", nameof(displayMatch));
         _total = checked(_total + 1);
         if (_limit == 0) return;
         var earliest = LauncherOrdering.Lane(kind, applicationEntry, int.MaxValue, history, directExecutable);
         // 更早的桶已经填满展示区时，仍核算总命中，但无需计算这个候选的对齐分数。
         if (Capacity(earliest) == 0) return;
-        var upper = Query.ScoreUpperBound(name.Span);
+        var upper = displayMatch?.AlignmentScore ?? Query.ScoreUpperBound(name.Span);
         var upperLane = LauncherOrdering.Lane(kind, applicationEntry, upper, history, directExecutable);
         bool CanEnter(LauncherLane lane, int scoreBound)
         {
             var bucket = _best[(int)lane];
             var capacity = Capacity(lane);
             return capacity != 0 && (bucket.Count < capacity || BestFirst.Instance.Compare(
-                new(source, key, name, kind, priority, scoreBound, lane, history, applicationEntry, directExecutable, _total), bucket.Peek()) < 0);
+                new(source, key, name, kind, priority, scoreBound, lane, history, applicationEntry, directExecutable, displayMatch, _total), bucket.Peek()) < 0);
         }
         // 强弱目录分桶前尚不知道实际分数，必须证明两个可能的桶都进不去才能跳过打分。
         if (!CanEnter(upperLane, upper) && (upperLane != LauncherLane.StrongDirectory || !CanEnter(LauncherLane.WeakDirectory, 1))) return;
-        var score = Query.ScoreMatched(name.Span, _cancellationToken);
+        var score = displayMatch?.AlignmentScore ?? Query.ScoreMatched(name.Span, _cancellationToken);
         var lane = LauncherOrdering.Lane(kind, applicationEntry, score, history, directExecutable);
         var capacity = Capacity(lane);
         if (capacity == 0) return;
         var best = _best[(int)lane];
-        var row = new Row(source, key, name, kind, priority, score, lane, history, applicationEntry, directExecutable, _total);
+        var row = new Row(source, key, name, kind, priority, score, lane, history, applicationEntry, directExecutable, displayMatch, _total);
         if (best.Count == capacity)
         {
             if (BestFirst.Instance.Compare(row, best.Peek()) >= 0) return;
@@ -90,12 +92,13 @@ public sealed class SearchCollector
         var hits = LauncherOrdering.Merge(lanes).Take(_limit).Select(row => new SearchHit(
             row.Source.Materialize(row.Key, row.Name, row.Kind, row.Priority) with
                 { IsApplicationEntry = row.ApplicationEntry, IsDirectExecutable = row.DirectExecutable },
-            Query.Match(row.Name.ToString(), _cancellationToken), LauncherOrdering.Group(row.History, row.ApplicationEntry, row.DirectExecutable), row.History)).ToArray();
+            row.DisplayMatch ?? Query.Match(row.Name.ToString(), _cancellationToken), LauncherOrdering.Group(row.History, row.ApplicationEntry, row.DirectExecutable), row.History)).ToArray();
         return new(Query.Text, _total, hits);
     }
 
     private readonly record struct Row(IUniqueSearchSource Source, ulong Key, ReadOnlyMemory<char> Name,
-        SearchItemKind Kind, ulong Priority, int Score, LauncherLane Lane, HistorySignals History, bool ApplicationEntry, bool DirectExecutable, long Ordinal);
+        SearchItemKind Kind, ulong Priority, int Score, LauncherLane Lane, HistorySignals History, bool ApplicationEntry, bool DirectExecutable,
+        MatchResult? DisplayMatch, long Ordinal);
 
     private sealed class WorstFirst : IComparer<Row>
     {

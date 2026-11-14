@@ -1,0 +1,93 @@
+[
+  {
+    "Query": "Any",
+    "Unchanged": true,
+    "Total": 185880
+  },
+  {
+    "Query": "800Q",
+    "Unchanged": true,
+    "Total": 667
+  },
+  {
+    "Query": ".code",
+    "Unchanged": true,
+    "Total": 38301
+  },
+  {
+    "Query": "nd",
+    "Unchanged": true,
+    "Total": 586193
+  },
+  {
+    "Query": "Tra",
+    "Unchanged": true,
+    "Total": 400350
+  },
+  {
+    "Query": "chatgpt",
+    "Unchanged": true,
+    "Total": 646
+  },
+  {
+    "Query": "rtt",
+    "Unchanged": true,
+    "Total": 345882
+  },
+  {
+    "Query": "doubao",
+    "Names": [
+      "豆包",
+      "豆包工作",
+      "Doubao",
+      "Doubao",
+      "Doubao",
+      "Doubao",
+      "DoubaoWork",
+      "DoubaoWork",
+      "Doubao_proxy"
+    ],
+    "Highlights": [
+      {
+        "start": 0,
+        "length": 2
+      },
+      {
+        "start": 0,
+        "length": 2
+      },
+      {
+        "start": 0,
+        "length": 6
+      }
+    ]
+  },
+  {
+    "Query": "qianwen",
+    "Names": [
+      "千问办公",
+      "Qianwen",
+      "Qianwen",
+      "QianwenUpdater",
+      "https_www.qianwen.com_0.indexeddb.leveldb",
+      "qianwen.svg",
+      "qianwen.svg",
+      "question_answering.pyc",
+      "question_answering.pyc"
+    ],
+    "Highlights": [
+      {
+        "start": 0,
+        "length": 2
+      },
+      {
+        "start": 0,
+        "length": 7
+      },
+      {
+        "start": 0,
+        "length": 7
+      }
+    ]
+  }
+]

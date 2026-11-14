@@ -1,0 +1,2 @@
+third_party/pinyin-data/pinyin.txt text eol=lf
+src/QBox.Core/Matching/Data/pinyin.tsv text eol=lf
