@@ -467,6 +467,51 @@ internal static class NtfsIndexChecks
             return collector.Finish();
         }
         var original = Snapshot(File(20, "folder", directory: true), File(21, "alpha.txt", Id(20)), File(22, "other", directory: true));
+        foreach (var query in new[] { "doubao", "db", "douba", "dbaogz" })
+            checks.Run($"文件及目录拼音补充 {query}", () =>
+            {
+                var index = Snapshot(File(20, "豆包工作", directory: true), File(21, "豆包工作.txt"), File(22, "豆包工作.exe"));
+                var found = Search(new(index), query);
+                Equal(3, found.TotalMatches);
+                True(found.Items.All(hit => hit.Match.Highlights[0].Start == 0));
+            });
+        checks.Run("实时新增中文名称可拼音检索且无重复字面项", () =>
+        {
+            var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(30), File(30, "豆包资料"))])]);
+            Equal(1, Search(next, "doubao").TotalMatches);
+            Equal(1, Search(next, "豆包").TotalMatches);
+        });
+        checks.Run("拼音文件选择使用原文件身份并进入历史首位", () =>
+        {
+            var index = new LiveVolumeIndex(Snapshot(File(20, "豆包工作", directory: true), File(21, "dXb.txt")));
+            var selected = Search(index, "db").Items.Single(hit => hit.Candidate.Name == "豆包工作").Candidate;
+            var history = new SelectionHistory(); history.RecordSelection(selected.Id, "db");
+            var collector = new SearchCollector("DB", 1); index.SearchInto(collector, history.ForQuery("DB"));
+            Equal(selected.Id, collector.Finish().Items.Single().Candidate.Id);
+        });
+        checks.Run("同一 FRN 单名称改名移动可以迁移历史", () =>
+        {
+            var old = new LiveVolumeIndex(original);
+            var selected = Search(old, "alpha").Items.Single().Candidate;
+            var history = new SelectionHistory(); history.RecordSelection(selected.Id, "al");
+            var next = old.Apply([new(new(7, 110), [new(Id(21), File(21, "alphabet.txt", Id(22)))])]);
+            var mapping = IndexHistoryMigration.Plan(history.Snapshot, [old], [next]);
+            Equal(1, mapping.Count); Equal(1, history.ReassignTargets(mapping));
+            var renamed = Search(next, "alphabet").Items.Single().Candidate;
+            True(history.ForQuery("al").Get(renamed.Id).ExactQuery != null);
+            True(history.ForQuery("al").Get(selected.Id).ExactQuery == null);
+        });
+        checks.Run("记录复用或硬链接歧义不会迁移历史", () =>
+        {
+            var old = new LiveVolumeIndex(original); var history = new SelectionHistory();
+            history.RecordSelection(Search(old, "alpha").Items.Single().Candidate.Id, "al");
+            var reused = File(21, "alphabet.txt") with { File = Id(21, 8) };
+            var next = old.Apply([new(new(7, 110), [new(reused.File, reused)])]);
+            Equal(0, IndexHistoryMigration.Plan(history.Snapshot, [old], [next]).Count);
+            var linked = File(21, "alphabet.txt") with { LinkCount = 2 };
+            next = old.Apply([new(new(7, 110), [new(linked.File, linked)])]);
+            Equal(0, IndexHistoryMigration.Plan(history.Snapshot, [old], [next]).Count);
+        });
         checks.Run("实时视图覆盖改名并保持旧查询快照不变", () =>
         {
             var old = new LiveVolumeIndex(original);

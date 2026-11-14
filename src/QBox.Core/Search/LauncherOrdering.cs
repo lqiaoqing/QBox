@@ -2,7 +2,7 @@ using QBox.Core.History;
 
 namespace QBox.Core.Search;
 
-internal enum LauncherLane { ExactHistory, PrefixHistoryOrApplication, DirectExecutable, StrongDirectory, Mixed, WeakDirectory }
+internal enum LauncherLane { ExactHistory, PrefixHistoryOrApplication, DirectExecutable, StrongDirectory, Mixed, WeakDirectory, Supplemental }
 
 internal static class LauncherOrdering
 {
@@ -60,5 +60,6 @@ internal static class LauncherOrdering
     public static IEnumerable<T> Merge<T>(IReadOnlyList<T>[] lanes) => lanes[(int)LauncherLane.ExactHistory]
         .Concat(lanes[(int)LauncherLane.PrefixHistoryOrApplication]).Concat(lanes[(int)LauncherLane.DirectExecutable])
         .Concat(lanes[(int)LauncherLane.StrongDirectory]).Concat(lanes[(int)LauncherLane.Mixed].Take(10))
-        .Concat(lanes[(int)LauncherLane.WeakDirectory]).Concat(lanes[(int)LauncherLane.Mixed].Skip(10));
+        .Concat(lanes[(int)LauncherLane.WeakDirectory]).Concat(lanes[(int)LauncherLane.Mixed].Skip(10))
+        .Concat(lanes[(int)LauncherLane.Supplemental]);
 }

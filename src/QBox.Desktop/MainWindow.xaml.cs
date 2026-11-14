@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private readonly SelectionHistory _history;
     private readonly string? _historyWarning;
     private readonly LatestQueryGate _queries = new(), _loads = new();
+    private readonly LatestQueryGate _catalogs = new();
     private readonly CancellationTokenSource _lifetime = new();
     private readonly ShellIconLoader _icons = new();
     private VolumeIndex[] _indexes = [];
@@ -41,6 +42,7 @@ public partial class MainWindow : Window
     private int _limit = 9, _total;
     private bool _loading, _searching, _loaded, _quitting, _opening;
     private bool _monitorRunning;
+    private DateTimeOffset _catalogRefreshAt = DateTimeOffset.UtcNow;
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -151,13 +153,16 @@ public partial class MainWindow : Window
                 if (result.Select(i => i.Geometry.Serial).Distinct().Count() != result.Length)
                     throw new InvalidDataException("同一个磁盘存在重复索引，请选择正确的索引目录");
                 foreach (var index in result) index.PrepareSearch(request.Token);
-                return (Indexes: result, Live: live, Shortcuts: ShortcutCatalog.Load(result, request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
+                return (Indexes: result, Live: live, Shortcuts: ShortcutCatalog.Load(live.Select(source => source.View).ToArray(), request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
             }, request.Token);
             if (!_loads.IsCurrent(request)) return;
             var indexes = snapshot.Indexes;
+            MigrateHistory(_liveIndexes.Length == 0 ? snapshot.Live.Select(source => new LiveVolumeIndex(source.View.Base)).ToArray() :
+                _liveIndexes.Select(source => source.View).ToArray(), snapshot.Live.Select(source => source.View).ToArray());
             _indexes = indexes;
             _liveIndexes = snapshot.Live;
             _shortcuts = snapshot.Shortcuts;
+            _catalogRefreshAt = DateTimeOffset.UtcNow;
             if (snapshot.Applications.Warning == null || snapshot.Applications.Count != 0) _applications = snapshot.Applications;
             _notice = snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
             if (indexes.Length != 0)
@@ -495,10 +500,14 @@ public partial class MainWindow : Window
                     if (!ReferenceEquals(before, _liveIndexes) || directory != _indexDirectory) continue;
                     if (after.Where((source, i) => !ReferenceEquals(source, before[i])).Any())
                     {
+                        if (after.Where((source, i) => source.View.HasShortcutChangesFrom(before[i].View)).Any())
+                            _catalogRefreshAt = DateTimeOffset.MinValue;
+                        MigrateHistory(before.Select(source => source.View).ToArray(), after.Select(source => source.View).ToArray());
                         _liveIndexes = after;
                         // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
                         await SearchAsync();
                     }
+                    if (DateTimeOffset.UtcNow - _catalogRefreshAt > TimeSpan.FromSeconds(30)) await RefreshCatalogsAsync();
                 }
                 catch (IndexBaseChangedException) { await ReloadAsync(true); }
                 catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
@@ -512,6 +521,33 @@ public partial class MainWindow : Window
         finally { _monitorRunning = false; }
     }
 
+    private void MigrateHistory(LiveVolumeIndex[] before, LiveVolumeIndex[] after)
+    {
+        try { _history.ReassignTargets(IndexHistoryMigration.Plan(_history.Snapshot, before, after)); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { _store.Log(error); _notice = "索引已更新，历史迁移未保存：" + error.Message; }
+    }
+
+    private async Task RefreshCatalogsAsync()
+    {
+        using var request = _catalogs.Begin();
+        var indexes = _indexes; var live = _liveIndexes.Select(source => source.View).ToArray();
+        try
+        {
+            var result = await Task.Run(() => (Shortcuts: ShortcutCatalog.Load(live, request.Token),
+                Applications: PackagedApplicationCatalog.Load(request.Token)), request.Token);
+            if (!_catalogs.IsCurrent(request) || !ReferenceEquals(indexes, _indexes)) return;
+            _shortcuts = result.Shortcuts;
+            if (result.Applications.Warning == null) _applications = result.Applications;
+            else _notice = result.Applications.Warning;
+            await SearchAsync();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
+        { _store.Log(error); _notice = "应用列表稍后重试：" + error.Message; }
+        finally { _catalogRefreshAt = DateTimeOffset.UtcNow; }
+    }
+
     private void OnClosing(object? sender, CancelEventArgs e) { if (!_quitting) { e.Cancel = true; Hide(); } }
     private void Quit()
     {
@@ -520,7 +556,7 @@ public partial class MainWindow : Window
         try { _update?.Cancel(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { _store.Log(error); }
         _lifetime.Cancel();
-        _queries.Dispose(); _loads.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
+        _queries.Dispose(); _loads.Dispose(); _catalogs.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
         if (_tray != null) { var icon = _tray.Icon; _tray.Visible = false; _tray.Dispose(); icon?.Dispose(); }
         Close();
         System.Windows.Application.Current.Shutdown();

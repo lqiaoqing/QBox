@@ -1,0 +1,56 @@
+[
+  {
+    "Query": "Any",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 185880,
+    "AfterTotal": 185881
+  },
+  {
+    "Query": "800Q",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 667,
+    "AfterTotal": 667
+  },
+  {
+    "Query": ".code",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 38301,
+    "AfterTotal": 38301
+  },
+  {
+    "Query": "nd",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 586193,
+    "AfterTotal": 586206
+  },
+  {
+    "Query": "Tra",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 400350,
+    "AfterTotal": 400350
+  },
+  {
+    "Query": "chatgpt",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 646,
+    "AfterTotal": 646
+  },
+  {
+    "Query": "rtt",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 345882,
+    "AfterTotal": 345885
+  },
+  {
+    "Query": "doubao",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 33891,
+    "AfterTotal": 33892
+  },
+  {
+    "Query": "qianwen",
+    "FirstNineUnchanged": true,
+    "BeforeTotal": 143,
+    "AfterTotal": 144
+  }
+]

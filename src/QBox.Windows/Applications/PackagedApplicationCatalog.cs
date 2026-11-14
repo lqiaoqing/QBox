@@ -103,16 +103,17 @@ public sealed class PackagedApplicationCatalog
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default)
     {
         // 同一 AUMID 可以有本地化名称别名；先择最佳匹配名称，再提交唯一动作。
-        var matches = _entries.Select(candidate => (Candidate: candidate, Match: _names[candidate.Name].Match(collector.Query, cancellationToken)))
+        var matches = _entries.Select(candidate => (Candidate: candidate, Match: _names[candidate.Name].Match(collector.Query, cancellationToken, extended: true)))
             .Where(hit => hit.Match.Score > 0).GroupBy(hit => hit.Candidate.Id, StringComparer.Ordinal)
-            .Select(group => group.OrderByDescending(hit => hit.Match.Score).ThenBy(hit => hit.Match.IsPhonetic).First())
+            .Select(group => group.OrderByDescending(hit => hit.Match.Score).ThenBy(hit => hit.Match.Supplemental).ThenBy(hit => hit.Match.IsPhonetic).First())
             .OrderByDescending(hit => hit.Match.Score).ThenBy(hit => hit.Match.IsPhonetic).ThenBy(hit => hit.Candidate.Id, StringComparer.Ordinal).ToArray();
         var source = new Source(matches.Select(hit => hit.Candidate).ToArray());
         for (var index = 0; index < matches.Length; index++)
         {
             var match = matches[index];
             collector.AddMatched(source, (ulong)index, match.Candidate.Name.AsMemory(), SearchItemKind.Application, 0,
-                history.Get(match.Candidate.Id), match.Match.Score > 1 || match.Match.IsPhonetic, displayMatch: match.Match.PhoneticMatch);
+                history.Get(match.Candidate.Id), match.Match.Score > 1 || match.Match.IsPhonetic, displayMatch: match.Match.PhoneticMatch,
+                supplemental: match.Match.Supplemental);
         }
     }
     private sealed class Source(SearchCandidate[] entries) : IUniqueSearchSource

@@ -19,6 +19,18 @@ public sealed class LiveVolumeIndex
     public int ChangedRecords => _changes.Count;
     public IEnumerable<IndexChange> Changes => _changes.Values;
 
+    public bool HasShortcutChangesFrom(LiveVolumeIndex previous)
+    {
+        foreach (var pair in _changes)
+        {
+            if (previous._changes.TryGetValue(pair.Key, out var old) && ReferenceEquals(old, pair.Value)) continue;
+            var before = previous.FindFile(pair.Value.File);
+            if (pair.Value.Value?.Names.Any(n => n.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase)) == true ||
+                before?.Names.Any(n => n.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase)) == true) return true;
+        }
+        return false;
+    }
+
     public LiveVolumeIndex(VolumeIndex index) : this(index, index.Checkpoint, []) { }
 
     private LiveVolumeIndex(LiveVolumeIndex saved, JournalCheckpoint checkpoint)

@@ -82,6 +82,39 @@ public sealed class SelectionHistory
         return query.Trim().ToLowerInvariant();
     }
 
+    public int ReassignTargets(IReadOnlyDictionary<string, string> mapping)
+    {
+        foreach (var pair in mapping)
+        { ArgumentException.ThrowIfNullOrWhiteSpace(pair.Key); ArgumentException.ThrowIfNullOrWhiteSpace(pair.Value); }
+        lock (_gate)
+        {
+            for (var attempt = 0; ; attempt++)
+            {
+                var count = _targets.Keys.Count(id => mapping.TryGetValue(id, out var next) && next != id);
+                if (count == 0) return 0;
+                var targets = _snapshot.Targets.Select(target => mapping.TryGetValue(target.TargetId, out var next) ? target with { TargetId = next } : target)
+                    .GroupBy(target => target.TargetId, StringComparer.Ordinal).Select(group => new TargetUse(group.Key,
+                        group.Max(target => target.LastUsedUtc), group.SelectMany(target => target.Queries)
+                            .GroupBy(query => query.Query, StringComparer.Ordinal).Select(queries => queries.MaxBy(query => query.LastUsedUtc)!)
+                            .OrderByDescending(query => query.LastUsedUtc).ThenBy(query => query.Query, StringComparer.Ordinal)
+                            .Take(QueriesPerTarget).ToImmutableArray())).OrderBy(target => target.TargetId, StringComparer.Ordinal).ToImmutableArray();
+                var snapshot = _snapshot with { Targets = targets };
+                try
+                {
+                    // 改名迁移与选择记录采用同一持久化边界，失败时保留原身份和原查询时间。
+                    _persistence.Write(snapshot);
+                    _snapshot = snapshot; _targets = targets.ToDictionary(target => target.TargetId, StringComparer.Ordinal);
+                    return count;
+                }
+                catch (HistoryConflictException) when (attempt < 3)
+                {
+                    var current = _persistence.Read(); Validate(current);
+                    _snapshot = current; _targets = current.Targets.ToDictionary(target => target.TargetId, StringComparer.Ordinal);
+                }
+            }
+        }
+    }
+
     internal static void Validate(HistorySnapshot snapshot)
     {
         if (snapshot.Version != HistorySnapshot.CurrentVersion)

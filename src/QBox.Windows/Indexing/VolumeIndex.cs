@@ -28,10 +28,15 @@ public sealed class VolumeIndex
     public int NameCount => Names.Length;
     private readonly object _presenceLock = new();
     private NamePresenceIndex? _presence;
+    private PhoneticNameIndex? _phonetic;
 
     public void PrepareSearch(CancellationToken cancellationToken = default)
     {
-        lock (_presenceLock) _presence ??= new NamePresenceIndex(this, cancellationToken);
+        lock (_presenceLock)
+        {
+            _presence ??= new NamePresenceIndex(this, cancellationToken);
+            _phonetic ??= new PhoneticNameIndex(this, cancellationToken);
+        }
     }
 
     private IEnumerable<int> SearchNames(string query, CancellationToken cancellationToken)
@@ -179,7 +184,7 @@ public sealed class VolumeIndex
         return -1;
     }
 
-    private static string NameIdentity(ReadOnlySpan<char> value)
+    internal static string NameIdentity(ReadOnlySpan<char> value)
     {
         Span<byte> hash = stackalloc byte[32];
         SHA256.HashData(MemoryMarshal.AsBytes(value), hash);
@@ -230,6 +235,29 @@ public sealed class VolumeIndex
             var key = ((ulong)(uint)nodeIndex << 32) | (uint)i;
             if (shortcut && replacedShortcutIds?.Contains(source.Identity(key)) == true) continue;
             collector.AddMatched(source, key, display, kind, 0, source.Signals(node, name), application, application);
+        }
+        foreach (var entry in _phonetic!.Select(collector.Query.Text, cancellationToken))
+        {
+            var node = Nodes[entry.Node]; var name = Names[entry.Name];
+            if (entry.Node == RootNode || live != null && !(overlay ? live.IncludesOverlay(node.File) : live.IncludesBase(node.File))) continue;
+            if (name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
+            var raw = Text.AsMemory(name.Offset, name.Length);
+            var display = entry.Prepared.Text.AsMemory();
+            // 与字面入口互斥，包含 DOS 别名的目标也只统计一次。
+            if (collector.Query.CanMatch(display.Span, cancellationToken) || collector.Query.CanMatch(raw.Span, cancellationToken) ||
+                MatchingDosAlias(node, name.Parent, collector.Query, cancellationToken) >= 0) continue;
+            var match = entry.Prepared.MatchPhonetic(collector.Query.Text, true, cancellationToken);
+            if (match.Score == 0) continue;
+            var path = resolvePaths ? live!.PathFor(this, entry.Name) : PathFor(entry.Name);
+            if (path == null) continue;
+            var shortcut = !node.IsDirectory && raw.Span.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase);
+            var executable = !node.IsDirectory && raw.Span.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+            var application = executable && !InPackagePath(path) && representedExecutables?.Contains(path) != true;
+            var kind = node.IsDirectory ? SearchItemKind.Directory : shortcut ? SearchItemKind.Shortcut : application ? SearchItemKind.Application : SearchItemKind.File;
+            var key = ((ulong)(uint)entry.Node << 32) | (uint)entry.Name;
+            if (shortcut && replacedShortcutIds?.Contains(source.Identity(key)) == true) continue;
+            collector.AddMatched(source, key, display, kind, 0, source.Signals(node, name), application, application,
+                match.PhoneticMatch, supplemental: true);
         }
     }
 

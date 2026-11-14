@@ -92,16 +92,18 @@ internal static class CliApplication
             if (sources != 1) throw new ArgumentException("请指定 --index、--index-directory 或 --catalog 中的一项");
             IEnumerable<SearchCandidate> candidates;
             VolumeIndex[]? indexes = null;
+            LiveVolumeIndex[]? live = null;
             if (options.ContainsKey("catalog")) candidates = ReadCatalog(Required(options, "catalog")).Items;
             else
             {
                 var paths = options.ContainsKey("index") ? new[] { Required(options, "index") } :
                     Directory.GetFiles(Required(options, "index-directory"), "*.qbi").Order(StringComparer.Ordinal).ToArray();
                 if (paths.Length == 0) throw new InvalidDataException("索引目录中没有 .qbi 文件");
-                indexes = paths.Select(path => VolumeIndexStore.Load(path, cancellation.Token)).ToArray();
+                live = paths.Select(path => LiveIndexFile.Load(path, cancellation.Token).View).ToArray();
+                indexes = live.Select(view => view.Base).ToArray();
                 if (indexes.Select(index => index.Geometry.Serial).Distinct().Count() != indexes.Length)
                     throw new InvalidDataException("同一个卷存在多份索引，请移走重复快照再查询");
-                candidates = indexes.SelectMany(index => index.Candidates(query, cancellation.Token));
+                candidates = [];
             }
             if (args[0] == "search")
             {
@@ -115,11 +117,11 @@ internal static class CliApplication
                     var applications = PackagedApplicationCatalog.Load(cancellation.Token);
                     if (applications.Warning != null) Console.Error.WriteLine(applications.Warning);
                     applications.SearchInto(collector, view, cancellation.Token);
-                    var shortcuts = ShortcutCatalog.Load(indexes, cancellation.Token);
+                    var shortcuts = ShortcutCatalog.Load(live!, cancellation.Token);
                     shortcuts.SearchInto(collector, view, cancellation.Token);
                     var replaced = shortcuts.ReplacedIds(query);
                     var representedExecutables = shortcuts.MatchedExecutableTargets(query);
-                    foreach (var index in indexes) index.SearchInto(collector, view, cancellation.Token, replaced, representedExecutables);
+                    foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, replaced, representedExecutables);
                     result = collector.Finish();
                 }
                 if (options.ContainsKey("json")) WriteJson(result);
@@ -139,11 +141,15 @@ internal static class CliApplication
             if (candidate == null && indexes != null)
             {
                 // 搜索别名后返回的是合并动作的主快捷方式 ID，主名称未必匹配该查询。
-                var shortcuts = ShortcutCatalog.Load(indexes, cancellation.Token);
+                var shortcuts = ShortcutCatalog.Load(live!, cancellation.Token);
                 var applications = PackagedApplicationCatalog.Load(cancellation.Token);
-                var collector = new SearchCollector(query, shortcuts.ActionCount + applications.Count, cancellation.Token);
-                applications.SearchInto(collector, history.ForQuery(query), cancellation.Token);
-                shortcuts.SearchInto(collector, history.ForQuery(query), cancellation.Token);
+                // 仅在临时历史中把指定 ID 提到首位，避免打开时物化全盘结果或提前污染用户历史。
+                var lookup = new SelectionHistory(); lookup.RecordSelection(id, query);
+                var collector = new SearchCollector(query, 1, cancellation.Token);
+                var view = lookup.ForQuery(query);
+                applications.SearchInto(collector, view, cancellation.Token);
+                shortcuts.SearchInto(collector, view, cancellation.Token);
+                foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, shortcuts.ReplacedIds(query), shortcuts.MatchedExecutableTargets(query));
                 candidate = collector.Finish().Items.FirstOrDefault(hit => hit.Candidate.Id == id)?.Candidate;
             }
             if (candidate == null) throw new ArgumentException($"找不到目标 ID：{id}");

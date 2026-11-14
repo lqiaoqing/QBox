@@ -14,6 +14,17 @@ internal static class CoreChecks
     public static async Task Run(CheckSuite checks)
     {
         var matcher = new FuzzyMatcher();
+        checks.Run("历史改名迁移合并同查询时间且不改最近查询", () =>
+        {
+            var history = new SelectionHistory();
+            history.RecordSelection("old", "name", Epoch);
+            history.RecordSelection("new", "name", Epoch.AddSeconds(1));
+            var recent = history.Snapshot.RecentQueries;
+            Equal(1, history.ReassignTargets(new Dictionary<string, string> { ["old"] = "new" }));
+            Equal(1, history.Snapshot.Targets.Length);
+            Equal<DateTimeOffset?>(Epoch.AddSeconds(1), history.ForQuery("name").Get("new").ExactQuery);
+            True(recent.SequenceEqual(history.Snapshot.RecentQueries));
+        });
         checks.Run("新输入取消旧请求并拒绝旧结果", () =>
         {
             using var gate = new LatestQueryGate();
