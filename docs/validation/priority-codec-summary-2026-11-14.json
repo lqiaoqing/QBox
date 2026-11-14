@@ -1,0 +1,16 @@
+{
+  "settingCases": 256,
+  "acceptedSettings": 4,
+  "rejectedSettings": 252,
+  "vectorCases": 40,
+  "convertedElements": 800,
+  "allEqual": true,
+  "externalHelperReplacements": 0,
+  "mapping": {
+    "1": 4,
+    "0": 2,
+    "-1": 1,
+    "-2": 0
+  },
+  "oracleJsonSha256": "05be961c8aa5554dd7810b2cd13a70b3e8673d9f09f4e033a1689b493fb50ad5"
+}

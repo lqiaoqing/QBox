@@ -15,6 +15,8 @@ public class QBoxReplayPriority extends GhidraScript {
     private static final String BINARY_SHA = "f728593f86597b95d9ee79c03f8e7d313ca4c79a4bab8cf31f3768febeb8063f";
     private static final long KEY_START = 0x141fc1000L, KEY_END = 0x141fc1433L;
     private static final long MERGE_START = 0x141b9c94bL, MERGE_END = 0x141b9c9cbL;
+    private static final long SETTING_START = 0x1405e7c40L, SETTING_END = 0x1405e7cc0L;
+    private static final long CODEC_START = 0x1416dda10L, CODEC_END = 0x1416ddde6L;
     private static final long STACK = 0x6000fff8L, STOP = 0x70000000L;
     private EmulatorHelper emu;
 
@@ -40,17 +42,80 @@ public class QBoxReplayPriority extends GhidraScript {
         emu.writeRegister("RSP", STACK);
         put(STACK, STOP, 8);
     }
-    private void execute(long start, long stop) throws Exception {
+    private long executeUntil(long start, long allowedEnd, long... stops) throws Exception {
         emu.writeRegister("RIP", start);
         for (int step = 0; step < 50000; step++) {
             long pc = emu.getExecutionAddress().getOffset();
-            if (pc == stop) return;
-            long allowedEnd = start == KEY_START ? KEY_END : MERGE_END;
+            for (long stop : stops) if (pc == stop) return pc;
             if (pc < start || pc >= allowedEnd) throw new IllegalStateException("execution left selected code range");
-            // 两段计算都没有外部调用；不替代分支、比较、移位或祖先遍历。
+            // 只执行选定原始指令；不替代分支、比较、移位或祖先遍历。
             if (!emu.step(monitor)) throw new IllegalStateException(emu.getLastError());
         }
         throw new IllegalStateException("instruction bound reached");
+    }
+    private void execute(long start, long stop) throws Exception {
+        executeUntil(start, start == KEY_START ? KEY_END : MERGE_END, stop);
+    }
+    private long get(long address) {
+        return ByteBuffer.wrap(emu.readMemory(toAddr(address), 8)).order(ByteOrder.LITTLE_ENDIAN).getLong();
+    }
+    private Map<String,Object> setting(int input) throws Exception {
+        initialize();
+        try {
+            long output = 0x50000000L;
+            emu.writeMemory(toAddr(output), new byte[64]);
+            emu.writeRegister("RCX", output); emu.writeRegister("RDX", input);
+            // 非法输入停在错误格式化入口；是否进入此分支完全由原始比较指令决定。
+            long stopped = executeUntil(SETTING_START, SETTING_END, STOP, 0x1405e7c8aL);
+            boolean accepted = stopped == STOP;
+            if (accepted && get(output) != -1) throw new IllegalStateException("unexpected result tag");
+            Map<String,Object> row = new LinkedHashMap<>();
+            row.put("settingByte", input); row.put("signedSetting", (int)(byte)input);
+            row.put("accepted", accepted);
+            if (accepted) row.put("wireTier", emu.readMemory(toAddr(output + 8), 1)[0] & 255);
+            return row;
+        } finally { emu.dispose(); }
+    }
+    private Map<String,Object> codec(int length, int seed) throws Exception {
+        initialize();
+        try {
+            long source = 0x50000000L, output = 0x50001000L, suffixes = 0x50002000L;
+            emu.writeMemory(toAddr(source), new byte[0x60]);
+            emu.writeMemory(toAddr(output), new byte[0x78]);
+            emu.writeMemory(toAddr(suffixes), new byte[24]);
+            put(suffixes, 9, 8); put(suffixes + 8, 0x50017000L, 8); put(suffixes + 16, 9, 8);
+            int[] strides = {32,8,32,32}, offsets = {24,4,26,24};
+            List<Object> vectors = new ArrayList<>();
+            byte[][] originals = new byte[4][];
+            for (int vector = 0; vector < 4; vector++) {
+                long array = 0x50003000L + vector * 0x1000;
+                byte[] bytes = new byte[length * strides[vector]];
+                for (int i = 0; i < bytes.length; i++) bytes[i] = (byte)(0x50 + i % 32);
+                for (int i = 0; i < length; i++) bytes[i * strides[vector] + offsets[vector]] = (byte)((seed + vector + i) % 4);
+                originals[vector] = bytes.clone();
+                if (bytes.length != 0) emu.writeMemory(toAddr(array), bytes);
+                put(source + vector * 24, length, 8); put(source + vector * 24 + 8, array, 8);
+                put(source + vector * 24 + 16, length, 8);
+            }
+            emu.writeRegister("RCX", output); emu.writeRegister("RDX", source); emu.writeRegister("R8", suffixes);
+            executeUntil(CODEC_START, CODEC_END, STOP);
+            for (int vector = 0; vector < 4; vector++) {
+                long array = 0x50003000L + vector * 0x1000;
+                byte[] after = length == 0 ? new byte[0] : emu.readMemory(toAddr(array), length * strides[vector]);
+                List<Integer> input = new ArrayList<>(), result = new ArrayList<>();
+                for (int i = 0; i < after.length; i++) {
+                    if (i % strides[vector] == offsets[vector]) {
+                        input.add(originals[vector][i] & 255); result.add(after[i] & 255);
+                    } else if (after[i] != originals[vector][i]) throw new IllegalStateException("unrelated field changed");
+                }
+                if (get(output + vector * 24) != length || get(output + vector * 24 + 8) != array ||
+                        get(output + vector * 24 + 16) != length) throw new IllegalStateException("vector topology changed");
+                vectors.add(Map.of("vector",vector,"input",input,"result",result));
+            }
+            if (!Arrays.equals(emu.readMemory(toAddr(suffixes),24), emu.readMemory(toAddr(output + 0x60),24)))
+                throw new IllegalStateException("suffix vector changed");
+            return Map.of("length",length,"seed",seed,"vectors",vectors,"unrelatedFieldsUnchanged",true);
+        } finally { emu.dispose(); }
     }
     private Map<String,Object> merge(int inherited, int folder, int attribute, int name) throws Exception {
         initialize();
@@ -115,8 +180,23 @@ public class QBoxReplayPriority extends GhidraScript {
     }
     @Override public void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 2 || !sha(Files.readAllBytes(Path.of(args[0]))).equals(BINARY_SHA))
+        if ((args.length != 2 && !(args.length == 3 && args[2].equals("codec"))) ||
+                !sha(Files.readAllBytes(Path.of(args[0]))).equals(BINARY_SHA))
             throw new IllegalArgumentException("binary SHA-256 mismatch or missing arguments");
+        if (args.length == 3) {
+            verifyCode(SETTING_START, SETTING_END, "a057ef61d0ab0e721f9b46fd88023047170e417c7b7dc9a9c5b907b9af76051c");
+            verifyCode(CODEC_START, CODEC_END, "56f4841ff93c4b7981df6b2628a7998e32e4fecb7c032d8dc1128ced88066c98");
+            List<Object> settings = new ArrayList<>(), codecs = new ArrayList<>();
+            for (int input = 0; input < 256; input++) settings.add(setting(input));
+            for (int length : new int[]{0,1,2,3,4,5,7,8,9,11}) for (int seed = 0; seed < 4; seed++)
+                codecs.add(codec(length,seed));
+            Map<String,Object> output = new LinkedHashMap<>();
+            output.put("binarySha256",BINARY_SHA); output.put("settingCases",settings); output.put("codecCases",codecs);
+            output.put("scope","Original selected instructions; rejected settings stop before error formatting; synthetic vectors only; no external helper replacements");
+            Files.writeString(Path.of(args[1]),new GsonBuilder().setPrettyPrinting().create().toJson(output));
+            println("setting instruction cases=256; vector codec instruction cases=40");
+            return;
+        }
         verifyCode(KEY_START, KEY_END, "12894bcc289fdbd29b1170e82d1f16d26d1a0a2a1429be8342d79418d693d7b4");
         verifyCode(MERGE_START, MERGE_END, "a598720a737ff244ba5d59aadb8bed368d5bdd67932fbd84ef84b70daacefaa0");
         List<Map<String,Object>> merges = new ArrayList<>(), keys = new ArrayList<>();

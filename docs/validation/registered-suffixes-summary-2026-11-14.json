@@ -1,0 +1,24 @@
+{
+  "capturedUtc": "2026-11-14T04:56:07.399312+00:00",
+  "hive": "HKEY_CLASSES_ROOT",
+  "rule": "nonempty subkey name starts with dot, valid UTF-16, lowercase",
+  "allAscii": true,
+  "skippedInvalidUnicode": 0,
+  "unicodeNormalizationVerified": false,
+  "count": 1035,
+  "distinctCount": 1035,
+  "snapshotSha256": "4f0cd1ab8e280853357a48cc1df9927967931ea76fdb964207de376f4849f6a3",
+  "examples": {
+    ".exe": true,
+    ".lnk": true,
+    ".pdf": true,
+    ".txt": true,
+    ".zip": true,
+    ".png": true,
+    ".h": true,
+    ".pyc": true,
+    ".siproj": true,
+    ".code-workspace": true
+  },
+  "scope": "Read-only registry snapshot; does not query a running Listary cache or prove full ranking equivalence"
+}
