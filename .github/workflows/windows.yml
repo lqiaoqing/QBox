@@ -1,0 +1,40 @@
+name: Windows build and checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          global-json-file: global.json
+      - name: Check repository materials
+        run: .\scripts\check-repository.ps1
+      - name: Publish from a clean checkout
+        run: .\scripts\publish.ps1 -OutputRoot work\ci-package
+      - name: Build and run all checks
+        run: .\scripts\verify.ps1
+      - name: Prepare isolated development instance
+        run: .\scripts\dev.ps1 -Configuration Release -PrepareOnly
+      - name: Query development snapshot
+        run: |
+          $settings = Get-Content work/dev/state/settings.json -Raw | ConvertFrom-Json
+          if ($settings.autoUpdate -or $settings.hotkey -eq 'DoubleCtrl') { throw 'Development instance is not isolated' }
+          $result = & ./work/ci-package/QBox.Cli/QBox.Cli.exe search --index-directory work/dev/indexes --query 中文资料 --history work/dev/state/ci-history.json --json
+          if ($LASTEXITCODE -ne 0) { throw 'Development search failed' }
+          $response = ($result -join "`n") | ConvertFrom-Json
+          if ($response.totalMatches -lt 1) { throw 'Development snapshot has no expected result' }

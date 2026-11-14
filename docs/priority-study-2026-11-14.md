@@ -1,3 +1,5 @@
+> 历史研究记录：保留当时的命令和结果。当前研究工具已改为显式目标清单，参数见 [工具说明](../tools/QBox.PriorityStudy/README.md)；脱敏路径不能直接作为本机输入。
+
 # 优先级离线对照与实施决定
 
 ## 结论
@@ -32,7 +34,7 @@
 |---|---:|---:|---:|
 | Any → 目标 ANYconsole 目录 | 84 | 43 | 43 |
 | 800Q → 资料下 EG800Q 目录 | 1 | 1 | 1 |
-| .code → `C:\Users\zsj\.codex` | 21 | 20 | **2018** |
+| .code → `%USERPROFILE%\.codex` | 21 | 20 | **2018** |
 | nd → Neat Download Manager 入口 | 1 | 1 | 1 |
 | Tra → Trae CN 入口 | 1 | 1 | 1 |
 | chatgpt → ChatGPT 注册入口 | 1 | 1 | 1 |

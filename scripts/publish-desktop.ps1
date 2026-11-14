@@ -13,4 +13,5 @@ try {
         -p:EnableSingleFileAnalyzer=false -p:DebugType=embedded `
         -m:1 -nodeReuse:false -p:UseSharedCompilation=false --nologo
     if ($LASTEXITCODE -ne 0) { throw '窗口版发布失败' }
+    & (Join-Path $PSScriptRoot 'copy-notices.ps1') -OutputDirectory $OutputDirectory
 } finally { Pop-Location }

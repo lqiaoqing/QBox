@@ -47,7 +47,7 @@
 - 单卷索引载入失败时保留该卷已载入视图，其他卷及系统应用继续可用，每 30 秒重试；坏完整快照由后台重建，坏增量从完整快照追齐再替换。半帧恢复、校验失败和 USN 断档有自动检查；未主动破坏用户的真实索引来制造故障。
 - 0.2.0 已替换并启动原路径 artifacts/QBox/QBox.exe，版本及 SHA-256 与发布归档一致。正式窗口已核对 qianwen 的千问办公首位、中文高亮、默认无数字键提示和“实时更新”状态。
 
-发布：releases/0.2.0/QBox.exe，1,016,589 字节；SHA-256 `ec717d89e2e46d5196e46446f791555827b5b42231bd2298cba8f582fdce2458`。用户历史未覆盖；首次保存的设置指向现有 D:/Work/workspace/QBox/work/indexes，移动 EXE 后仍复用该索引。旧 0.1.2、0.1.3 归档保留。
+发布：releases/0.2.0/QBox.exe，1,016,589 字节；SHA-256 `ec717d89e2e46d5196e46446f791555827b5b42231bd2298cba8f582fdce2458`。用户历史未覆盖；首次保存的设置指向现有 %QBOX_REPO%/work/indexes，移动 EXE 后仍复用该索引。旧 0.1.2、0.1.3 归档保留。
 
 实机记录：`../validation/live-index-validation-C-2026-11-14.json` 与 `../validation/live-index-validation-D-2026-11-14.json`。后台更新实现提交 60f8487，覆盖补全提交 3a93a0b；本阶段另行自动提交。
 

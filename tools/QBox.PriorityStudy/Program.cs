@@ -9,7 +9,7 @@ using QBox.Windows.Applications;
 using QBox.Windows.Indexing;
 using QBox.Windows.Shortcuts;
 
-if (args.Length is not (3 or 4)) throw new ArgumentException("用法：<索引目录> <默认表 JSON> <输出 JSON> [注册后缀快照 JSON]");
+if (args.Length is not (4 or 5)) throw new ArgumentException("用法：<索引目录> <默认表 JSON> <输出 JSON> <目标清单 JSON> [注册后缀快照 JSON]");
 if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("本机应用入口与路径对照需要 Windows");
 var json = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 {
@@ -18,18 +18,24 @@ var json = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 };
 var defaults = JsonSerializer.Deserialize<DefaultTables>(File.ReadAllText(args[1]), json)
     ?? throw new InvalidDataException("默认表为空");
+// 本机目标由操作者提供，不把个人目录或机器上的应用清单写进公共研究工具。
+var targetCatalog = JsonSerializer.Deserialize<Dictionary<string, TargetSpec[]>>(File.ReadAllText(args[3]), json)
+    ?? throw new InvalidDataException("目标清单为空");
+if (targetCatalog.Count == 0 || targetCatalog.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null || pair.Value.Length == 0 ||
+    pair.Value.Any(target => target == null || string.IsNullOrWhiteSpace(target.Name) && string.IsNullOrWhiteSpace(target.Target))))
+    throw new InvalidDataException("每个查询必须提供至少一个具有名称或路径的目标");
 var rules = new ProposedRules(defaults.Copies[0]);
 rules.CheckBoundaries();
 var paths = Directory.GetFiles(args[0], "*.qbi").Order(StringComparer.Ordinal).ToArray();
 if (paths.Length == 0) throw new InvalidDataException("没有索引快照");
 var fingerprints = paths.Select(path => new { Name = Path.GetFileName(path), Sha256 = Hash(path) }).ToArray();
 var indexes = paths.Select(path => VolumeIndexStore.Load(path)).ToArray();
-var native = args.Length == 4 ? new NativePriorityModel(defaults.Copies[0], indexes, args[3]) : null;
+var native = args.Length == 5 ? new NativePriorityModel(defaults.Copies[0], indexes, args[4]) : null;
 foreach (var index in indexes) index.PrepareSearch();
 var shortcuts = ShortcutCatalog.Load(indexes);
 var applications = PackagedApplicationCatalog.Load();
 if (applications.Warning != null) throw new IOException(applications.Warning);
-var queries = new[] { "Any", "800Q", ".code", "nd", "Tra", "chatgpt", "rtt", "doubao", "qianwen" };
+var queries = targetCatalog.Keys.ToArray();
 var cases = new List<object>();
 foreach (var query in queries)
 {
@@ -73,7 +79,7 @@ object Study(string query)
     foreach (var variant in new[] { a, b })
         if (!variant.Order().SequenceEqual(original)) throw new InvalidDataException("模拟改变了召回集合");
     var targetIndices = original.Where(i => IsTarget(query, before.Items[i].Candidate)).ToArray();
-    if (targetIndices.Length != (query == "doubao" ? 2 : 1))
+    if (targetIndices.Length != targetCatalog[query].Length)
         throw new InvalidDataException("用户目标缺失或不唯一，不能把空对照当作通过");
     var aRanks = Invert(a);
     var bRanks = Invert(b);
@@ -134,19 +140,10 @@ static int[] Invert(int[] order)
     return ranks;
 }
 
-static bool IsTarget(string query, SearchCandidate item) => query.ToLowerInvariant() switch
-{
-    "any" => item.Target.Equals(@"D:\Work\烧录固件\production_tools_pc-ANYconsole_V2.1.00\ANYconsole", StringComparison.OrdinalIgnoreCase),
-    "800q" => item.Target.Equals(@"D:\Work\资料\EG800Q", StringComparison.OrdinalIgnoreCase),
-    ".code" => item.Target.Equals(@"C:\Users\zsj\.codex", StringComparison.OrdinalIgnoreCase),
-    "nd" => item.IsApplicationEntry && item.Name.Equals("Neat Download Manager", StringComparison.OrdinalIgnoreCase),
-    "tra" => item.IsApplicationEntry && item.Name.Equals("Trae CN", StringComparison.OrdinalIgnoreCase),
-    "chatgpt" => item.Name.Equals("ChatGPT", StringComparison.OrdinalIgnoreCase) && item.AppUserModelId != null,
-    "rtt" => item.Target.Equals(@"C:\Users\zsj\.eide\tools\jlink\JLinkRTTViewer.exe", StringComparison.OrdinalIgnoreCase),
-    "doubao" => item.IsApplicationEntry && item.Name is "豆包" or "豆包工作",
-    "qianwen" => item.IsApplicationEntry && item.Name == "千问办公",
-    _ => false
-};
+bool IsTarget(string query, SearchCandidate item) => targetCatalog[query].Any(target =>
+    (target.Name == null || item.Name.Equals(target.Name, StringComparison.OrdinalIgnoreCase)) &&
+    (target.Target == null || item.Target.Equals(Environment.ExpandEnvironmentVariables(target.Target), StringComparison.OrdinalIgnoreCase)) &&
+    (target.IsApplicationEntry == null || item.IsApplicationEntry == target.IsApplicationEntry));
 
 static string Hash(string path)
 {
@@ -155,6 +152,7 @@ static string Hash(string path)
 }
 
 sealed record DefaultTables(string BinarySha256, TableCopy[] Copies);
+sealed record TargetSpec(string? Name = null, string? Target = null, bool? IsApplicationEntry = null);
 sealed record TableCopy(PathRule[] Paths, NameRule[] Patterns);
 sealed record PathRule(int Priority, string Path);
 sealed record NameRule(string Pattern, bool ApplyToFolders, bool ApplyToFiles, int Priority = 2);

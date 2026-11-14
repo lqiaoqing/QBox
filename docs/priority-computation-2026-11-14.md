@@ -107,8 +107,8 @@ python scripts\research\verify-listary-priority.py docs\validation\priority-comp
 ```powershell
 $research = Join-Path $PWD 'work\research\listary-7.1.0.47'
 $replayOutput = Join-Path $research ('priority-replay-' + [guid]::NewGuid().ToString('N') + '.json')
-$env:JAVA_HOME = 'D:\Work\workspace\rea\_reference\rea-environment\tools\jdk-21.0.12.1+1'
-& 'D:\Work\workspace\rea\_reference\rea-environment\tools\ghidra_12.1.4_PUBLIC\support\analyzeHeadless.bat' "$research\ghidra-projects" QBoxStaticCalls -process Listary.exe -readOnly -noanalysis -max-cpu 2 -scriptPath "$PWD\scripts\research" -postScript QBoxReplayPriority.java 'C:\Program Files\Listary\Listary.exe' $replayOutput
+$env:JAVA_HOME = '%REA_ROOT%\_reference\rea-environment\tools\jdk-21.0.12.1+1'
+& '%REA_ROOT%\_reference\rea-environment\tools\ghidra_12.1.4_PUBLIC\support\analyzeHeadless.bat' "$research\ghidra-projects" QBoxStaticCalls -process Listary.exe -readOnly -noanalysis -max-cpu 2 -scriptPath "$PWD\scripts\research" -postScript QBoxReplayPriority.java 'C:\Program Files\Listary\Listary.exe' $replayOutput
 python scripts\research\verify-listary-priority.py $replayOutput work\priority-computation-recheck.json
 ```
 

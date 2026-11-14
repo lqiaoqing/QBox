@@ -1,5 +1,9 @@
 # 文档目录
 
+开发从 [DEVELOPING](../DEVELOPING.md) 开始，当前任务和边界见 [ROADMAP](../ROADMAP.md)。以下设计与研究报告保留历史语境，不作为当前开发步骤或授权。
+
+真实机器报告中的个人目录、工作根路径和 SID 已脱敏。`%USERPROFILE%`、`%WORK_ROOT%`、`%QBOX_REPO%`、`%REA_ROOT%` 代表原机器路径占位符，不是仓库依赖。压缩指令 oracle 保持原样；脱敏报告中的原始输入哈希只作溯源，不能视为脱敏后文件的内容哈希。
+
 面向使用和构建的说明在仓库根目录的 [README.md](../README.md) 和 [CHANGELOG.md](../CHANGELOG.md)。第三方读音表许可见 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md)。
 
 ## 发布与验收
@@ -11,7 +15,7 @@
 - [0.1.3 应用全拼增量](application-pinyin-validation-2026-11-14.md)
 - [搜索验证](search-validation-2026-11-14.md)
 
-## 计划
+## 历史计划（非当前待办）
 
 - [桌面设计](plans/2026-11-13-desktop-design.md)
 - [搜索设计](plans/2026-11-13-search-design.md)

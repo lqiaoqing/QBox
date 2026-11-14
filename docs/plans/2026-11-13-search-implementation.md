@@ -1,3 +1,5 @@
+> 历史文档：反映创建时的设计和授权，包含已完成任务及已被替代的说明。当前开发流程见 [DEVELOPING](../../DEVELOPING.md)，当前目标见 [ROADMAP](../../ROADMAP.md)，代理约束以 [AGENTS](../../AGENTS.md) 为准。
+
 # QBox Search Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

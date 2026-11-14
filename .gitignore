@@ -3,3 +3,11 @@
 work/
 .vs/
 artifacts/
+*.qbi
+*.qbd
+*.qbi.lock
+**/history.json
+**/settings.json
+.env
+.env.*
+!.env.example

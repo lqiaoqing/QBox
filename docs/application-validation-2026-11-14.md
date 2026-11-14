@@ -4,7 +4,7 @@
 
 `chatgpt`：旧版本匹配出 645 个文件/目录，ChatGPT.exe 已在索引中，但只能以普通文件出现在第 32 项。系统 Shell 的 AppsFolder 中实际存在名称为 ChatGPT 的包注册入口，旧版没有接入该来源。包身份为 `OpenAI.Codex_2p2nqsd0c76g0!App`，应通过注册入口激活。
 
-`rtt`：真实索引中存在 `C:\Users\zsj\.eide\tools\jlink\JLinkRTTViewer.exe`，文件也确实存在。旧版没有将没有开始菜单快捷方式的 EXE 识别为应用，又将分值为 1 的弱匹配快捷方式放在应用优先桶，导致目标被挤在后面。这属于功能缺陷，不能作为正常验收结果接受。
+`rtt`：真实索引中存在 `%USERPROFILE%\.eide\tools\jlink\JLinkRTTViewer.exe`，文件也确实存在。旧版没有将没有开始菜单快捷方式的 EXE 识别为应用，又将分值为 1 的弱匹配快捷方式放在应用优先桶，导致目标被挤在后面。这属于功能缺陷，不能作为正常验收结果接受。
 
 读取 Get-AppxPackage 曾被当前环境拒绝；改用系统 Shell 只读枚举，无需提升 GUI 权限。没有修改 Listary 或导入它的历史，也没有收集 Listary 性能数据。
 

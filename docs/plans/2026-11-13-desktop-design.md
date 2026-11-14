@@ -1,3 +1,5 @@
+> 历史文档：反映创建时的设计和授权，包含已完成任务及已被替代的说明。当前开发流程见 [DEVELOPING](../../DEVELOPING.md)，当前目标见 [ROADMAP](../../ROADMAP.md)，代理约束以 [AGENTS](../../AGENTS.md) 为准。
+
 # QBox 窗口版第一版
 
 按用户“先交付可双击使用的窗口版”继续现有实施计划。采用已安装桌面框架中的 WPF，复用现有索引、搜索和历史核心，新增 QBox.Desktop，发布名称 QBox.exe。

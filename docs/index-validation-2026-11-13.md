@@ -17,9 +17,9 @@
 
 | 输入 | 目标 | 排名 |
 | --- | --- | ---: |
-| Any | `D:\Work\烧录固件\production_tools_pc-ANYconsole_V2.1.00\ANYconsole` | 76 |
-| 800Q | `D:\Work\资料\EG800Q` | 1 |
-| .code | `C:\Users\zsj\.codex` | 56 |
+| Any | `%WORK_ROOT%\烧录固件\production_tools_pc-ANYconsole_V2.1.00\ANYconsole` | 76 |
+| 800Q | `%WORK_ROOT%\资料\EG800Q` | 1 |
+| .code | `%USERPROFILE%\.codex` | 56 |
 | nd | Neat Download Manager 快捷方式 | 1 |
 | Tra | Trae CN 快捷方式 | 1 |
 

@@ -1,5 +1,7 @@
 # 第三方资料
 
+QBox 自有代码采用根目录 [LICENSE](LICENSE) 中的 MIT 许可；以下第三方资料保留各自版权与许可声明。
+
 应用名称拼音读音表来自 [mozillazg/pinyin-data](https://github.com/mozillazg/pinyin-data)，固定提交 `fe29ad32bdf352b31a02b9936e537f575432e9a6`，原数据版本 0.16.0，使用 MIT 许可。
 
 Copyright (c) 2016 mozillazg

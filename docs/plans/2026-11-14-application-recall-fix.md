@@ -1,3 +1,5 @@
+> 历史文档：反映创建时的设计和授权，包含已完成任务及已被替代的说明。当前开发流程见 [DEVELOPING](../../DEVELOPING.md)，当前目标见 [ROADMAP](../../ROADMAP.md)，代理约束以 [AGENTS](../../AGENTS.md) 为准。
+
 # ChatGPT 与 RTT Viewer 应用检索修复
 
 用户报告搜索 chatgpt / rtt 无法直接找到应用。诊断确认 ChatGPT 的 Windows 应用注册存在，RTT Viewer 的实际 EXE 也存在且已进入 NTFS 索引。它们分别暴露应用来源遗漏和普通文件被目录/弱应用挤压的问题，不作为正常验收结果接受。
