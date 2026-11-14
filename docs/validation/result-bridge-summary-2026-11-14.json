@@ -1,0 +1,10 @@
+{
+  "cases": 128,
+  "allEqual": true,
+  "fullWireConverter": true,
+  "selectedRowAndItemScalarBlocks": true,
+  "externalHelperReplacements": 0,
+  "cloneOwnershipVerified": false,
+  "fullLauncherVerified": false,
+  "oracleJsonSha256": "4c5936b9a98774a46ba07a748c148df772da659afd4a5b2c65a52f91816483ef"
+}

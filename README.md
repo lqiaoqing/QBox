@@ -87,4 +87,4 @@ dotnet run --project src\QBox.Cli -c Release -- search --catalog samples\catalog
 
 Listary 优先级默认表及九类查询的完整集合离线对照见 `docs/priority-study-2026-11-14.md`。简单降级会损害 `.codex` 排名，因此本轮仅保留分析工具与证据，未将实验规则接入 0.1.3。
 
-后续已恢复规则合并及 64 位引擎排序键的计算，并通过 500 + 780 组原始指令对照，见 `docs/priority-computation-2026-11-14.md`。设置到引擎的两次类别转换及 HKCR 注册后缀来源也已核实，新增 256 个设置字节、800 个类别字段指令对照，见 `docs/priority-codec-and-suffixes-2026-11-14.md`。来源封装及完整行为仍待闭合，当前产品规则保持不变。
+后续已恢复规则合并及 64 位引擎排序键的计算，并通过 500 + 780 组原始指令对照，见 `docs/priority-computation-2026-11-14.md`。设置到引擎的两次类别转换及 HKCR 注册后缀来源也已核实，新增 256 个设置字节、800 个类别字段指令对照，见 `docs/priority-codec-and-suffixes-2026-11-14.md`。磁盘接口到快捷栏的键字段桥接新增 128 组指令验证，见 `docs/result-key-bridge-2026-11-14.md`。完整来源行为、上下文和上游候选选择仍保留边界，当前产品规则保持不变。
