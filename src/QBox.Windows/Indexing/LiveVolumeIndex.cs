@@ -14,6 +14,7 @@ public sealed class LiveVolumeIndex
     private readonly VolumeIndex? _overlay;
     private readonly bool _changedDirectories;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<ulong, string> _paths = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<ulong, bool> _reachable = new();
     public VolumeIndex Base { get; }
     public JournalCheckpoint Checkpoint { get; }
     public int ChangedRecords => _changes.Count;
@@ -37,6 +38,7 @@ public sealed class LiveVolumeIndex
     {
         Base = saved.Base; Checkpoint = checkpoint; _changes = saved._changes;
         _overlay = saved._overlay; _changedDirectories = saved._changedDirectories; _paths = saved._paths;
+        _reachable = saved._reachable;
     }
 
     private LiveVolumeIndex(VolumeIndex index, JournalCheckpoint checkpoint, Dictionary<ulong, IndexChange> changes)
@@ -59,7 +61,7 @@ public sealed class LiveVolumeIndex
         // 删除或复用的父记录不能留下伪路径，其他仍有效的硬链接继续参与搜索。
         foreach (var file in files.Values.ToArray())
         {
-            var names = file.Names.Where(n => DirectoryPath(n.Parent, []) != null).ToArray();
+            var names = file.Names.Where(n => DirectoryReachable(n.Parent, [])).ToArray();
             if (names.Length == 0) files.Remove(file.File);
             else if (names.Length != file.Names.Count) files[file.File] = file with { Names = names };
         }
@@ -98,11 +100,32 @@ public sealed class LiveVolumeIndex
     internal bool IncludesBase(ulong file) => !_changes.ContainsKey(file & 0x0000ffffffffffffUL);
     internal bool IncludesOverlay(ulong file) => _changes.TryGetValue(file & 0x0000ffffffffffffUL, out var change) && change.Value != null && change.File.Low == file;
 
+    internal bool HasPath(VolumeIndex index, int nameIndex)
+    {
+        var id = new FileReference(index.Nodes[index.Names[nameIndex].Parent].File);
+        if (id.Low == Base.Nodes[Base.RootNode].File) return true;
+        return _reachable.TryGetValue(id.Low, out var cached) ? cached : DirectoryReachable(id, []);
+    }
+
+    private bool DirectoryReachable(FileReference id, HashSet<FileReference> visited)
+    {
+        if (id.Low == Base.Nodes[Base.RootNode].File) return true;
+        if (_reachable.TryGetValue(id.Low, out var cached)) return cached;
+        if (visited.Count >= 1024 || !visited.Add(id)) throw new InvalidDataException("增量目录关系存在循环或超过安全范围");
+        var valid = FindFile(id) is { IsDirectory: true } file &&
+            file.Names.OrderBy(name => name.Namespace == 2).Any(name => DirectoryReachable(name.Parent, visited));
+        visited.Remove(id);
+        // 大范围查询只记录目录是否可达，不为每个目录保留重复的完整路径字符串。
+        _reachable.TryAdd(id.Low, valid);
+        return valid;
+    }
+
     internal string? PathFor(VolumeIndex index, int nameIndex)
     {
+        using var textLease = index.Text.Pin();
         var name = index.Names[nameIndex];
         var parent = DirectoryPath(new(index.Nodes[name.Parent].File), []);
-        return parent == null ? null : Path.Combine(parent, index.Text.Substring(name.Offset, name.Length));
+        return parent == null ? null : Path.Combine(parent, index.Text.Slice(name.Offset, name.Length).ToString());
     }
 
     private string? DirectoryPath(FileReference id, HashSet<FileReference> visited)
@@ -121,7 +144,7 @@ public sealed class LiveVolumeIndex
             }
         }
         visited.Remove(id);
-        _paths.TryAdd(id.Low, path ?? "");
+        if (_paths.Count < 8192) _paths.TryAdd(id.Low, path ?? "");
         return path;
     }
 
@@ -133,4 +156,8 @@ public sealed class LiveVolumeIndex
         _overlay?.SearchInto(collector, history, cancellationToken, replacedShortcutIds, representedExecutables,
             this, true, true);
     }
+
+    internal IEnumerable<SearchCandidate> ShortcutCandidates(CancellationToken cancellationToken) =>
+        Base.ShortcutCandidates(cancellationToken, this, false, _changedDirectories)
+            .Concat(_overlay?.ShortcutCandidates(cancellationToken, this, true, true) ?? []);
 }

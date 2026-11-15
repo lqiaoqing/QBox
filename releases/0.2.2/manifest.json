@@ -1,0 +1,12 @@
+{
+  "version": "0.2.2.0",
+  "sha256": "23ca4b7a2c5905862bc7a86c2f2b095ae03846b74abcd59c49016a42038153fe",
+  "bytes": 978701,
+  "sdk": "10.0.110",
+  "runtime": "Microsoft.WindowsDesktop.App 10.0.x",
+  "matchingChecks": 685,
+  "behaviorChecks": 2904,
+  "baseline": "3f7713f / 0.2.1",
+  "validation": "docs/validation/memory-validation-2026-11-15.json",
+  "purpose": "共享只读基础索引、按需生成路径和流式加载快捷方式，降低内存；保留 v1 格式和匹配排序，保护索引速度"
+}

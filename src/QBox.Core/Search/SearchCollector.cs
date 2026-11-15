@@ -93,10 +93,15 @@ public sealed class SearchCollector
         _cancellationToken.ThrowIfCancellationRequested();
         var lanes = _best.Select(bucket => (IReadOnlyList<Row>)bucket.UnorderedItems.Select(item => item.Element)
             .Order(BestFirst.Instance).ToArray()).ToArray();
-        var hits = LauncherOrdering.Merge(lanes).Take(_limit).Select(row => new SearchHit(
-            row.Source.Materialize(row.Key, row.Name, row.Kind, row.Priority) with
+        var hits = LauncherOrdering.Merge(lanes).Take(_limit).Select(row =>
+        {
+            // 名称可能来自只读文件映射，整个结果物化期间保持其所有者存活。
+            using var nameLease = row.Name.Pin();
+            return new SearchHit(row.Source.Materialize(row.Key, row.Name, row.Kind, row.Priority) with
                 { IsApplicationEntry = row.ApplicationEntry, IsDirectExecutable = row.DirectExecutable },
-            row.DisplayMatch ?? Query.Match(row.Name.ToString(), _cancellationToken), LauncherOrdering.Group(row.History, row.ApplicationEntry, row.DirectExecutable), row.History)).ToArray();
+                row.DisplayMatch ?? Query.Match(row.Name.ToString(), _cancellationToken),
+                LauncherOrdering.Group(row.History, row.ApplicationEntry, row.DirectExecutable), row.History);
+        }).ToArray();
         return new(Query.Text, _total, hits);
     }
 

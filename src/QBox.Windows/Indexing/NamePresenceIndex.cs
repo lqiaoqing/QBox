@@ -27,7 +27,7 @@ internal sealed class NamePresenceIndex
                 _owners[index] = nodeIndex;
                 var name = volume.Names[index];
                 ulong seenLow = 0, seenHigh = 0;
-                foreach (var rune in volume.Text.AsSpan(name.Offset, name.Length).EnumerateRunes())
+                foreach (var rune in volume.Text.Span.Slice(name.Offset, name.Length).EnumerateRunes())
                 {
                     // 与匹配器使用同一 Rune 大写映射，保留长 s、无点 i 等可匹配 ASCII 的名称。
                     var upper = Rune.ToUpperInvariant(rune).Value;

@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using QBox.Windows.Ntfs;
 
 namespace QBox.Windows.Indexing;
@@ -17,6 +19,8 @@ public static class VolumeIndexStore
 
     public static void Save(string path, VolumeIndex index, CancellationToken cancellationToken = default)
     {
+        if (!BitConverter.IsLittleEndian) throw new PlatformNotSupportedException("索引保存需要小端平台");
+        using var textLease = index.Text.Pin();
         var absolute = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
         var temporary = absolute + "." + Guid.NewGuid().ToString("N") + ".tmp";
@@ -43,22 +47,12 @@ public static class VolumeIndexStore
                 writer.Write(index.Nodes.Length);
                 writer.Write(index.Names.Length);
                 writer.Write(index.Text.Length);
-                foreach (var node in index.Nodes)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    writer.Write(node.File); writer.Write(node.FirstName); writer.Write(node.NameCount);
-                    writer.Write(node.IsDirectory); writer.Write(node.LastUsn.HasValue); writer.Write(node.LastUsn ?? 0);
-                    writer.Write(node.LinkCount);
-                }
-                foreach (var name in index.Names)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    writer.Write(name.Parent); writer.Write(name.Offset); writer.Write(name.Length);
-                    writer.Write(name.Namespace); writer.Write(name.Attributes);
-                }
-                // 直接保存 UTF-16 代码单元，避免 UTF-8 编码把孤立代理项替换成其他文件名。
-                foreach (var character in index.Text) writer.Write((ushort)character);
                 writer.Flush();
+                // 固定布局直接分块写出；保留 v1 字节与孤立代理项，减少逐字段/逐字符调用，不牺牲保存速度。
+                WriteBlocks(file, index.Nodes.AsSpan(), cancellationToken);
+                WriteBlocks(file, index.Names.AsSpan(), cancellationToken);
+                WriteBlocks(file, index.Text.Span, cancellationToken);
+                file.Flush();
                 file.Position = 0;
                 var digest = Hash(file, file.Length, cancellationToken);
                 file.Position = file.Length;
@@ -96,23 +90,14 @@ public static class VolumeIndexStore
         if (nodeCount <= 0 || nameCount < nodeCount || textCount < nameCount ||
             nodeCount * 28L + nameCount * 17L + textCount * 2L != bodyLength - file.Position)
             throw new InvalidDataException("索引计数与文件长度不符");
-        var nodes = new IndexNode[nodeCount];
-        var names = new IndexName[nameCount];
-        var text = new char[textCount];
-        for (var i = 0; i < nodes.Length; i++)
+        var mapped = new MappedIndexStorage(file, file.Position, nodeCount, nameCount, textCount);
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var id = reader.ReadUInt64(); var first = reader.ReadInt32(); var count = reader.ReadInt32();
-            var directory = reader.ReadBoolean(); var hasUsn = reader.ReadBoolean(); var usn = reader.ReadInt64();
-            nodes[i] = new(id, first, count, directory, hasUsn ? usn : null, reader.ReadUInt16());
+            // 校验、格式和快照身份保持原样；只改变承载方式，旧索引无需重建或迁移。
+            return new(geometry, checkpoint, created, new IndexNodeTable(mapped), new IndexNameTable(mapped),
+                mapped.Text, cancellationToken);
         }
-        for (var i = 0; i < names.Length; i++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            names[i] = new(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadByte(), reader.ReadUInt32());
-        }
-        for (var i = 0; i < text.Length; i++) text[i] = (char)reader.ReadUInt16();
-        return new(geometry, checkpoint, created, nodes, names, new(text));
+        catch { mapped.Dispose(); throw; }
     }
 
     private static byte[] Hash(Stream stream, long length, CancellationToken cancellationToken)
@@ -128,5 +113,18 @@ public static class VolumeIndexStore
             length -= read;
         }
         return hash.GetHashAndReset();
+    }
+
+    private static void WriteBlocks<T>(Stream stream, ReadOnlySpan<T> values, CancellationToken cancellationToken) where T : unmanaged
+    {
+        // 先按元素切块，避免超大映射整体转换为字节 Span 时溢出 Int32 长度。
+        var maximum = 65536 / Unsafe.SizeOf<T>();
+        while (!values.IsEmpty)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var count = Math.Min(values.Length, maximum);
+            stream.Write(MemoryMarshal.AsBytes(values[..count]));
+            values = values[count..];
+        }
     }
 }

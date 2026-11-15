@@ -18,7 +18,7 @@ internal sealed class PhoneticNameIndex
             for (var i = node.FirstName; i < node.FirstName + node.NameCount; i++)
             {
                 var name = index.Names[i];
-                var raw = index.Text.AsSpan(name.Offset, name.Length);
+                var raw = index.Text.Span.Slice(name.Offset, name.Length);
                 if (!PreparedApplicationName.CanContainPhonetic(raw)) continue;
                 if (!node.IsDirectory && (raw.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) || raw.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))) raw = raw[..^4];
                 var text = raw.ToString();

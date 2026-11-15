@@ -270,6 +270,70 @@ internal static class NtfsIndexChecks
             Equal("x\ud800y", restored.ExportFiles().Single(f => f.File == Id(20)).Names[0].Name);
             Equal(@"X:\folder\child", restored.Candidates("child").Single().Target);
         }));
+        checks.Run("映射快照跨原子替换仍保持旧查询完整", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "old资料😀")));
+            var old = VolumeIndexStore.Load(path);
+            var collector = new SearchCollector("old");
+            old.SearchInto(collector, new SelectionHistory().ForQuery("old"));
+            VolumeIndexStore.Save(path, Snapshot(File(20, "new资料😀")));
+            var next = VolumeIndexStore.Load(path);
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+            Equal("old资料😀", collector.Finish().Items.Single().Candidate.Name);
+            Equal(@"X:\old资料😀", old.Candidates("old").Single().Target);
+            Equal(@"X:\new资料😀", next.Candidates("new").Single().Target);
+            Equal(0, next.Candidates("old").Count());
+        }));
+        checks.Run("映射快照再保存保持 v1 字节与孤立代理项", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            var copy = Path.Combine(directory, "copy.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "x\ud800y"), File(21, "𠀀资料😀")));
+            VolumeIndexStore.Save(copy, VolumeIndexStore.Load(path));
+            True(System.IO.File.ReadAllBytes(path).SequenceEqual(System.IO.File.ReadAllBytes(copy)));
+            Equal("𠀀资料😀", VolumeIndexStore.Load(copy).Candidates("资料").Single().Name);
+        }));
+        checks.Run("有效校验和中的非法名称边界仍拒绝并释放映射", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "file")));
+            var bytes = System.IO.File.ReadAllBytes(path);
+            // v1 的固定头在三字符卷根下为 92 字节；首条名称偏移不得越过字符区。
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(92 + 2 * 28 + 4), int.MaxValue);
+            System.Security.Cryptography.SHA256.HashData(bytes.AsSpan(0, bytes.Length - 32)).CopyTo(bytes, bytes.Length - 32);
+            System.IO.File.WriteAllBytes(path, bytes);
+            Throws<InvalidDataException>(() => VolumeIndexStore.Load(path));
+            using var exclusive = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            Equal((long)bytes.Length, exclusive.Length);
+        }));
+        checks.Run("取消载入不遗留文件句柄", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "file")));
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            Throws<OperationCanceledException>(() => VolumeIndexStore.Load(path, cancellation.Token));
+            using var exclusive = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            True(exclusive.Length > 0);
+        }));
+        checks.Run("快捷方式流式扫描保留取消信号", () =>
+        {
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            Throws<OperationCanceledException>(() => QBox.Windows.Shortcuts.ShortcutCatalog.Load(
+                new[] { Snapshot(File(20, "sample.lnk")) }, cancellation.Token));
+        });
+        checks.Run("无引用映射由终结器释放", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "file")));
+            var weak = LoadWeak(path);
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+            True(!weak.IsAlive);
+            using var exclusive = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            True(exclusive.Length > 0);
+        }));
         checks.Run("取消保存保留旧索引且清理临时文件", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "volume.qbi");
@@ -584,6 +648,17 @@ internal static class NtfsIndexChecks
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), null)])]);
             Equal(0, Search(next, "alpha").TotalMatches);
         });
+        checks.Run("目录可达缓存不跨删除恢复污染新旧视图", () =>
+        {
+            var first = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "first", directory: true))])]);
+            Equal(@"X:\first\alpha.txt", Search(first, "alpha").Items.Single().Candidate.Target);
+            var deleted = first.Apply([new(new(7, 120), [new(Id(20), null)])]);
+            Equal(0, Search(deleted, "alpha").TotalMatches);
+            var restored = deleted.Apply([new(new(7, 130), [new(Id(20), File(20, "restored", directory: true))])]);
+            Equal(@"X:\restored\alpha.txt", Search(restored, "alpha").Items.Single().Candidate.Target);
+            Equal(@"X:\first\alpha.txt", Search(first, "alpha").Items.Single().Candidate.Target);
+            Equal(0, Search(deleted, "alpha").TotalMatches);
+        });
         checks.Run("实时新目录与新文件可以同一批入索引", () =>
         {
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(30), File(30, "newdir", directory: true)),
@@ -689,6 +764,10 @@ internal static class NtfsIndexChecks
         checks.Run("实时增量检查点回退被拒绝", () =>
             Throws<InvalidDataException>(() => new LiveVolumeIndex(original).Apply([new(new(7, 99), [])])));
     }
+
+    // 独立栈帧退出后不再留下 JIT 临时强引用，测量真实的映射所有者回收。
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference LoadWeak(string path) => new(VolumeIndexStore.Load(path));
 
     private static FileReference Id(ulong number, ushort sequence = 7) => new(number | ((ulong)sequence << 48));
     private sealed class CountingSource : IUniqueSearchSource

@@ -25,14 +25,12 @@ public sealed class ShortcutCatalog
     }
 
     public static ShortcutCatalog Load(VolumeIndex[] indexes, CancellationToken cancellationToken = default)
-        => Load(indexes.SelectMany(index => index.Candidates(".lnk", cancellationToken)), cancellationToken);
+        => Load(indexes.SelectMany(index => index.ShortcutCandidates(cancellationToken)), cancellationToken);
 
     public static ShortcutCatalog Load(LiveVolumeIndex[] indexes, CancellationToken cancellationToken = default)
     {
-        var collector = new SearchCollector(".lnk", int.MaxValue, cancellationToken);
-        var history = new SelectionHistory().ForQuery(".lnk");
-        foreach (var index in indexes) index.SearchInto(collector, history, cancellationToken);
-        return Load(collector.Finish().Items.Select(hit => hit.Candidate), cancellationToken);
+        // 应用入口只需要真实 .lnk 文件；流式消费，避免无限结果队列和大量无关路径物化。
+        return Load(indexes.SelectMany(index => index.ShortcutCandidates(cancellationToken)), cancellationToken);
     }
 
     private static ShortcutCatalog Load(IEnumerable<SearchCandidate> candidates, CancellationToken cancellationToken)

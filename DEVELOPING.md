@@ -19,6 +19,7 @@
 | `src/QBox.Cli` | 查询、匹配、索引及打开的命令行入口；`CliApplication` |
 | `tests/QBox.Checks` | 无外部测试包的自动检查与夹具；`Program.cs` 是执行入口 |
 | `tools/QBox.DevData` | 生成当前机器上的小规模开发快照，不扫描全盘 |
+| `tools/QBox.MemoryProbe` | 内存、完整结果摘要及确定性索引速度重放；见工具 README |
 | `tools/QBox.PriorityStudy`、`scripts/research` | 可选离线研究，独立于产品和普通验证；见工具自己的 README |
 
 主要调用链：窗口输入 → 最新查询门控 → 应用/快捷方式/索引来源 → 候选预筛 → 原匹配器与收集排序 → 当前版本结果显示。打开前核对身份，只有提交启动成功后才记录历史。后台工作进程读 NTFS 变更并发布日志，GUI 读取不可变视图；不要把权限逻辑放进普通搜索循环。

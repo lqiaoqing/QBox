@@ -1,0 +1,1434 @@
+{
+  "baselineCommit": "3f7713f",
+  "candidateVersion": "0.2.2",
+  "matchingChecks": 685,
+  "behaviorChecks": 2904,
+  "desktopSources": {
+    "before": {
+      "sourceFiles": [
+        {
+          "name": "C.qbi",
+          "bytes": 384727963,
+          "sha256": "b50bc63163bba880fc2c027b3708aef7eb3bc681c894671315c0b1342fae63d2"
+        },
+        {
+          "name": "D.qbi",
+          "bytes": 60510169,
+          "sha256": "0601b2eec1f17005859c53eea6a597e3adac8f0b1816710c18a78348a0c7cfac"
+        }
+      ],
+      "useLive": true,
+      "includeDesktop": true,
+      "catalogMs": 2124.8696,
+      "changedRecords": 10288,
+      "fileCount": 2920457,
+      "nameCount": 4754894,
+      "loadMs": 5120.5111,
+      "prepareMs": 0.0026,
+      "stages": [
+        {
+          "stage": "empty",
+          "beforeCollectionPrivateBytes": 8081408,
+          "privateBytes": 8228864,
+          "workingSetBytes": 27136000,
+          "managedBytes": 290328,
+          "peakWorkingSetBytes": 27136000
+        },
+        {
+          "stage": "loaded",
+          "beforeCollectionPrivateBytes": 910585856,
+          "privateBytes": 904126464,
+          "workingSetBytes": 912257024,
+          "managedBytes": 591832120,
+          "peakWorkingSetBytes": 918519808
+        },
+        {
+          "stage": "prepared",
+          "beforeCollectionPrivateBytes": 904126464,
+          "privateBytes": 904126464,
+          "workingSetBytes": 912261120,
+          "managedBytes": 591832184,
+          "peakWorkingSetBytes": 918519808
+        },
+        {
+          "stage": "catalogs",
+          "beforeCollectionPrivateBytes": 1038938112,
+          "privateBytes": 1023758336,
+          "workingSetBytes": 1051635712,
+          "managedBytes": 614147688,
+          "peakWorkingSetBytes": 1066651648
+        },
+        {
+          "stage": "queried",
+          "beforeCollectionPrivateBytes": 1077788672,
+          "privateBytes": 1064685568,
+          "workingSetBytes": 1094696960,
+          "managedBytes": 760639312,
+          "peakWorkingSetBytes": 1108299776
+        }
+      ],
+      "cases": [
+        {
+          "query": "Any",
+          "totalMatches": 211632,
+          "responseSha256": "68f51c447dc6c092464a1db479d8b09acf376d4739c05f99afaaa46287ea37bc",
+          "timesMs": [
+            211.4596,
+            108.1662,
+            107.1872
+          ]
+        },
+        {
+          "query": "800Q",
+          "totalMatches": 838,
+          "responseSha256": "5456593e8c2bf7912380aa295846c6c6f9953f87ded8fc04ba0ce74b423116ed",
+          "timesMs": [
+            14.1924,
+            11.6637,
+            13.1165
+          ]
+        },
+        {
+          "query": ".code",
+          "totalMatches": 96083,
+          "responseSha256": "61ec23095860b21e2b5b2e7d98b3b36f0bb5433bcf633b4bc926e263049253c5",
+          "timesMs": [
+            145.4716,
+            144.5214,
+            123.9053
+          ]
+        },
+        {
+          "query": "nd",
+          "totalMatches": 1188276,
+          "responseSha256": "04e89fdd9d86e25efd3eac6c1513be4e3ff47b79d908673d18e181a8848a71bb",
+          "timesMs": [
+            524.8191,
+            239.569,
+            237.271
+          ]
+        },
+        {
+          "query": "Tra",
+          "totalMatches": 853110,
+          "responseSha256": "5060fff2ce0208c9c04db38e30e8a2a5e097286629cd611c673d6a437b354cee",
+          "timesMs": [
+            215.0107,
+            202.129,
+            203.4543
+          ]
+        },
+        {
+          "query": "chatgpt",
+          "totalMatches": 4230,
+          "responseSha256": "739af4cffe7b76383fb605a7a55f729b606ffe7d44796af122b3aad2d5f0ede4",
+          "timesMs": [
+            33.2494,
+            33.1492,
+            33.6082
+          ]
+        },
+        {
+          "query": "rtt",
+          "totalMatches": 900328,
+          "responseSha256": "3f746c11a4c6de652bf43ca20a307c634364018220b01c7ff7ad22218578d5dc",
+          "timesMs": [
+            249.4954,
+            230.1318,
+            221.2097
+          ]
+        },
+        {
+          "query": "doubao",
+          "totalMatches": 62009,
+          "responseSha256": "a993aaf17f2a164060bf8a4e3ed2250f00c44bfcdf7cc1a71c717dc4751f127c",
+          "timesMs": [
+            97.5273,
+            91.3985,
+            88.6917
+          ]
+        },
+        {
+          "query": "qianwen",
+          "totalMatches": 190,
+          "responseSha256": "d9e3bfe601b7eb9c638dad5ad696f00ba74a3529cb8df02590cfb5ced2cdc98f",
+          "timesMs": [
+            4.7957,
+            3.7742,
+            3.745
+          ]
+        },
+        {
+          "query": "豆包",
+          "totalMatches": 5,
+          "responseSha256": "1c32d0323148f1323dc4aa8177f77de1d92829941c840061c64e000b25b9ff4b",
+          "timesMs": [
+            1.5525,
+            0.4076,
+            0.3861
+          ]
+        },
+        {
+          "query": "千问",
+          "totalMatches": 0,
+          "responseSha256": "02179d59460f60d8a0a7cff78bfb15af6b07a5ed688193401796fa9e39b2ca20",
+          "timesMs": [
+            0.3799,
+            0.3118,
+            0.412
+          ]
+        },
+        {
+          "query": "资料",
+          "totalMatches": 7,
+          "responseSha256": "7302d075aa9869027f24f4d9e621d00dc769899e2cbbb5d655f4364936165f42",
+          "timesMs": [
+            0.3822,
+            0.3115,
+            0.4069
+          ]
+        },
+        {
+          "query": "工作",
+          "totalMatches": 32,
+          "responseSha256": "7c7d882e283601826e6557da4fe59fca851c56ff2d88243ca966d1e87cba5e5f",
+          "timesMs": [
+            0.5974,
+            0.5166,
+            0.5094
+          ]
+        },
+        {
+          "query": "中",
+          "totalMatches": 83,
+          "responseSha256": "2970bc8fc9d1228a0c987eb6b4686ac4596709e9b9fd58d408e30dd3026d7fac",
+          "timesMs": [
+            0.6503,
+            0.4795,
+            0.5208
+          ]
+        },
+        {
+          "query": "任意中文不存在探针",
+          "totalMatches": 0,
+          "responseSha256": "5ac0c32639e32896645cba3f118812bfe1494b5c9741935b180fce41204163f5",
+          "timesMs": [
+            2.1289,
+            0.2875,
+            0.3124
+          ]
+        },
+        {
+          "query": "资",
+          "totalMatches": 57,
+          "responseSha256": "ebd446a38d3a5cd920db99b26b93d34b8f5a18332d54f67fbd7854a848d71798",
+          "timesMs": [
+            0.4729,
+            0.3965,
+            0.3951
+          ]
+        },
+        {
+          "query": "😀",
+          "totalMatches": 1,
+          "responseSha256": "52d2456aa77aa23b8d025d97e90fea019289c9dc791fc6d0f7735e92933e4b5b",
+          "timesMs": [
+            0.2409,
+            0.2078,
+            0.2041
+          ]
+        },
+        {
+          "query": "𠀀",
+          "totalMatches": 0,
+          "responseSha256": "9a2773f2b768d2d8ab3db1e4107a92ecd6feb84a962b2f494274007b1eddf50a",
+          "timesMs": [
+            0.2405,
+            0.2287,
+            0.2168
+          ]
+        },
+        {
+          "query": "文a",
+          "totalMatches": 22,
+          "responseSha256": "2ae67c52933c07f5b272e833a0790aafbf00724cfb7993fe7112d0ebd39f04cf",
+          "timesMs": [
+            0.5835,
+            0.422,
+            0.5724
+          ]
+        },
+        {
+          "query": "ſ",
+          "totalMatches": 2035192,
+          "responseSha256": "5ac7f14d1cf7e5ca9832861481a403f043ab72dfc4f7c6a302116ce5d03e0a4d",
+          "timesMs": [
+            1049.5163,
+            866.3829,
+            856.7502
+          ]
+        },
+        {
+          "query": "ı",
+          "totalMatches": 0,
+          "responseSha256": "d2c6d37696b57dc31a2f78c65760f57922b43186ddeda2b0f67aecc82bbb69ba",
+          "timesMs": [
+            0.3102,
+            0.1833,
+            0.1661
+          ]
+        },
+        {
+          "query": "",
+          "totalMatches": 3042242,
+          "responseSha256": "7fa3f5f800f0e3aa197e7b20d2cf1eea956d0f1e9b5048a3752049ae8f05ebf1",
+          "timesMs": [
+            847.5615,
+            669.4215,
+            658.3259
+          ]
+        }
+      ]
+    },
+    "all22FullResponseHashesUnchanged": true,
+    "after": {
+      "sourceFiles": [
+        {
+          "name": "C.qbi",
+          "bytes": 384727963,
+          "sha256": "b50bc63163bba880fc2c027b3708aef7eb3bc681c894671315c0b1342fae63d2"
+        },
+        {
+          "name": "D.qbi",
+          "bytes": 60510169,
+          "sha256": "0601b2eec1f17005859c53eea6a597e3adac8f0b1816710c18a78348a0c7cfac"
+        }
+      ],
+      "useLive": true,
+      "includeDesktop": true,
+      "catalogMs": 462.9036,
+      "shortcutActions": 127,
+      "applications": 3,
+      "applicationCatalogWarning": false,
+      "changedRecords": 10288,
+      "fileCount": 2920457,
+      "nameCount": 4754894,
+      "loadMs": 3077.0428,
+      "prepareMs": 0.0044,
+      "stages": [
+        {
+          "stage": "empty",
+          "beforeCollectionPrivateBytes": 8151040,
+          "privateBytes": 8232960,
+          "workingSetBytes": 27185152,
+          "managedBytes": 290296,
+          "peakWorkingSetBytes": 27185152
+        },
+        {
+          "stage": "loaded",
+          "beforeCollectionPrivateBytes": 123973632,
+          "privateBytes": 117215232,
+          "workingSetBytes": 584605696,
+          "managedBytes": 73251232,
+          "peakWorkingSetBytes": 591360000
+        },
+        {
+          "stage": "prepared",
+          "beforeCollectionPrivateBytes": 117215232,
+          "privateBytes": 117215232,
+          "workingSetBytes": 584605696,
+          "managedBytes": 73251296,
+          "peakWorkingSetBytes": 591360000
+        },
+        {
+          "stage": "catalogs",
+          "beforeCollectionPrivateBytes": 118427648,
+          "privateBytes": 114458624,
+          "workingSetBytes": 599543808,
+          "managedBytes": 74068824,
+          "peakWorkingSetBytes": 603893760
+        },
+        {
+          "stage": "queried",
+          "beforeCollectionPrivateBytes": 150851584,
+          "privateBytes": 146812928,
+          "workingSetBytes": 637140992,
+          "managedBytes": 100406608,
+          "peakWorkingSetBytes": 647401472
+        }
+      ],
+      "cases": [
+        {
+          "query": "Any",
+          "totalMatches": 211632,
+          "responseSha256": "68f51c447dc6c092464a1db479d8b09acf376d4739c05f99afaaa46287ea37bc",
+          "timesMs": [
+            330.9396,
+            164.0721,
+            158.1673
+          ]
+        },
+        {
+          "query": "800Q",
+          "totalMatches": 838,
+          "responseSha256": "5456593e8c2bf7912380aa295846c6c6f9953f87ded8fc04ba0ce74b423116ed",
+          "timesMs": [
+            15.4405,
+            9.3913,
+            9.4883
+          ]
+        },
+        {
+          "query": ".code",
+          "totalMatches": 96083,
+          "responseSha256": "61ec23095860b21e2b5b2e7d98b3b36f0bb5433bcf633b4bc926e263049253c5",
+          "timesMs": [
+            284.8334,
+            179.1726,
+            207.1424
+          ]
+        },
+        {
+          "query": "nd",
+          "totalMatches": 1188276,
+          "responseSha256": "04e89fdd9d86e25efd3eac6c1513be4e3ff47b79d908673d18e181a8848a71bb",
+          "timesMs": [
+            575.9937,
+            178.6359,
+            154.7404
+          ]
+        },
+        {
+          "query": "Tra",
+          "totalMatches": 853110,
+          "responseSha256": "5060fff2ce0208c9c04db38e30e8a2a5e097286629cd611c673d6a437b354cee",
+          "timesMs": [
+            160.2783,
+            143.3147,
+            136.3077
+          ]
+        },
+        {
+          "query": "chatgpt",
+          "totalMatches": 4230,
+          "responseSha256": "739af4cffe7b76383fb605a7a55f729b606ffe7d44796af122b3aad2d5f0ede4",
+          "timesMs": [
+            39.8761,
+            37.0506,
+            35.8869
+          ]
+        },
+        {
+          "query": "rtt",
+          "totalMatches": 900328,
+          "responseSha256": "3f746c11a4c6de652bf43ca20a307c634364018220b01c7ff7ad22218578d5dc",
+          "timesMs": [
+            190.055,
+            162.407,
+            160.718
+          ]
+        },
+        {
+          "query": "doubao",
+          "totalMatches": 62009,
+          "responseSha256": "a993aaf17f2a164060bf8a4e3ed2250f00c44bfcdf7cc1a71c717dc4751f127c",
+          "timesMs": [
+            94.3934,
+            92.3634,
+            90.3455
+          ]
+        },
+        {
+          "query": "qianwen",
+          "totalMatches": 190,
+          "responseSha256": "d9e3bfe601b7eb9c638dad5ad696f00ba74a3529cb8df02590cfb5ced2cdc98f",
+          "timesMs": [
+            5.6011,
+            3.9397,
+            3.8885
+          ]
+        },
+        {
+          "query": "豆包",
+          "totalMatches": 5,
+          "responseSha256": "1c32d0323148f1323dc4aa8177f77de1d92829941c840061c64e000b25b9ff4b",
+          "timesMs": [
+            1.6956,
+            0.4954,
+            0.4084
+          ]
+        },
+        {
+          "query": "千问",
+          "totalMatches": 0,
+          "responseSha256": "02179d59460f60d8a0a7cff78bfb15af6b07a5ed688193401796fa9e39b2ca20",
+          "timesMs": [
+            0.5065,
+            0.4213,
+            0.339
+          ]
+        },
+        {
+          "query": "资料",
+          "totalMatches": 7,
+          "responseSha256": "7302d075aa9869027f24f4d9e621d00dc769899e2cbbb5d655f4364936165f42",
+          "timesMs": [
+            0.9161,
+            0.3558,
+            0.5173
+          ]
+        },
+        {
+          "query": "工作",
+          "totalMatches": 32,
+          "responseSha256": "7c7d882e283601826e6557da4fe59fca851c56ff2d88243ca966d1e87cba5e5f",
+          "timesMs": [
+            1.3181,
+            0.5027,
+            0.5282
+          ]
+        },
+        {
+          "query": "中",
+          "totalMatches": 83,
+          "responseSha256": "2970bc8fc9d1228a0c987eb6b4686ac4596709e9b9fd58d408e30dd3026d7fac",
+          "timesMs": [
+            0.9944,
+            0.5896,
+            0.507
+          ]
+        },
+        {
+          "query": "任意中文不存在探针",
+          "totalMatches": 0,
+          "responseSha256": "5ac0c32639e32896645cba3f118812bfe1494b5c9741935b180fce41204163f5",
+          "timesMs": [
+            2.1841,
+            0.3074,
+            0.3001
+          ]
+        },
+        {
+          "query": "资",
+          "totalMatches": 57,
+          "responseSha256": "ebd446a38d3a5cd920db99b26b93d34b8f5a18332d54f67fbd7854a848d71798",
+          "timesMs": [
+            0.9714,
+            0.4237,
+            4.7331
+          ]
+        },
+        {
+          "query": "😀",
+          "totalMatches": 1,
+          "responseSha256": "52d2456aa77aa23b8d025d97e90fea019289c9dc791fc6d0f7735e92933e4b5b",
+          "timesMs": [
+            0.3802,
+            0.2777,
+            0.2612
+          ]
+        },
+        {
+          "query": "𠀀",
+          "totalMatches": 0,
+          "responseSha256": "9a2773f2b768d2d8ab3db1e4107a92ecd6feb84a962b2f494274007b1eddf50a",
+          "timesMs": [
+            0.2157,
+            0.2303,
+            0.2333
+          ]
+        },
+        {
+          "query": "文a",
+          "totalMatches": 22,
+          "responseSha256": "2ae67c52933c07f5b272e833a0790aafbf00724cfb7993fe7112d0ebd39f04cf",
+          "timesMs": [
+            0.8599,
+            0.5867,
+            0.4531
+          ]
+        },
+        {
+          "query": "ſ",
+          "totalMatches": 2035192,
+          "responseSha256": "5ac7f14d1cf7e5ca9832861481a403f043ab72dfc4f7c6a302116ce5d03e0a4d",
+          "timesMs": [
+            837.6013,
+            554.86,
+            555.9329
+          ]
+        },
+        {
+          "query": "ı",
+          "totalMatches": 0,
+          "responseSha256": "d2c6d37696b57dc31a2f78c65760f57922b43186ddeda2b0f67aecc82bbb69ba",
+          "timesMs": [
+            0.2836,
+            0.1756,
+            0.1773
+          ]
+        },
+        {
+          "query": "",
+          "totalMatches": 3042242,
+          "responseSha256": "7fa3f5f800f0e3aa197e7b20d2cf1eea956d0f1e9b5048a3752049ae8f05ebf1",
+          "timesMs": [
+            595.3462,
+            410.8417,
+            405.8555
+          ]
+        }
+      ]
+    }
+  },
+  "indexingReplay": {
+    "before": {
+      "fixture": "201001 records from deterministic cache reconciliation; 2000 USN renames",
+      "physicalDiskThroughputMeasured": false,
+      "remapAfterSave": false,
+      "runs": [
+        {
+          "pass": 0,
+          "buildMs": 881.4565,
+          "saveMs": 104.3629,
+          "loadMs": 112.0853,
+          "incrementalMs": 19.1623,
+          "incrementalSamples": [
+            32.8577,
+            20.632,
+            16.9019,
+            30.08,
+            39.1102,
+            19.0685,
+            17.4109,
+            20.7044,
+            36.6677,
+            20.9513,
+            15.1112,
+            18.4106,
+            16.969,
+            18.9947,
+            15.6718,
+            19.0429,
+            15.51,
+            21.3376,
+            20.6656,
+            19.1623
+          ],
+          "readSamples": [
+            16.9416,
+            9.9704,
+            8.9453,
+            11.3694,
+            12.4723,
+            9.7894,
+            10.2042,
+            11.0027,
+            10.4294,
+            8.546,
+            7.6779,
+            8.1031,
+            8.0271,
+            10.0212,
+            8.5183,
+            8.6724,
+            7.7469,
+            11.5017,
+            9.3887,
+            8.911
+          ],
+          "applySamples": [
+            15.9161,
+            10.661600000000002,
+            7.956600000000002,
+            18.7106,
+            26.6379,
+            9.2791,
+            7.206700000000001,
+            9.701699999999999,
+            26.238300000000002,
+            12.4053,
+            7.4333,
+            10.3075,
+            8.9419,
+            8.973500000000001,
+            7.153499999999999,
+            10.3705,
+            7.7631,
+            9.835899999999999,
+            11.276900000000001,
+            10.251299999999999
+          ],
+          "appendMs": 62.2312,
+          "compactMs": 447.5626,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 1,
+          "buildMs": 522.3629,
+          "saveMs": 136.0009,
+          "loadMs": 151.7797,
+          "incrementalMs": 7.8773,
+          "incrementalSamples": [
+            6.9132,
+            4.9701,
+            10.2289,
+            7.0444,
+            8.6336,
+            7.8773,
+            5.9183,
+            7.8645,
+            4.9202,
+            10.5389,
+            5.7723,
+            8.0829,
+            5.5419,
+            9.2636,
+            7.2528,
+            10.6064,
+            7.129,
+            14.0234,
+            8.5604,
+            15.2804
+          ],
+          "readSamples": [
+            3.1549,
+            2.7426,
+            5.3047,
+            2.5967,
+            1.952,
+            3.0513,
+            1.9894,
+            3.917,
+            1.9484,
+            2.7186,
+            2.0507,
+            2.8069,
+            2.3497,
+            3.1346,
+            3.1771,
+            2.6914,
+            2.4398,
+            2.6373,
+            1.9881,
+            2.9949
+          ],
+          "applySamples": [
+            3.7582999999999998,
+            2.2275000000000005,
+            4.924199999999999,
+            4.447700000000001,
+            6.6815999999999995,
+            4.8260000000000005,
+            3.9289000000000005,
+            3.9475,
+            2.9718000000000004,
+            7.8203,
+            3.7216000000000005,
+            5.276,
+            3.1922,
+            6.1290000000000004,
+            4.075699999999999,
+            7.915000000000001,
+            4.6892,
+            11.3861,
+            6.572299999999999,
+            12.2855
+          ],
+          "appendMs": 9.9774,
+          "compactMs": 446.4922,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 2,
+          "buildMs": 520.6173,
+          "saveMs": 74.3498,
+          "loadMs": 85.0077,
+          "incrementalMs": 7.5415,
+          "incrementalSamples": [
+            6.6194,
+            4.4322,
+            8.1985,
+            11.3484,
+            26.3737,
+            4.8272,
+            9.3612,
+            5.2239,
+            8.5225,
+            5.1934,
+            9.2467,
+            7.1057,
+            8.7993,
+            4.9524,
+            8.9419,
+            4.6871,
+            9.2524,
+            4.5397,
+            7.5415,
+            7.3579
+          ],
+          "readSamples": [
+            2.9252,
+            2.4347,
+            4.7586,
+            3.2322,
+            9.2696,
+            2.6436,
+            4.9587,
+            3.0596,
+            4.5444,
+            2.9505,
+            4.5953,
+            4.1819,
+            5.2579,
+            2.8213,
+            5.5277,
+            2.6414,
+            5.9316,
+            2.4866,
+            4.4518,
+            2.5841
+          ],
+          "applySamples": [
+            3.6942,
+            1.9975,
+            3.439899999999999,
+            8.1162,
+            17.1041,
+            2.1836,
+            4.4025,
+            2.1643000000000003,
+            3.9781000000000004,
+            2.2428999999999997,
+            4.651400000000001,
+            2.9238,
+            3.5414000000000003,
+            2.1311,
+            3.4142,
+            2.0457,
+            3.3207999999999993,
+            2.0530999999999997,
+            3.0896999999999997,
+            4.7738
+          ],
+          "appendMs": 7.6546,
+          "compactMs": 472.0841,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 3,
+          "buildMs": 355.5793,
+          "saveMs": 80.8109,
+          "loadMs": 94.2527,
+          "incrementalMs": 8.4255,
+          "incrementalSamples": [
+            8.4613,
+            6.241,
+            13.2735,
+            7.0835,
+            10.65,
+            6.006,
+            9.6273,
+            5.3663,
+            9.4483,
+            5.3043,
+            9.1288,
+            5.4655,
+            11.7367,
+            5.1532,
+            8.8921,
+            5.5035,
+            9.1517,
+            5.9373,
+            8.4255,
+            5.655
+          ],
+          "readSamples": [
+            4.2232,
+            3.2542,
+            8.7601,
+            4.3651,
+            6.6644,
+            3.0775,
+            5.8154,
+            2.9076,
+            5.5405,
+            2.9485,
+            5.1853,
+            2.9266,
+            7.2794,
+            2.9975,
+            5.059,
+            3.1911,
+            5.0808,
+            3.7368,
+            4.8102,
+            2.8844
+          ],
+          "applySamples": [
+            4.238099999999999,
+            2.9867999999999997,
+            4.513400000000001,
+            2.7184,
+            3.9856000000000007,
+            2.9285,
+            3.8118999999999996,
+            2.4587,
+            3.9078,
+            2.3557999999999995,
+            3.9435000000000002,
+            2.5388999999999995,
+            4.457300000000001,
+            2.1557,
+            3.833099999999999,
+            2.3124,
+            4.0709,
+            2.2004999999999995,
+            3.6152999999999995,
+            2.7706000000000004
+          ],
+          "appendMs": 3.7887,
+          "compactMs": 451.4069,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 4,
+          "buildMs": 441.7511,
+          "saveMs": 65.6822,
+          "loadMs": 80.4447,
+          "incrementalMs": 6.26,
+          "incrementalSamples": [
+            6.26,
+            4.6774,
+            8.6166,
+            5.2514,
+            8.4162,
+            5.613,
+            7.5395,
+            5.1522,
+            8.3191,
+            4.7006,
+            8.8549,
+            5.1107,
+            8.1678,
+            5.0962,
+            8.4431,
+            4.8351,
+            7.0935,
+            4.5515,
+            7.6762,
+            4.8366
+          ],
+          "readSamples": [
+            2.946,
+            2.6508,
+            5.3535,
+            3.1707,
+            4.5037,
+            3.0985,
+            4.5587,
+            2.8576,
+            5.2789,
+            2.6318,
+            4.9853,
+            2.7749,
+            4.9237,
+            3.1518,
+            5.5284,
+            2.7157,
+            4.1807,
+            2.5959,
+            4.697,
+            2.6349
+          ],
+          "applySamples": [
+            3.3139999999999996,
+            2.0265999999999997,
+            3.2630999999999997,
+            2.0807,
+            3.9124999999999996,
+            2.5145000000000004,
+            2.9808000000000003,
+            2.2945999999999995,
+            3.0402000000000005,
+            2.0687999999999995,
+            3.869600000000001,
+            2.3357999999999994,
+            3.2440999999999995,
+            1.9443999999999995,
+            2.914699999999999,
+            2.1193999999999997,
+            2.9128,
+            1.9556,
+            2.9791999999999996,
+            2.2016999999999998
+          ],
+          "appendMs": 5.0714,
+          "compactMs": 452.841,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        }
+      ]
+    },
+    "normalizedV1BytesIdentical": true,
+    "after": {
+      "fixture": "201001 records from deterministic cache reconciliation; 2000 USN renames",
+      "physicalDiskThroughputMeasured": false,
+      "remapAfterSave": true,
+      "runs": [
+        {
+          "pass": 0,
+          "buildMs": 874.9177,
+          "saveMs": 81.3022,
+          "loadMs": 25.4203,
+          "incrementalMs": 18.679,
+          "incrementalSamples": [
+            28.8859,
+            19.3789,
+            25.8237,
+            30.4057,
+            41.1381,
+            19.5998,
+            20.5653,
+            18.679,
+            22.8993,
+            21.5191,
+            18.4997,
+            14.0073,
+            15.1651,
+            13.2997,
+            17.4622,
+            13.2605,
+            17.8229,
+            12.1643,
+            16.7084,
+            15.5035
+          ],
+          "readSamples": [
+            15.9134,
+            11.8556,
+            14.2275,
+            12.9415,
+            16.4682,
+            12.9462,
+            12.7985,
+            11.1938,
+            13.5695,
+            12.126,
+            10.3539,
+            7.8132,
+            8.5356,
+            5.9444,
+            8.4009,
+            6.2218,
+            6.277,
+            5.4188,
+            6.9677,
+            8.5053
+          ],
+          "applySamples": [
+            12.9725,
+            7.523300000000001,
+            11.5962,
+            17.464199999999998,
+            24.669900000000002,
+            6.653599999999999,
+            7.7668,
+            7.485199999999999,
+            9.3298,
+            9.393100000000002,
+            8.145800000000001,
+            6.194100000000001,
+            6.6295,
+            7.3553,
+            9.0613,
+            7.0387,
+            11.5459,
+            6.745500000000001,
+            9.7407,
+            6.998200000000001
+          ],
+          "appendMs": 63.0566,
+          "compactMs": 435.8071,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 1,
+          "buildMs": 333.6202,
+          "saveMs": 71.1328,
+          "loadMs": 22.5979,
+          "incrementalMs": 10.7491,
+          "incrementalSamples": [
+            11.5238,
+            9.2942,
+            15.3005,
+            10.7491,
+            15.9261,
+            9.7279,
+            13.1472,
+            11.0052,
+            14.5615,
+            12.6415,
+            12.8604,
+            10.4132,
+            14.0396,
+            6.9893,
+            9.7764,
+            8.0961,
+            9.2833,
+            6.2214,
+            8.7299,
+            5.4466
+          ],
+          "readSamples": [
+            5.4323,
+            5.2201,
+            8.645,
+            6.2687,
+            7.1752,
+            5.3748,
+            8.0954,
+            6.6737,
+            6.9753,
+            4.8791,
+            5.6993,
+            5.033,
+            5.3899,
+            3.171,
+            3.6909,
+            3.3603,
+            3.1175,
+            2.6648,
+            2.7061,
+            1.9371
+          ],
+          "applySamples": [
+            6.0915,
+            4.0741,
+            6.6555,
+            4.4804,
+            8.7509,
+            4.3531,
+            5.0518,
+            4.3315,
+            7.586200000000001,
+            7.7624,
+            7.1611,
+            5.380199999999999,
+            8.6497,
+            3.8183000000000002,
+            6.085500000000001,
+            4.735799999999999,
+            6.165800000000001,
+            3.5566,
+            6.0238000000000005,
+            3.5095
+          ],
+          "appendMs": 9.3607,
+          "compactMs": 436.5632,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 2,
+          "buildMs": 324.5853,
+          "saveMs": 60.5313,
+          "loadMs": 21.3177,
+          "incrementalMs": 7.1696,
+          "incrementalSamples": [
+            8.1499,
+            6.8536,
+            7.6449,
+            13.5701,
+            31.4783,
+            4.4675,
+            7.5043,
+            5.0311,
+            6.5594,
+            6.1045,
+            8.1154,
+            5.1612,
+            7.1696,
+            4.4631,
+            7.4708,
+            5.1662,
+            6.7755,
+            7.1924,
+            4.861,
+            7.9447
+          ],
+          "readSamples": [
+            5.1682,
+            2.8014,
+            4.571,
+            1.9307,
+            7.0758,
+            1.9229,
+            2.4225,
+            2.1894,
+            2.3692,
+            2.4517,
+            2.3997,
+            2.0685,
+            2.5932,
+            1.8086,
+            2.225,
+            2.159,
+            2.3862,
+            3.4523,
+            2.5686,
+            4.7588
+          ],
+          "applySamples": [
+            2.981700000000001,
+            4.0522,
+            3.0739,
+            11.6394,
+            24.4025,
+            2.5446,
+            5.081799999999999,
+            2.8417000000000003,
+            4.1902,
+            3.6527999999999996,
+            5.715699999999999,
+            3.0927000000000002,
+            4.5764,
+            2.6544999999999996,
+            5.245799999999999,
+            3.0072,
+            4.3893,
+            3.7401,
+            2.2923999999999998,
+            3.1859
+          ],
+          "appendMs": 7.1086,
+          "compactMs": 264.0271,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 3,
+          "buildMs": 465.1475,
+          "saveMs": 72.7027,
+          "loadMs": 21.5897,
+          "incrementalMs": 7.0909,
+          "incrementalSamples": [
+            7.2376,
+            4.9595,
+            7.5868,
+            5.147,
+            7.5755,
+            4.9299,
+            7.1311,
+            5.1887,
+            7.3658,
+            5.1356,
+            7.38,
+            5.1387,
+            4.4993,
+            7.0909,
+            5.3582,
+            7.5362,
+            4.3182,
+            8.3504,
+            5.09,
+            10.0738
+          ],
+          "readSamples": [
+            3.526,
+            2.167,
+            2.4092,
+            2.1556,
+            3.3384,
+            1.9187,
+            2.5366,
+            2.0271,
+            2.4504,
+            2.3952,
+            3.0038,
+            2.128,
+            2.5702,
+            4.3837,
+            3.0999,
+            4.7582,
+            2.406,
+            4.9474,
+            2.6725,
+            5.4618
+          ],
+          "applySamples": [
+            3.7116,
+            2.7925000000000004,
+            5.1776,
+            2.9914,
+            4.2371,
+            3.0111999999999997,
+            4.5945,
+            3.1616,
+            4.9154,
+            2.7404,
+            4.3762,
+            3.0107,
+            1.9291,
+            2.7072000000000003,
+            2.2583,
+            2.7779999999999996,
+            1.9122,
+            3.4030000000000005,
+            2.4175,
+            4.612
+          ],
+          "appendMs": 3.8298,
+          "compactMs": 226.4203,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        },
+        {
+          "pass": 4,
+          "buildMs": 293.2016,
+          "saveMs": 61.038,
+          "loadMs": 21.183,
+          "incrementalMs": 6.128,
+          "incrementalSamples": [
+            7.5124,
+            4.6766,
+            8.8948,
+            5.5059,
+            4.1061,
+            8.1605,
+            4.4089,
+            6.5021,
+            4.7982,
+            8.0535,
+            4.3344,
+            8.5941,
+            3.9783,
+            8.7491,
+            5.0014,
+            7.0206,
+            6.128,
+            6.2369,
+            4.2669,
+            6.0966
+          ],
+          "readSamples": [
+            4.0256,
+            1.868,
+            2.4548,
+            2.2172,
+            2.3197,
+            4.3824,
+            2.5575,
+            3.9199,
+            2.8732,
+            5.3298,
+            2.2101,
+            5.7778,
+            2.2186,
+            4.9662,
+            3.1837,
+            3.8536,
+            4.0975,
+            3.7518,
+            2.5072,
+            3.3787
+          ],
+          "applySamples": [
+            3.4868000000000006,
+            2.8085999999999993,
+            6.4399999999999995,
+            3.2886999999999995,
+            1.7863999999999995,
+            3.778100000000001,
+            1.8514,
+            2.5822000000000003,
+            1.9249999999999994,
+            2.7237,
+            2.1242999999999994,
+            2.816299999999999,
+            1.7597,
+            3.7829000000000006,
+            1.8177000000000003,
+            3.167,
+            2.0305,
+            2.4851000000000005,
+            1.7596999999999996,
+            2.7178999999999998
+          ],
+          "appendMs": 4.3676,
+          "compactMs": 228.6667,
+          "fileCount": 201001,
+          "changedRecords": 2000,
+          "responseSha256": "1853b6e5c4d88f6fa3fb23ece69938503ca7c01711e9e5b1b76f2f99bee8330c"
+        }
+      ]
+    },
+    "oldCliReadsNewSnapshot": true,
+    "phaseMedians": [
+      {
+        "stage": "buildMs",
+        "beforeMs": 481.18420000000003,
+        "afterMs": 329.10275
+      },
+      {
+        "stage": "saveMs",
+        "beforeMs": 77.58035000000001,
+        "afterMs": 66.08539999999999
+      },
+      {
+        "stage": "loadMs",
+        "beforeMs": 89.6302,
+        "afterMs": 21.453699999999998
+      },
+      {
+        "stage": "incrementalMs",
+        "beforeMs": 7.7094000000000005,
+        "afterMs": 7.13025
+      },
+      {
+        "stage": "appendMs",
+        "beforeMs": 6.3629999999999995,
+        "afterMs": 5.7381
+      },
+      {
+        "stage": "compactMs",
+        "beforeMs": 452.12395000000004,
+        "afterMs": 246.3469
+      }
+    ],
+    "measuredPhaseMediansDidNotRegress": true
+  },
+  "isolatedGui": {
+    "scenario": "isolated GUI after nd and Chinese query, no forced GC",
+    "version": "0.2.2.0",
+    "privateBytes": 296284160,
+    "workingSetBytes": 844173312,
+    "peakWorkingSetBytes": 844206080,
+    "cpuSeconds": 19.375,
+    "autoUpdate": false,
+    "productionInstanceReplaced": false,
+    "axEnglishAndChineseResultsObserved": true,
+    "physicalImeMeasured": false
+  },
+  "limits": [
+    "Working sets include file-backed shared pages and cannot be added as unique physical memory.",
+    "Only diagnostic probes force GC; the product does not trim working sets or force collections.",
+    "Indexing replay uses identical cache records and USN input, not physical full-MFT scan throughput.",
+    "GUI uses isolated state and copied indexes; production instance was not replaced.",
+    "Timing samples describe this machine and do not guarantee every device or query is faster."
+  ]
+}

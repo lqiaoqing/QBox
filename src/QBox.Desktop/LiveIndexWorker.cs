@@ -105,7 +105,11 @@ internal static class LiveIndexWorker
                         catch (InvalidDataException) { index = builder.Build(new ProgressSink(progress), token); built = true; }
                     }
                     else { index = builder.Build(new ProgressSink(progress), token); built = true; }
-                    if (built) VolumeIndexStore.Save(path, index, token);
+                    if (built)
+                    {
+                        VolumeIndexStore.Save(path, index, token);
+                        index = VolumeIndexStore.Load(path, token);
+                    }
                     View = new(index);
                     long cursor = 0;
                     try
@@ -119,7 +123,9 @@ internal static class LiveIndexWorker
                         // 损坏日志不直接丢弃，先从完整快照的 USN 追齐后再替换，避免漏掉删除事件。
                         try { index = builder.Synchronize(index, new ProgressSink(progress), token); }
                         catch (JournalGapException) { index = builder.Build(new ProgressSink(progress), token); }
-                        VolumeIndexStore.Save(path, index, token); IndexChangeLog.Reset(_log, index); View = new(index);
+                        VolumeIndexStore.Save(path, index, token);
+                        index = VolumeIndexStore.Load(path, token);
+                        IndexChangeLog.Reset(_log, index); View = new(index);
                     }
                 }
                 catch { _volume.Dispose(); throw; }
@@ -157,6 +163,8 @@ internal static class LiveIndexWorker
             }
             // 先原子替换完整基础索引，再切换日志身份；读端在间隙继续使用上个完整视图。
             VolumeIndexStore.Save(_path, index, token);
+            // 初建、恢复和合并后都转回共享视图，避免工作进程永久保留构建用的大数组。
+            index = VolumeIndexStore.Load(_path, token);
             IndexChangeLog.Reset(_log, index);
             View = new(index); _savedAt = DateTimeOffset.UtcNow;
         }

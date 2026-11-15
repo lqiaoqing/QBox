@@ -12,14 +12,44 @@ namespace QBox.Windows.Indexing;
 public sealed record IndexedName(FileReference Parent, string Name, byte Namespace, uint Attributes);
 public sealed record IndexedFile(FileReference File, bool IsDirectory, long? LastUsn, ushort LinkCount,
     IReadOnlyList<IndexedName> Names);
-internal readonly record struct IndexNode(ulong File, int FirstName, int NameCount, bool IsDirectory, long? LastUsn, ushort LinkCount);
-internal readonly record struct IndexName(int Parent, int Offset, int Length, byte Namespace, uint Attributes);
+// 字段偏移与 v1 磁盘布局一致，映射读取直接取值，避免每个候选重建 Nullable 等中间字段。
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 28)]
+internal readonly struct IndexNode
+{
+    [FieldOffset(0)] public readonly ulong File;
+    [FieldOffset(8)] public readonly int FirstName;
+    [FieldOffset(12)] public readonly int NameCount;
+    [FieldOffset(16)] private readonly byte _directory;
+    [FieldOffset(17)] private readonly byte _hasUsn;
+    [FieldOffset(18)] private readonly long _usn;
+    [FieldOffset(26)] public readonly ushort LinkCount;
+    public bool IsDirectory => _directory != 0;
+    public long? LastUsn => _hasUsn != 0 ? _usn : null;
+    public IndexNode(ulong file, int firstName, int nameCount, bool isDirectory, long? lastUsn, ushort linkCount)
+    {
+        File = file; FirstName = firstName; NameCount = nameCount;
+        _directory = isDirectory ? (byte)1 : (byte)0; _hasUsn = lastUsn.HasValue ? (byte)1 : (byte)0;
+        _usn = lastUsn ?? 0; LinkCount = linkCount;
+    }
+}
+
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 17)]
+internal readonly struct IndexName
+{
+    [FieldOffset(0)] public readonly int Parent;
+    [FieldOffset(4)] public readonly int Offset;
+    [FieldOffset(8)] public readonly int Length;
+    [FieldOffset(12)] public readonly byte Namespace;
+    [FieldOffset(13)] public readonly uint Attributes;
+    public IndexName(int parent, int offset, int length, byte nameSpace, uint attributes)
+    { Parent = parent; Offset = offset; Length = length; Namespace = nameSpace; Attributes = attributes; }
+}
 
 public sealed class VolumeIndex
 {
-    internal IndexNode[] Nodes { get; }
-    internal IndexName[] Names { get; }
-    internal string Text { get; }
+    internal IndexNodeTable Nodes { get; }
+    internal IndexNameTable Names { get; }
+    internal ReadOnlyMemory<char> Text { get; }
     internal int RootNode { get; }
     public NtfsGeometry Geometry { get; }
     public JournalCheckpoint Checkpoint { get; }
@@ -32,6 +62,7 @@ public sealed class VolumeIndex
 
     public void PrepareSearch(CancellationToken cancellationToken = default)
     {
+        using var textLease = Text.Pin();
         lock (_presenceLock)
         {
             _presence ??= new NamePresenceIndex(this, cancellationToken);
@@ -48,6 +79,10 @@ public sealed class VolumeIndex
 
     internal VolumeIndex(NtfsGeometry geometry, JournalCheckpoint checkpoint, DateTimeOffset createdAt,
         IndexNode[] nodes, IndexName[] names, string text)
+        : this(geometry, checkpoint, createdAt, new IndexNodeTable(nodes), new IndexNameTable(names), text.AsMemory()) { }
+
+    internal VolumeIndex(NtfsGeometry geometry, JournalCheckpoint checkpoint, DateTimeOffset createdAt,
+        IndexNodeTable nodes, IndexNameTable names, ReadOnlyMemory<char> text, CancellationToken cancellationToken = default)
     {
         Geometry = geometry;
         Checkpoint = checkpoint;
@@ -55,8 +90,11 @@ public sealed class VolumeIndex
         Nodes = nodes;
         Names = names;
         Text = text;
-        RootNode = Array.FindIndex(nodes, n => (n.File & 0x0000ffffffffffffUL) == 5);
-        Validate();
+        using var textLease = Text.Pin();
+        RootNode = -1;
+        for (var i = 0; i < nodes.Length; i++)
+            if ((nodes[i].File & 0x0000ffffffffffffUL) == 5) { RootNode = i; break; }
+        Validate(cancellationToken);
     }
 
     public static VolumeIndex Create(NtfsGeometry geometry, JournalCheckpoint checkpoint,
@@ -95,13 +133,14 @@ public sealed class VolumeIndex
 
     public IEnumerable<IndexedFile> ExportFiles()
     {
+        using var textLease = Text.Pin();
         foreach (var node in Nodes)
         {
             var names = new IndexedName[node.NameCount];
             for (var i = 0; i < names.Length; i++)
             {
                 var name = Names[node.FirstName + i];
-                names[i] = new(new(Nodes[name.Parent].File), Text.Substring(name.Offset, name.Length), name.Namespace, name.Attributes);
+                names[i] = new(new(Nodes[name.Parent].File), Text.Slice(name.Offset, name.Length).ToString(), name.Namespace, name.Attributes);
             }
             yield return new(new(node.File), node.IsDirectory, node.LastUsn, node.LinkCount, names);
         }
@@ -109,6 +148,7 @@ public sealed class VolumeIndex
 
     public IndexedFile? FindFile(FileReference id)
     {
+        using var textLease = Text.Pin();
         if (id.High != 0) return null;
         var low = 0; var high = Nodes.Length - 1;
         while (low <= high)
@@ -121,7 +161,7 @@ public sealed class VolumeIndex
             for (var i = 0; i < names.Length; i++)
             {
                 var name = Names[node.FirstName + i];
-                names[i] = new(new(Nodes[name.Parent].File), Text.Substring(name.Offset, name.Length), name.Namespace, name.Attributes);
+                names[i] = new(new(Nodes[name.Parent].File), Text.Slice(name.Offset, name.Length).ToString(), name.Namespace, name.Attributes);
             }
             return new(id, node.IsDirectory, node.LastUsn, node.LinkCount, names);
         }
@@ -130,6 +170,7 @@ public sealed class VolumeIndex
 
     public IEnumerable<SearchCandidate> Candidates(string query, CancellationToken cancellationToken = default, IReadOnlySet<string>? representedExecutables = null)
     {
+        using var textLease = Text.Pin();
         var prepared = new FuzzyMatcher().Prepare(query);
         for (var nodeIndex = 0; nodeIndex < Nodes.Length; nodeIndex++)
         {
@@ -140,19 +181,19 @@ public sealed class VolumeIndex
             {
                 var name = Names[i];
                 if (name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
-                var raw = Text.AsSpan(name.Offset, name.Length);
+                var raw = Text.Span.Slice(name.Offset, name.Length);
                 var shortcut = !node.IsDirectory && raw.Length > 4 && raw.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase);
                 var executable = !node.IsDirectory && raw.Length > 4 && raw.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
                 var friendlyLength = shortcut || executable ? name.Length - 4 : name.Length;
                 var friendlyMatch = prepared.CanMatch(raw[..friendlyLength], cancellationToken);
                 string display;
                 if (friendlyMatch || ((shortcut || executable) && prepared.CanMatch(raw, cancellationToken)))
-                    display = Text.Substring(name.Offset, friendlyMatch ? friendlyLength : name.Length);
+                    display = Text.Slice(name.Offset, friendlyMatch ? friendlyLength : name.Length).ToString();
                 else
                 {
                     var alias = MatchingDosAlias(node, name.Parent, prepared, cancellationToken);
                     if (alias < 0) continue;
-                    display = Text.Substring(Names[alias].Offset, Names[alias].Length);
+                    display = Text.Slice(Names[alias].Offset, Names[alias].Length).ToString();
                 }
                 // 一个文件的不同硬链接保留为不同路径；文件序列号防止复用后的记录继承旧目标身份。
                 var id = $"ntfs:{Geometry.Serial:x16}:{node.File:x16}:{Nodes[name.Parent].File:x16}:{NameIdentity(raw)}";
@@ -162,6 +203,30 @@ public sealed class VolumeIndex
                 yield return new(id, display, PathFor(i), node.IsDirectory ? SearchItemKind.Directory :
                     shortcut ? SearchItemKind.Shortcut : application ? SearchItemKind.Application : SearchItemKind.File,
                     IsApplicationEntry: application, IsDirectExecutable: application);
+            }
+        }
+    }
+
+    internal IEnumerable<SearchCandidate> ShortcutCandidates(CancellationToken cancellationToken, LiveVolumeIndex? live = null, bool overlay = false, bool resolvePaths = false)
+    {
+        using var textLease = Text.Pin();
+        var query = new FuzzyMatcher().Prepare(".lnk");
+        for (var nodeIndex = 0; nodeIndex < Nodes.Length; nodeIndex++)
+        {
+            if ((nodeIndex & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            var node = Nodes[nodeIndex];
+            if (node.IsDirectory || live != null && !(overlay ? live.IncludesOverlay(node.File) : live.IncludesBase(node.File))) continue;
+            for (var i = node.FirstName; i < node.FirstName + node.NameCount; i++)
+            {
+                var name = Names[i];
+                var raw = Text.Span.Slice(name.Offset, name.Length);
+                if (!raw.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) || name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
+                var path = resolvePaths ? live!.PathFor(this, i) : PathFor(i);
+                if (path == null) continue;
+                // 保留原 .lnk 查询对名称和身份的选择，但仅物化真正的快捷方式，不收集全盘模糊命中。
+                var display = query.CanMatch(raw[..^4], cancellationToken) ? raw[..^4].ToString() : raw.ToString();
+                var id = $"ntfs:{Geometry.Serial:x16}:{node.File:x16}:{Nodes[name.Parent].File:x16}:{NameIdentity(raw)}";
+                yield return new(id, display, path, SearchItemKind.Shortcut);
             }
         }
     }
@@ -179,7 +244,7 @@ public sealed class VolumeIndex
         for (var i = node.FirstName; i < node.FirstName + node.NameCount; i++)
         {
             var name = Names[i];
-            if (name.Parent == parent && name.Namespace == 2 && query.CanMatch(Text.AsSpan(name.Offset, name.Length), cancellationToken)) return i;
+            if (name.Parent == parent && name.Namespace == 2 && query.CanMatch(Text.Span.Slice(name.Offset, name.Length), cancellationToken)) return i;
         }
         return -1;
     }
@@ -199,6 +264,7 @@ public sealed class VolumeIndex
         ISet<string>? replacedShortcutIds, IReadOnlySet<string>? representedExecutables,
         LiveVolumeIndex? live, bool overlay, bool resolvePaths)
     {
+        using var textLease = Text.Pin();
         cancellationToken.ThrowIfCancellationRequested();
         var source = new IndexSearchSource(this, history, resolvePaths ? live : null);
         foreach (var i in SearchNames(collector.Query.Text, cancellationToken))
@@ -210,7 +276,7 @@ public sealed class VolumeIndex
             if (live != null && !(overlay ? live.IncludesOverlay(node.File) : live.IncludesBase(node.File))) continue;
             var name = Names[i];
             if (name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
-            var raw = Text.AsMemory(name.Offset, name.Length);
+            var raw = Text.Slice(name.Offset, name.Length);
             var shortcut = !node.IsDirectory && name.Length > 4 && raw.Span.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase);
             var executable = !node.IsDirectory && name.Length > 4 && raw.Span.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
             var friendly = shortcut || executable ? raw[..^4] : raw;
@@ -222,11 +288,12 @@ public sealed class VolumeIndex
             {
                 var alias = MatchingDosAlias(node, name.Parent, collector.Query, cancellationToken);
                 if (alias < 0) continue;
-                display = Text.AsMemory(Names[alias].Offset, Names[alias].Length);
+                display = Text.Slice(Names[alias].Offset, Names[alias].Length);
             }
             // 无开始菜单入口的便携 EXE 仍可直接启动；包目录中的 EXE 由注册入口负责激活。
-            var livePath = resolvePaths ? live!.PathFor(this, i) : null;
-            if (resolvePaths && livePath == null) continue;
+            if (resolvePaths && !live!.HasPath(this, i)) continue;
+            // 普通候选只验证父链；完整路径留给 EXE 来源判定和最终展示的少量结果。
+            var livePath = resolvePaths && executable ? live!.PathFor(this, i) : null;
             var application = executable && friendlyMatch && !collector.Query.Text.Contains(".exe", StringComparison.OrdinalIgnoreCase) &&
                 !(resolvePaths ? InPackagePath(livePath!) : InPackageDirectory(name.Parent)) && collector.Query.Score(display.Span, cancellationToken) > 1 &&
                 representedExecutables?.Contains(livePath ?? PathFor(i)) != true;
@@ -241,7 +308,7 @@ public sealed class VolumeIndex
             var node = Nodes[entry.Node]; var name = Names[entry.Name];
             if (entry.Node == RootNode || live != null && !(overlay ? live.IncludesOverlay(node.File) : live.IncludesBase(node.File))) continue;
             if (name.Namespace == 2 && HasLongName(node, name.Parent)) continue;
-            var raw = Text.AsMemory(name.Offset, name.Length);
+            var raw = Text.Slice(name.Offset, name.Length);
             var display = entry.Prepared.Text.AsMemory();
             // 与字面入口互斥，包含 DOS 别名的目标也只统计一次。
             if (collector.Query.CanMatch(display.Span, cancellationToken) || collector.Query.CanMatch(raw.Span, cancellationToken) ||
@@ -269,11 +336,11 @@ public sealed class VolumeIndex
         while (parent != RootNode)
         {
             var name = Names[Nodes[parent].FirstName];
-            if (Text.AsSpan(name.Offset, name.Length).Equals("WindowsApps", StringComparison.OrdinalIgnoreCase))
+            if (Text.Span.Slice(name.Offset, name.Length).Equals("WindowsApps", StringComparison.OrdinalIgnoreCase))
             {
                 if (name.Parent == RootNode) return true;
                 var container = Names[Nodes[name.Parent].FirstName];
-                if (container.Parent == RootNode && Text.AsSpan(container.Offset, container.Length).Equals("Program Files", StringComparison.OrdinalIgnoreCase)) return true;
+                if (container.Parent == RootNode && Text.Span.Slice(container.Offset, container.Length).Equals("Program Files", StringComparison.OrdinalIgnoreCase)) return true;
             }
             parent = name.Parent;
         }
@@ -305,7 +372,7 @@ public sealed class VolumeIndex
         public HistorySignals Signals(IndexNode node, IndexName name)
         {
             if (!_history.TryGetValue((node.File, _index.Nodes[name.Parent].File), out var list)) return default;
-            var hash = NameIdentity(_index.Text.AsSpan(name.Offset, name.Length));
+            var hash = NameIdentity(_index.Text.Span.Slice(name.Offset, name.Length));
             foreach (var entry in list) if (entry.Hash == hash) return entry.Signals;
             return default;
         }
@@ -318,15 +385,18 @@ public sealed class VolumeIndex
 
         public string Identity(ulong key)
         {
+            using var textLease = _index.Text.Pin();
             var node = _index.Nodes[(int)(key >> 32)];
             var name = _index.Names[(int)(uint)key];
             return $"ntfs:{_index.Geometry.Serial:x16}:{node.File:x16}:{_index.Nodes[name.Parent].File:x16}:" +
-                NameIdentity(_index.Text.AsSpan(name.Offset, name.Length));
+                NameIdentity(_index.Text.Span.Slice(name.Offset, name.Length));
         }
 
         public int CompareIdentity(ulong key, IUniqueSearchSource other, ulong otherKey)
         {
             if (other is not IndexSearchSource native) return StringComparer.Ordinal.Compare(Identity(key), other.Identity(otherKey));
+            using var leftLease = _index.Text.Pin();
+            using var rightLease = native._index.Text.Pin();
             var compare = _index.Geometry.Serial.CompareTo(native._index.Geometry.Serial);
             if (compare != 0) return compare;
             compare = _index.Nodes[(int)(key >> 32)].File.CompareTo(native._index.Nodes[(int)(otherKey >> 32)].File);
@@ -335,13 +405,14 @@ public sealed class VolumeIndex
             var otherName = native._index.Names[(int)(uint)otherKey];
             compare = _index.Nodes[name.Parent].File.CompareTo(native._index.Nodes[otherName.Parent].File);
             if (compare != 0) return compare;
-            return StringComparer.Ordinal.Compare(NameIdentity(_index.Text.AsSpan(name.Offset, name.Length)),
-                NameIdentity(native._index.Text.AsSpan(otherName.Offset, otherName.Length)));
+            return StringComparer.Ordinal.Compare(NameIdentity(_index.Text.Span.Slice(name.Offset, name.Length)),
+                NameIdentity(native._index.Text.Span.Slice(otherName.Offset, otherName.Length)));
         }
     }
 
     private string PathFor(int nameIndex)
     {
+        using var textLease = Text.Pin();
         var parts = new List<int> { nameIndex };
         var parent = Names[nameIndex].Parent;
         while (parent != RootNode)
@@ -354,26 +425,28 @@ public sealed class VolumeIndex
         for (var i = parts.Count - 1; i >= 0; i--)
         {
             var part = Names[parts[i]];
-            result.Append(Text.AsSpan(part.Offset, part.Length));
+            result.Append(Text.Span.Slice(part.Offset, part.Length));
             if (i != 0) result.Append('\\');
         }
         return result.ToString();
     }
 
-    private void Validate()
+    private void Validate(CancellationToken cancellationToken)
     {
         if (Geometry.Root.Length != 3 || !char.IsAsciiLetterUpper(Geometry.Root[0]) || Geometry.Root[1..] != @":\" ||
             RootNode < 0 || !Nodes[RootNode].IsDirectory || Checkpoint.NextUsn < 0)
             throw new InvalidDataException("索引卷身份或根目录无效");
-        var physical = new HashSet<ulong>();
+        // 校验物理编号仍然完整；紧凑排序数组替代数百万项 HashSet 的临时容量开销。
+        ValidatePhysicalRecords(cancellationToken);
         var end = 0;
         ulong? previousFile = null;
         foreach (var node in Nodes)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (previousFile is { } previous && node.File <= previous)
                 throw new InvalidDataException("索引文件身份顺序无效");
             previousFile = node.File;
-            if (!physical.Add(node.File & 0x0000ffffffffffffUL) || node.FirstName != end || node.NameCount <= 0 ||
+            if (node.FirstName != end || node.NameCount <= 0 ||
                 node.NameCount > Names.Length - end)
                 throw new InvalidDataException("索引文件记录或名称范围无效");
             end += node.NameCount;
@@ -382,11 +455,12 @@ public sealed class VolumeIndex
         var textEnd = 0;
         for (var i = 0; i < Names.Length; i++)
         {
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
             var name = Names[i];
             if ((uint)name.Parent >= Nodes.Length || !Nodes[name.Parent].IsDirectory || name.Namespace > 3 ||
                 name.Offset != textEnd || name.Length <= 0 || name.Length > Text.Length - textEnd)
                 throw new InvalidDataException("索引名称或父目录无效");
-            var value = Text.AsSpan(name.Offset, name.Length);
+            var value = Text.Span.Slice(name.Offset, name.Length);
             if (value.ContainsAny('\\', '/', '\0') || value.SequenceEqual(".."))
                 throw new InvalidDataException("索引名称包含非法路径分量");
             textEnd += name.Length;
@@ -395,9 +469,11 @@ public sealed class VolumeIndex
         // 每个名称均验证到根目录，重命名、父目录删除和记录复用不能留下可打开的伪路径。
         var state = new byte[Nodes.Length];
         state[RootNode] = 2;
+        var chain = new List<int>();
         for (var i = 0; i < Nodes.Length; i++)
         {
-            var chain = new List<int>();
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            chain.Clear();
             var current = i;
             while (state[current] == 0)
             {
@@ -410,7 +486,21 @@ public sealed class VolumeIndex
         }
         for (var i = 0; i < Nodes.Length; i++)
             for (var j = Nodes[i].FirstName; j < Nodes[i].FirstName + Nodes[i].NameCount; j++)
-                if (i != RootNode && (Names[j].Parent == i || Text.AsSpan(Names[j].Offset, Names[j].Length).SequenceEqual(".")))
+                if (i != RootNode && (Names[j].Parent == i || Text.Span.Slice(Names[j].Offset, Names[j].Length).SequenceEqual(".")))
                     throw new InvalidDataException("非根目录名称不能引用自身或使用点目录");
+    }
+
+    private void ValidatePhysicalRecords(CancellationToken cancellationToken)
+    {
+        var physical = new ulong[Nodes.Length];
+        for (var i = 0; i < physical.Length; i++)
+        {
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            physical[i] = Nodes[i].File & 0x0000ffffffffffffUL;
+        }
+        Array.Sort(physical);
+        cancellationToken.ThrowIfCancellationRequested();
+        for (var i = 1; i < physical.Length; i++)
+            if (physical[i] == physical[i - 1]) throw new InvalidDataException("索引包含重复物理记录");
     }
 }
