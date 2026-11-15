@@ -40,7 +40,7 @@ public partial class MainWindow : Window
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
     private int _limit = 9, _total;
-    private bool _loading, _searching, _loaded, _quitting, _opening;
+    private bool _loading, _searching, _silentRefresh, _loaded, _quitting, _opening;
     private bool _monitorRunning;
     private bool _realtime;
     private bool _catalogRefreshing;
@@ -154,6 +154,7 @@ public partial class MainWindow : Window
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
         _searching = false;
+        _silentRefresh = false;
         _rows = [];
         _total = 0;
         Results.ItemsSource = _rows;
@@ -281,25 +282,30 @@ public partial class MainWindow : Window
     private async Task SearchAsync()
     {
         if (_quitting || !IsVisible) return;
+        var query = QueryBox.Text;
+        // 已有当前查询的展示结果时静默换新视图，避免实时更新把底栏闪成「正在搜索…」。
+        var silent = SearchProgress.SilentRefresh(query, _resultQuery, Results.IsEnabled);
         _icons.CancelPending();
         using var request = _queries.Begin();
         _inputVersion = request.Version;
-        Results.IsEnabled = false;
-        if (_loading || _indexes.Length == 0 && _applications.Count == 0) { _searching = false; return; }
-        var query = QueryBox.Text;
+        if (!silent) Results.IsEnabled = false;
+        if (_loading || _indexes.Length == 0 && _applications.Count == 0)
+        { _searching = false; _silentRefresh = false; return; }
         if (query.Length == 0)
         {
             _rows = [];
             _total = 0;
             Results.ItemsSource = _rows;
             _searching = false;
+            _silentRefresh = false;
             MoreButton.Visibility = Visibility.Collapsed;
             SetEmpty("输入名称，开始搜索", "支持名称片段、首字母和大小写混合输入。", false);
             RefreshStatus();
             return;
         }
         _searching = true;
-        RefreshStatus();
+        _silentRefresh = silent;
+        if (!silent) RefreshStatus();
         var indexes = _liveIndexes;
         var shortcuts = _shortcuts;
         var applications = _applications;
@@ -350,7 +356,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            if (_queries.IsCurrent(request)) { _searching = false; RefreshStatus(); }
+            if (_queries.IsCurrent(request)) { _searching = false; _silentRefresh = false; RefreshStatus(); }
         }
     }
 
@@ -437,7 +443,7 @@ public partial class MainWindow : Window
         if (!IsInitialized) return;
         var snapshot = _snapshotText + (_realtime ? " · 实时更新" : "");
         StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
-            (_searching ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
+            (SearchProgress.ShowSearching(_searching, _silentRefresh) ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
         StatusText.ToolTip = StatusText.Text;
     }
 

@@ -67,6 +67,18 @@ internal static class CoreChecks
             using var shown = gate.Begin();
             True(gate.IsCurrent(shown) && !shown.Token.IsCancellationRequested);
         });
+        checks.Run("首次搜索显示正在搜索，已有结果的重搜保持底栏", () =>
+        {
+            True(SearchProgress.ShowSearching(true, false));
+            True(!SearchProgress.ShowSearching(true, true));
+            True(!SearchProgress.ShowSearching(false, false));
+            True(!SearchProgress.ShowSearching(false, true));
+            True(!SearchProgress.SilentRefresh("foo", "foo", false));
+            True(SearchProgress.SilentRefresh("foo", "foo", true));
+            True(!SearchProgress.SilentRefresh("bar", "foo", true));
+            True(!SearchProgress.SilentRefresh("", "", true));
+            True(!SearchProgress.SilentRefresh("foo", "", true));
+        });
         checks.Run("空查询和空候选", () =>
         {
             True(matcher.Match("", "").IsMatch);
