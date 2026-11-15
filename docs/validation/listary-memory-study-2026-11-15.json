@@ -1,0 +1,566 @@
+{
+  "date": "2026-11-15",
+  "task": "Read-only Listary memory architecture comparison; no product implementation",
+  "artifacts": [
+    {
+      "name": "Listary.exe",
+      "version": "6.3.5.94",
+      "sha256": "be2aec5c06d2731cb89a9799ffeeffdb063afe0da7f1dfcdeb33c6929e7b20d9",
+      "mvid": "64603b90-3193-c46d-c5ba-eeb31b6ca156"
+    },
+    {
+      "name": "listary_engine.dll",
+      "version": "0.3.1",
+      "sha256": "1671b88533316e3b8fa2d1b4189ba31d77aa7174ac936e1ab2dff20b73c0882e"
+    }
+  ],
+  "source_commit": "071111077d9936a2555f9d4e657e6b52e36f9aa4",
+  "tools": {
+    "rea": "6.8.0",
+    "managed": "REA CLI plus independent PEReader CIL decoder",
+    "native": "REA PE imports/exports; Ghidra 12.1.4 selected native follow-up",
+    "native_disabled_analyzers": [
+      "Stack",
+      "Decompiler Switch Analysis"
+    ],
+    "native_default_profile_attempt": "provider_timeout at 330000 ms; closed and cleaned before focused retry",
+    "native_focused_profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b"
+  },
+  "native_analysis_disposition": {
+    "identified_function_count": 34041,
+    "defined_string_count": 11985,
+    "counts_are_discovered_inventory_not_full_semantics": true,
+    "unreliable_inner_function_excluded": "0x1801231e0",
+    "session_closed": true,
+    "raw_bundle_sha256": "9e95f109529f09c06dec0d3eef26533c1a91120160edaabd62c46ba2ccd25a21"
+  },
+  "rea_evidence": [
+    {
+      "bundle": "memory-session-members-bundle.json",
+      "evidence_id": "ev_5bb6c81f359fa7d04c5be91e1a1b4fbf904b97c9e5491ca95d2d7a8933624edf",
+      "coverage": {
+        "issues": [],
+        "state": "complete"
+      },
+      "methods": 96,
+      "checked_token_anchors": 1102,
+      "mismatch_count": 0
+    },
+    {
+      "bundle": "current-backend-members-bundle.json",
+      "evidence_id": "ev_69b50dcf1cedf2f88bd5075e42d63bffcb63a2ed5f9fa4d917c90bb8a70b55d4",
+      "coverage": {
+        "issues": [],
+        "state": "complete"
+      },
+      "methods": 185,
+      "checked_token_anchors": 1474,
+      "mismatch_count": 0
+    },
+    {
+      "bundle": "query-session-state-members-bundle.json",
+      "evidence_id": "ev_38d00de2d6c77311e397b3b170c8c568df08feaf7f41026a82a6936e4f6ddb7d",
+      "coverage": {
+        "issues": [],
+        "state": "complete"
+      },
+      "methods": 727,
+      "checked_token_anchors": 8402,
+      "mismatch_count": 0
+    },
+    {
+      "bundle": "lazy-results-members-bundle.json",
+      "evidence_id": "ev_94c5fa8deeb5b8ee56a1714f04f508caf1998e7abd9791bbdd10b179fe5a2eda",
+      "coverage": {
+        "issues": [],
+        "state": "complete"
+      },
+      "methods": 56,
+      "checked_token_anchors": 461,
+      "mismatch_count": 0
+    },
+    {
+      "bundle": "engine-exports.json",
+      "evidence_id": "ev_ed238e3ddbe0bc6afa2011701cf4fe485c2da4a289d013ec83eb29a124720d90",
+      "operation": "inspect_native_exports",
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "examined_entries": 106,
+        "exports": 106
+      },
+      "raw_sha256": "420788243c31023a8f5f550768e9702be763958a9d40ac069db40513df982cc4"
+    },
+    {
+      "bundle": "engine-imports.json",
+      "evidence_id": "ev_0ae69de637ce98f66e6ee104c27db9414b276efd8c2880f159d09b198d7f054b",
+      "operation": "inspect_pe_imports",
+      "coverage": {
+        "status": "complete",
+        "reason": null,
+        "examined_dlls": 13,
+        "imports": 241,
+        "delay_imports": 0
+      },
+      "raw_sha256": "00ffd511d52a4369ac93ffd1a2579c1b41406518cef11c36516925b893c3ca6a"
+    },
+    {
+      "bundle": "native-focused-overview.json",
+      "evidence_id": "ev_a57ed71725c9ec7ec7847c32728446b0902e351d11141b17f0e2424bd76687d7",
+      "operation": "binary_overview",
+      "profile_digest": "c9872125249a81f6023e6fd479e62765dc7d1ddaf0af1582cdf3f05efbebcbad",
+      "raw_sha256": "aa05a68fed6b0dd45ac282866ef31d396e6b1a3888a2eef830a98c1e6607e2d3",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-release-session.json",
+      "evidence_id": "ev_99f7806068b4d566e4ec0604c9c7b5f9b413e7ba992fee9eac130a894538c132",
+      "operation": "procedure_pseudo_code",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "bb41ff3f075ae758cb0b7c72cb9f855e3896fe6b3ffe8d6873f997eaf5ada2a1",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-get-results.json",
+      "evidence_id": "ev_91cc7ed25c1102135d978d7e3d2a3dfd329d490e9507940d27d1838a02222f90",
+      "operation": "procedure_pseudo_code",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "39e9b63d4276fc5d89b28fe51e634cbc47214abe23be2aaf7a3a3dc136a0bf5f",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-release-future.json",
+      "evidence_id": "ev_c883eb8e640fc0d2417fa115f6a0e5297c53057f430e50419b4c401bff4f1167",
+      "operation": "procedure_pseudo_code",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "84750ec1d937f307759dfa144aed55ce904dbb69c94c21ff0515261aa7d8cef8",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-snapshot-xrefs.json",
+      "evidence_id": "ev_868daab9a3f9e094fd6684d415f24f92bbab11d9bb50219a1f4b2387b2f50d4b",
+      "operation": "xrefs",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "998ccc430265b1fffe9868bcf94dbfec9ddb8f5e606c0db1c92160ee102b0145",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-snapshot-info-xrefs.json",
+      "evidence_id": "ev_574d749d81872fddaf9ae6ded0b7f96492558053d6bcf9d941760ebc27afa0ed",
+      "operation": "xrefs",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "226696a97cb0a5fb6ca1d3b3af371367a8ec406a293e47c000a53ae3485e0457",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-snapshot-function.json",
+      "evidence_id": "ev_36a32126536313c6e44d070c52e33cc03534f1330975523532bdb042df905752",
+      "operation": "procedure_pseudo_code",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "845cca2dbd2ebdc0e4754eb6672f09ef685229d2b826fbf83363f1cdab0ab716",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery"
+    },
+    {
+      "bundle": "native-release-core.json",
+      "evidence_id": "ev_a818d0ad1890f789bff3686faeed48414452368cb725f971fd9a0644ca23de4a",
+      "operation": "procedure_pseudo_code",
+      "profile_digest": "68b6c5f4d23557728b7c4e68a31a871e5a8856722a28a8f8982293fe86bf132b",
+      "raw_sha256": "b43f010e507467479553f6c06afd46c77323da1a0c1a66abf0ead0dca5afd28c",
+      "scope": "Selected static output; disabled Stack and Decompiler Switch Analysis; not complete semantic recovery",
+      "semantic_use": false,
+      "reason": "Overlapping/bad instructions and unrecovered jump tables; not used to infer cache/layout/allocator behavior"
+    }
+  ],
+  "independent_cil_validation": {
+    "method_count": 9064,
+    "parse_errors": 0,
+    "checked_token_anchors": 11439,
+    "mismatches": 0,
+    "scope": "Selected REA token-bearing instructions, possibly overlapping methods; not all instruction semantics."
+  },
+  "managed_claims": [
+    {
+      "claim": "Current startup/query chain reaches UniFFI engine",
+      "anchors": [
+        "0x06000b0e IL251",
+        "0x060018d3 IL57",
+        "0x06001893",
+        "0x060002e7"
+      ],
+      "level": "static-call-chain"
+    },
+    {
+      "claim": "Session ID reuse and explicit native release",
+      "anchors": [
+        "field 0x04000e44",
+        "0x06001893 IL52",
+        "0x060018ac IL17",
+        "0x0600043a IL17",
+        "0x060002e4"
+      ],
+      "level": "static-call-chain"
+    },
+    {
+      "claim": "Summary followed by range result retrieval",
+      "anchors": [
+        "0x060018af IL1070/1083/1097",
+        "0x06000ea9 IL64",
+        "0x06001894"
+      ],
+      "level": "static-call-chain"
+    },
+    {
+      "claim": "100 is batch size; full-count placeholder slots and loaded rows remain",
+      "anchors": [
+        "0x06000eaf IL339/341/355",
+        "0x06002008 IL56/61",
+        "0x0600202c IL208"
+      ],
+      "level": "static-call-chain"
+    },
+    {
+      "claim": "Unique direct GC.Collect belongs to startup warmup cleanup",
+      "anchors": [
+        "0x06001583 IL122",
+        "0x06000b0e IL391"
+      ],
+      "level": "bounded-static-search"
+    }
+  ],
+  "memory_snapshot_reused": {
+    "productVersion": "0.2.2.0",
+    "listaryFileVersion": "6.3.5.94",
+    "sourceCommit": "071111077d9936a2555f9d4e657e6b52e36f9aa4",
+    "comparison": [
+      {
+        "Process": "Listary",
+        "PrivateResidentMiB": 97.0,
+        "WorkingSetMiB": 200.1,
+        "PrivateCommitMiB": 696.9
+      },
+      {
+        "Process": "QBox",
+        "PrivateResidentMiB": null,
+        "WorkingSetMiB": 511.3,
+        "PrivateCommitMiB": 41.7
+      },
+      {
+        "Process": "QBox",
+        "PrivateResidentMiB": 288.5,
+        "WorkingSetMiB": 863.3,
+        "PrivateCommitMiB": 328.3
+      }
+    ],
+    "snapshotScope": "Read-only snapshot; different uptime, index coverage and process history. No GC or working-set trimming in either target.",
+    "namePool": {
+      "projectedIndexBytesBeforeFormatOverhead": 300341006.0,
+      "exactDuplicateUtf16Bytes": 144896878.0,
+      "currentIndexBytes": 445237884.0,
+      "queryComparisonEncoding": "UTF-16 unchanged"
+    },
+    "adaptiveAscii": {
+      "potentialArrayPayloadSavingBytes": 10645600.0,
+      "currentBitmapBytes": 34843856.0,
+      "metadataAndQueryCostNotMeasured": true
+    },
+    "implementationPerformed": false,
+    "performanceOfProposalsVerified": false
+  },
+  "persisted_options": {
+    "filename": "OPTIONS-002114",
+    "values": [
+      {
+        "line": 8,
+        "section": "[Version]",
+        "key": "rocksdb_version",
+        "value": "8.1.1"
+      },
+      {
+        "line": 19,
+        "section": "[DBOptions]",
+        "key": "max_total_wal_size",
+        "value": "0"
+      },
+      {
+        "line": 24,
+        "section": "[DBOptions]",
+        "key": "max_open_files",
+        "value": "-1"
+      },
+      {
+        "line": 36,
+        "section": "[DBOptions]",
+        "key": "allow_mmap_reads",
+        "value": "false"
+      },
+      {
+        "line": 38,
+        "section": "[DBOptions]",
+        "key": "allow_mmap_writes",
+        "value": "false"
+      },
+      {
+        "line": 116,
+        "section": "[CFOptions \"default\"]",
+        "key": "max_write_buffer_number",
+        "value": "2"
+      },
+      {
+        "line": 124,
+        "section": "[CFOptions \"default\"]",
+        "key": "write_buffer_size",
+        "value": "67108864"
+      },
+      {
+        "line": 131,
+        "section": "[CFOptions \"default\"]",
+        "key": "compression",
+        "value": "kSnappyCompression"
+      },
+      {
+        "line": 140,
+        "section": "[CFOptions \"default\"]",
+        "key": "bottommost_compression",
+        "value": "kDisableCompressionOption"
+      },
+      {
+        "line": 147,
+        "section": "[CFOptions \"default\"]",
+        "key": "level_compaction_dynamic_level_bytes",
+        "value": "false"
+      },
+      {
+        "line": 150,
+        "section": "[CFOptions \"default\"]",
+        "key": "min_write_buffer_number_to_merge",
+        "value": "1"
+      },
+      {
+        "line": 169,
+        "section": "[TableOptions/BlockBasedTable \"default\"]",
+        "key": "cache_index_and_filter_blocks",
+        "value": "false"
+      },
+      {
+        "line": 178,
+        "section": "[TableOptions/BlockBasedTable \"default\"]",
+        "key": "block_size",
+        "value": "4096"
+      },
+      {
+        "line": 222,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "max_write_buffer_number",
+        "value": "2"
+      },
+      {
+        "line": 230,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "write_buffer_size",
+        "value": "67108864"
+      },
+      {
+        "line": 237,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "compression",
+        "value": "kSnappyCompression"
+      },
+      {
+        "line": 246,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "bottommost_compression",
+        "value": "kDisableCompressionOption"
+      },
+      {
+        "line": 253,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "level_compaction_dynamic_level_bytes",
+        "value": "false"
+      },
+      {
+        "line": 256,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "min_write_buffer_number_to_merge",
+        "value": "1"
+      },
+      {
+        "line": 275,
+        "section": "[TableOptions/BlockBasedTable \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "cache_index_and_filter_blocks",
+        "value": "false"
+      },
+      {
+        "line": 284,
+        "section": "[TableOptions/BlockBasedTable \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "block_size",
+        "value": "4096"
+      },
+      {
+        "line": 328,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "max_write_buffer_number",
+        "value": "2"
+      },
+      {
+        "line": 336,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "write_buffer_size",
+        "value": "67108864"
+      },
+      {
+        "line": 343,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "compression",
+        "value": "kSnappyCompression"
+      },
+      {
+        "line": 352,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "bottommost_compression",
+        "value": "kDisableCompressionOption"
+      },
+      {
+        "line": 359,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "level_compaction_dynamic_level_bytes",
+        "value": "false"
+      },
+      {
+        "line": 362,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "min_write_buffer_number_to_merge",
+        "value": "1"
+      },
+      {
+        "line": 381,
+        "section": "[TableOptions/BlockBasedTable \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "cache_index_and_filter_blocks",
+        "value": "false"
+      },
+      {
+        "line": 390,
+        "section": "[TableOptions/BlockBasedTable \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "block_size",
+        "value": "4096"
+      },
+      {
+        "line": 434,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "max_write_buffer_number",
+        "value": "2"
+      },
+      {
+        "line": 442,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "write_buffer_size",
+        "value": "67108864"
+      },
+      {
+        "line": 449,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "compression",
+        "value": "kLZ4Compression"
+      },
+      {
+        "line": 458,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "bottommost_compression",
+        "value": "kZSTD"
+      },
+      {
+        "line": 465,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "level_compaction_dynamic_level_bytes",
+        "value": "false"
+      },
+      {
+        "line": 468,
+        "section": "[CFOptions \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "min_write_buffer_number_to_merge",
+        "value": "1"
+      },
+      {
+        "line": 487,
+        "section": "[TableOptions/BlockBasedTable \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "cache_index_and_filter_blocks",
+        "value": "false"
+      },
+      {
+        "line": 496,
+        "section": "[TableOptions/BlockBasedTable \"db/NtfsVolumeIndexer/<volume>\"]",
+        "key": "block_size",
+        "value": "4096"
+      },
+      {
+        "line": 540,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "max_write_buffer_number",
+        "value": "2"
+      },
+      {
+        "line": 548,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "write_buffer_size",
+        "value": "67108864"
+      },
+      {
+        "line": 555,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "compression",
+        "value": "kLZ4Compression"
+      },
+      {
+        "line": 564,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "bottommost_compression",
+        "value": "kZSTD"
+      },
+      {
+        "line": 571,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "level_compaction_dynamic_level_bytes",
+        "value": "false"
+      },
+      {
+        "line": 574,
+        "section": "[CFOptions \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "min_write_buffer_number_to_merge",
+        "value": "1"
+      },
+      {
+        "line": 593,
+        "section": "[TableOptions/BlockBasedTable \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "cache_index_and_filter_blocks",
+        "value": "false"
+      },
+      {
+        "line": 602,
+        "section": "[TableOptions/BlockBasedTable \"meta/NtfsVolumeIndexer/<volume>\"]",
+        "key": "block_size",
+        "value": "4096"
+      }
+    ],
+    "scope": "Existing persisted file, not live allocations or a whole-process memory budget"
+  },
+  "proposal_status": {
+    "implemented": false,
+    "performance_verified": false,
+    "exact_duplicate_utf16_bytes": 144896878,
+    "sparse_ascii_potential_payload_bytes": 10645600,
+    "scope": "QBox frozen-snapshot payload estimates; excludes construction cost and new metadata; not equivalent private-resident savings"
+  },
+  "unknowns": [
+    "Native name encoding/dedup layout",
+    "Prefix incremental candidate reuse",
+    "Native session cache budget",
+    "Live RocksDB block cache budget",
+    "Allocator/paging attribution of resident-versus-commit difference",
+    "Equivalent index coverage and same-workload target comparison"
+  ],
+  "limitations": [
+    "No target launch, injection, forced GC, working-set trim or live database open",
+    "No third-party binary or decompiled source copied into product",
+    "Old 7.1.0.47 priority artifact is a different build",
+    "Prior QBox query oracle compares total hits and top 9 full SearchHit fields, not every hit"
+  ]
+}
