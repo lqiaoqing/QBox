@@ -70,6 +70,11 @@ internal static class LiveIndexWorker
                     }
                 }
                 Save("Watching");
+                if (IdleWorkingSetReclaim.TryConsumeReclaim(directory))
+                {
+                    foreach (var session in sessions.Values) session.ReleaseIdleCaches();
+                    IdleWorkingSetReclaim.TrimCurrentProcess();
+                }
                 if (cancellation.Token.WaitHandle.WaitOne(750)) cancellation.Token.ThrowIfCancellationRequested();
             }
         }
@@ -132,6 +137,8 @@ internal static class LiveIndexWorker
             }
             catch { _writer.Dispose(); throw; }
         }
+
+        public void ReleaseIdleCaches() => View?.ReleaseIdleCaches();
 
         public void Poll(CancellationToken token)
         {

@@ -48,6 +48,7 @@ public partial class MainWindow : Window
     private DateTimeOffset _indexRetryAt = DateTimeOffset.MaxValue;
     private int _indexPathCount;
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly DispatcherTimer _idleReclaim = new() { Interval = IdleWorkingSetReclaim.Delay };
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -68,6 +69,7 @@ public partial class MainWindow : Window
         BrandText.Text = "QBOX · 全局共享试用";
 #endif
         IsVisibleChanged += OnVisibilityChanged;
+        _idleReclaim.Tick += OnIdleReclaim;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
     }
@@ -140,6 +142,8 @@ public partial class MainWindow : Window
         if (_quitting) return;
         if (IsVisible)
         {
+            _idleReclaim.Stop();
+            _update?.SetIdle(false);
             if (_loaded) _ = SearchAsync();
             return;
         }
@@ -152,6 +156,18 @@ public partial class MainWindow : Window
         Results.ItemsSource = _rows;
         Results.IsEnabled = false;
         MoreButton.Visibility = Visibility.Collapsed;
+        _update?.SetIdle(true);
+        _idleReclaim.Stop();
+        _idleReclaim.Start();
+    }
+
+    private void OnIdleReclaim(object? sender, EventArgs e)
+    {
+        if (_quitting || IsVisible || _searching || _loading || _opening) return;
+        foreach (var live in _liveIndexes) live.View.ReleaseIdleCaches();
+        _icons.ReleaseIdleCache();
+        IdleWorkingSetReclaim.TrimCurrentProcess();
+        _update?.RequestReclaim();
     }
     private void OnFocus(object sender, RoutedEventArgs e) => QueryBox.Focus();
     private void OnDrag(object sender, MouseButtonEventArgs e)
@@ -497,6 +513,7 @@ public partial class MainWindow : Window
         try
         {
             await Task.Run(_update.Start, _lifetime.Token);
+            if (!IsVisible) _update.SetIdle(true);
             var exitedPolls = 0;
             while (!_lifetime.IsCancellationRequested)
             {
@@ -625,6 +642,7 @@ public partial class MainWindow : Window
         _quitting = true;
         try { _update?.Cancel(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { _store.Log(error); }
+        _idleReclaim.Stop();
         _lifetime.Cancel();
         _queries.Dispose(); _loads.Dispose(); _catalogs.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
         if (_tray != null) { var icon = _tray.Icon; _tray.Visible = false; _tray.Dispose(); icon?.Dispose(); }

@@ -778,6 +778,14 @@ internal static class NtfsIndexChecks
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "renamed", Id(22), true))])]);
             Equal(@"X:\other\renamed\alpha.txt", Search(next, "alpha").Items.Single().Candidate.Target);
         });
+        checks.Run("空闲回收清除增量路径缓存后仍能解析路径", () =>
+        {
+            var original = Snapshot(File(20, "folder", directory: true), File(21, "readme.txt", Id(20)));
+            var live = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "folder-renamed", directory: true))])]);
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+            live.ReleaseIdleCaches();
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+        });
         checks.Run("实时删除父目录不返回子项旧路径", () =>
         {
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), null)])]);
