@@ -43,7 +43,7 @@ public static class SearchChromeLayout
     public static bool HideOnDeactivation(SearchChromeKind kind) => kind != SearchChromeKind.Full;
 }
 
-// 双 Ctrl / 托盘唤起按 Listary 式渐进展开：紧凑框、结果列表、完整界面；隐藏后下次从紧凑框开始。
+// 双 Ctrl / 托盘唤起按 Listary 式渐进展开：紧凑框、结果列表、完整界面；隐藏后下次从空的紧凑框开始。
 public sealed class SearchChromeState
 {
     public SearchChromeKind Kind { get; private set; } = SearchChromeKind.Compact;

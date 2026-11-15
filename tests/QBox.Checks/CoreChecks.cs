@@ -100,10 +100,13 @@ internal static class CoreChecks
             chrome.Reset();
             chrome.ShowFromHidden();
             Equal(SearchChromeKind.Compact, chrome.Kind);
+            // 隐藏清空的是输入框，不在 chrome 状态里；切回快捷窗口则保留查询并回到结果列表。
             chrome.OnQueryText("abc");
             Equal(SearchChromeKind.Results, chrome.Kind);
             True(chrome.TryExpandToFull());
             Equal(SearchChromeKind.Full, chrome.Kind);
+            True(chrome.TryCollapseFromFull("abc"));
+            Equal(SearchChromeKind.Results, chrome.Kind);
         });
         checks.Run("快捷窗口固定 8 行、最多约 40 条，完整界面首屏分页并设安全上限", () =>
         {

@@ -179,7 +179,10 @@ public partial class MainWindow : Window
             return;
         }
         // 结束前台请求而不停止索引监测；下次显示从最新视图重查，旧结果不可打开。
+        // 隐藏后不保留输入，下次唤起是空的紧凑搜索框；同一次显示中切完整/快捷界面不走这里。
         _chrome.Reset();
+        QueryBox.Text = "";
+        _resultQuery = "";
         _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();

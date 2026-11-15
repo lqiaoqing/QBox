@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using QBox.Core.Search;
 using QBox.Desktop;
 using QBox.Windows.Applications;
 using QBox.Windows.Indexing;
@@ -81,8 +82,14 @@ internal static class Program
         var refresh = Invoke("RefreshCatalogsAsync"); Wait(() => refresh.IsCompleted); refresh.GetAwaiter().GetResult();
         Check(Version() == version && ReferenceEquals(rows, Get("_rows")), "unchanged catalog rebuilt rows");
         window.Hide(); Check(Rows() == 0 && Version() > version, "hide did not invalidate rows");
+        Check(query.Text.Length == 0 && (string)Get("_resultQuery") == "", "hide did not clear query");
+        Check(((SearchChromeState)Get("_chrome")).Kind == SearchChromeKind.Compact, "hide did not return to compact chrome");
         var hiddenVersion = Version(); Invoke("SearchAsync").GetAwaiter().GetResult();
         Check(Version() == hiddenVersion, "hidden refresh started search");
+        window.Show(); Wait(() => !(bool)Get("_searching") && query.Text.Length == 0 && Rows() == 0);
+        Check(((SearchChromeState)Get("_chrome")).Kind == SearchChromeKind.Compact, "reshow did not stay compact");
+        window.Hide();
+        hiddenVersion = Version();
         var changed = new LiveVolumeIndex(index).Apply([new(new(7, 110), [new(Id(20), File(20, "qboxupdatedprobe74.txt"))])]);
         Set("_liveIndexes", new[] { new LiveIndexFile("probe", changed, 1, 0, default) });
         query.Text = "qboxupdatedprobe74"; Check(Version() == hiddenVersion, "hidden changed input started search");
@@ -92,7 +99,11 @@ internal static class Program
         var times = new List<double>();
         for (var i = 0; i < 10; i++)
         {
-            window.Hide(); timer.Restart(); window.Show(); Wait(() => !(bool)Get("_searching") && Rows() == 1);
+            window.Hide();
+            Check(query.Text.Length == 0, "hide did not clear query");
+            // 再次显示前写入查询，只测量带查询唤起；用户隐藏后再唤起时输入框应为空。
+            query.Text = "qboxupdatedprobe74";
+            timer.Restart(); window.Show(); Wait(() => !(bool)Get("_searching") && Rows() == 1);
             times.Add(timer.Elapsed.TotalMilliseconds);
         }
         var icons = Get("_icons"); var iconType = icons.GetType(); var completed = 0;
@@ -109,7 +120,8 @@ internal static class Program
         System.IO.File.WriteAllText(Path.Combine(root, "../report.json"), JsonSerializer.Serialize(new
         {
             unchangedCatalogPreservedRows = true, hiddenInputAndRefreshSkipped = true,
-            hideInvalidatedResults = true, reshowUsedLatestIndex = true, staleIconQueueClearedAndReusable = true,
+            hideInvalidatedResults = true, hideClearedQuery = true, reshowStartedEmpty = true,
+            reshowUsedLatestIndex = true, staleIconQueueClearedAndReusable = true,
             firstShowMs = firstShow, changedShowMs = changedShow, repeatedShowQueryMs = times,
             scope = "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
         }, new JsonSerializerOptions { WriteIndented = true }));
