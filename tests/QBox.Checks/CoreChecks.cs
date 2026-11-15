@@ -105,6 +105,42 @@ internal static class CoreChecks
             True(chrome.TryExpandToFull());
             Equal(SearchChromeKind.Full, chrome.Kind);
         });
+        checks.Run("快捷窗口固定 8 行、最多约 40 条，完整界面展示全部", () =>
+        {
+            Equal(8, SearchChromeLayout.VisibleResultRows);
+            Equal(40, SearchChromeLayout.QuickResultCap);
+            Equal(40, SearchChromeLayout.ResultLimit(SearchChromeKind.Compact));
+            Equal(40, SearchChromeLayout.ResultLimit(SearchChromeKind.Results));
+            True(SearchChromeLayout.ResultLimit(SearchChromeKind.Full) > SearchChromeLayout.QuickResultCap);
+            Equal(0, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 0));
+            Equal(8, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 8));
+            Equal(40, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 40));
+            Equal(40, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 100));
+            Equal(100, SearchChromeLayout.DisplayedCount(SearchChromeKind.Full, 100));
+            Equal(0, SearchChromeLayout.WindowListRows(SearchChromeKind.Compact));
+            Equal(8, SearchChromeLayout.WindowListRows(SearchChromeKind.Results));
+            Equal(8, SearchChromeLayout.WindowListRows(SearchChromeKind.Full));
+            True(SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Compact));
+            True(SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Results));
+            True(!SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Full));
+        });
+        checks.Run("完整界面可切回快捷窗口，有查询则回到结果列表", () =>
+        {
+            var chrome = new SearchChromeState();
+            True(!chrome.TryCollapseFromFull("foo"));
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            chrome.OnQueryText("foo");
+            True(chrome.TryExpandToFull());
+            True(chrome.TryCollapseFromFull("foo"));
+            Equal(SearchChromeKind.Results, chrome.Kind);
+            True(chrome.TryExpandToFull());
+            True(chrome.TryCollapseFromFull(""));
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            chrome.TryExpandToFull();
+            True(!chrome.OnQueryText("bar"));
+            True(chrome.TryCollapseFromFull("bar"));
+            Equal(SearchChromeKind.Results, chrome.Kind);
+        });
         checks.Run("首次搜索显示正在搜索，已有结果的重搜保持底栏", () =>
         {
             True(SearchProgress.ShowSearching(true, false));

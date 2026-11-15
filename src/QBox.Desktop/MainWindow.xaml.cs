@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -39,8 +40,9 @@ public partial class MainWindow : Window
     private string? _updateText, _notice, _workerWarning;
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
-    private int _limit = 9, _total;
+    private int _limit = SearchChromeLayout.QuickResultCap, _total;
     private bool _loading, _searching, _silentRefresh, _loaded, _quitting, _opening;
+    private bool _dragging;
     private bool _monitorRunning;
     private bool _realtime;
     private bool _catalogRefreshing;
@@ -52,7 +54,6 @@ public partial class MainWindow : Window
     private readonly SearchHotPathWarmup _searchWarmup = new();
     private readonly SearchChromeState _chrome = new();
     private const double ResultRowHeight = 56;
-    private const int VisibleResultRows = 9;
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -143,8 +144,25 @@ public partial class MainWindow : Window
         if (!IsVisible || !IsActive) { ShowSearch(); return; }
         // 已唤起再按双 Ctrl：先进入完整界面，已在完整界面则收起。
         if (!_chrome.TryExpandToFull()) { Hide(); return; }
+        ApplyChromeAfterKindChange();
+    }
+    private void OnExpandToFull(object sender, RoutedEventArgs e) => ExpandToFull();
+    private void ExpandToFull()
+    {
+        if (!_chrome.TryExpandToFull()) return;
+        ApplyChromeAfterKindChange();
+    }
+    private void OnCollapseToQuick(object sender, RoutedEventArgs e)
+    {
+        if (!_chrome.TryCollapseFromFull(QueryBox.Text)) return;
+        ApplyChromeAfterKindChange();
+    }
+    private void ApplyChromeAfterKindChange()
+    {
         ApplyChrome();
+        _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
         QueryBox.Focus();
+        if (IsVisible && QueryBox.Text.Length != 0) _ = SearchAsync();
     }
     private void OnHide(object sender, RoutedEventArgs e) => Hide();
     private void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -171,7 +189,6 @@ public partial class MainWindow : Window
         _total = 0;
         Results.ItemsSource = _rows;
         Results.IsEnabled = false;
-        MoreButton.Visibility = Visibility.Collapsed;
         _update?.SetIdle(true);
         _idleReclaim.Stop();
         _idleReclaim.Start();
@@ -197,10 +214,43 @@ public partial class MainWindow : Window
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
-        for (var item = e.OriginalSource as DependencyObject; item != null;
-             item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
-            if (item is System.Windows.Controls.Primitives.ButtonBase) return;
-        DragMove();
+        if (ShouldIgnoreDrag(e.OriginalSource as DependencyObject)) return;
+        _dragging = true;
+        try { DragMove(); }
+        catch (InvalidOperationException) { }
+        finally { _dragging = false; }
+    }
+
+    // 只从空白窗框、搜索行背景和完整界面标题栏拖动，避免抢走按钮、结果行和输入框选区。
+    private static bool ShouldIgnoreDrag(DependencyObject? item)
+    {
+        for (; item != null; item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
+        {
+            if (item is ButtonBase or TextBoxBase or ListBox or ListBoxItem or ScrollBar or Thumb) return true;
+        }
+        return false;
+    }
+
+    // 快捷窗口在失活时收起；拖动、上下文菜单或拖出屏幕时的短暂失活不算点到窗外。
+    private void OnDeactivated(object? sender, EventArgs e)
+    {
+        if (_quitting || !IsVisible || _dragging || !SearchChromeLayout.HideOnDeactivation(_chrome.Kind)) return;
+        if (HasOpenContextMenu()) return;
+        Hide();
+    }
+
+    private bool HasOpenContextMenu()
+    {
+        if (_tray?.ContextMenuStrip?.Visible == true) return true;
+        return IsContextMenuOpen(this);
+    }
+
+    private static bool IsContextMenuOpen(DependencyObject root)
+    {
+        if (root is FrameworkElement element && element.ContextMenu?.IsOpen == true) return true;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (IsContextMenuOpen(VisualTreeHelper.GetChild(root, i))) return true;
+        return false;
     }
 
     private async Task ReloadAsync(bool background = false)
@@ -287,7 +337,7 @@ public partial class MainWindow : Window
     private async void OnQueryChanged(object sender, TextChangedEventArgs e)
     {
         if (!_loaded || _quitting) return;
-        _limit = 9;
+        _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
         if (IsVisible && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
         await SearchAsync();
     }
@@ -311,7 +361,6 @@ public partial class MainWindow : Window
             Results.ItemsSource = _rows;
             _searching = false;
             _silentRefresh = false;
-            MoreButton.Visibility = Visibility.Collapsed;
             SetEmpty("输入名称，开始搜索", "支持名称片段、首字母和大小写混合输入。", false);
             RefreshStatus();
             return;
@@ -349,7 +398,6 @@ public partial class MainWindow : Window
             Results.SelectedIndex = _rows.Length == 0 ? -1 : 0;
             EmptyPanel.Visibility = _rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (_rows.Length == 0) SetEmpty("没有找到匹配项", "可以尝试名称片段，或在菜单中更新索引。", false);
-            MoreButton.Visibility = _total > _rows.Length ? Visibility.Visible : Visibility.Collapsed;
             foreach (var row in _rows)
             {
                 _icons.Load(row.Hit.Candidate.Target, image =>
@@ -420,7 +468,6 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
         else if (key == Key.Enter && modifiers == ModifierKeys.None) { e.Handled = true; await OpenAsync(Results.SelectedIndex); }
-        else if (key == Key.Down && modifiers == ModifierKeys.Alt) { e.Handled = true; await MoreAsync(); }
         else if ((key == Key.Down || key == Key.Up) && modifiers == ModifierKeys.None && QueryBox.Text.Length != 0 && _rows.Length != 0)
         {
             if (_chrome.Kind != SearchChromeKind.Full && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
@@ -435,33 +482,37 @@ public partial class MainWindow : Window
         if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement(Results, source) is ListBoxItem)
             await OpenAsync(Results.SelectedIndex);
     }
-    private async void OnMore(object sender, RoutedEventArgs e) => await MoreAsync();
-    private async Task MoreAsync()
-    {
-        if (_total <= _rows.Length || _searching) return;
-        _limit = (int)Math.Min(_total, (long)_limit + 200);
-        await SearchAsync();
-        QueryBox.Focus();
-    }
-
     private void ApplyChrome()
     {
         if (!IsInitialized) return;
         var kind = _chrome.Kind;
         var full = kind == SearchChromeKind.Full;
         var showResults = kind != SearchChromeKind.Compact;
+        QuickChromeBar.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
         TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
         CompactHideButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
-        QueryBox.Padding = new Thickness(2, 6, full ? 8 : 40, 6);
         ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
-        MinHeight = full ? 240 : 56;
         var work = SystemParameters.WorkArea;
-        MaxHeight = Math.Max(MinHeight, work.Height - 24);
         MaxWidth = Math.Max(MinWidth, work.Width - 24);
         UpdateLayout();
-        Height = Math.Min(MaxHeight, Math.Max(MinHeight, PreferredHeight(kind)));
+        var preferred = PreferredHeight(kind);
+        var workHeight = Math.Max(56, work.Height - 24);
+        // 先放松再收紧宽高约束，避免从完整界面切回时旧的 MinHeight 把快捷窗口卡住。
+        MinHeight = 56;
+        MaxHeight = workHeight;
+        if (full)
+        {
+            MinHeight = 240;
+            MaxHeight = Math.Max(MinHeight, workHeight);
+            Height = Math.Min(MaxHeight, Math.Max(MinHeight, preferred));
+        }
+        else
+        {
+            Height = Math.Min(Math.Max(preferred, 56), workHeight);
+            MinHeight = MaxHeight = Height;
+        }
         PlaceWindow(false);
     }
 
@@ -469,14 +520,15 @@ public partial class MainWindow : Window
     {
         var border = ShellBorder.BorderThickness.Top + ShellBorder.BorderThickness.Bottom;
         var search = Math.Max(SearchBar.ActualHeight, 44) + SearchBar.Margin.Top + SearchBar.Margin.Bottom;
+        var quickChrome = QuickChromeBar.Visibility == Visibility.Visible
+            ? Math.Max(QuickChromeBar.ActualHeight, 20) + QuickChromeBar.Margin.Top + QuickChromeBar.Margin.Bottom : 0;
         var title = TitleBar.Visibility == Visibility.Visible
             ? Math.Max(TitleBar.ActualHeight, 36) + TitleBar.Margin.Top + TitleBar.Margin.Bottom : 0;
         var status = StatusBar.Visibility == Visibility.Visible ? Math.Max(StatusBar.ActualHeight, 32) : 0;
-        if (kind == SearchChromeKind.Compact) return border + search;
-        var rows = kind == SearchChromeKind.Full ? VisibleResultRows
-            : QueryBox.Text.Length == 0 || _rows.Length == 0 ? 4 : Math.Clamp(_rows.Length, 1, VisibleResultRows);
-        var list = ResultRowHeight * rows + ResultsPane.Margin.Top + ResultsPane.Margin.Bottom;
-        return border + title + search + list + status;
+        if (kind == SearchChromeKind.Compact) return border + quickChrome + search;
+        // 快捷窗口高度按 8 行固定，多出的条目用右侧滚动条翻看；完整界面初始也按 8 行视口，并可再拉高。
+        var list = ResultRowHeight * SearchChromeLayout.WindowListRows(kind) + ResultsPane.Margin.Top + ResultsPane.Margin.Bottom;
+        return border + quickChrome + title + search + list + status;
     }
 
     private void PlaceWindow(bool resetTop)
@@ -507,7 +559,6 @@ public partial class MainWindow : Window
     {
         _rows = [];
         Results.ItemsSource = _rows;
-        MoreButton.Visibility = Visibility.Collapsed;
         EmptyTitle.Text = title;
         EmptyDetail.Text = detail;
         EmptyPanel.Visibility = Visibility.Visible;

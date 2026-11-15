@@ -3,19 +3,25 @@
         Title="QBox 搜索" Width="640" Height="72" MinWidth="480" MinHeight="56" WindowStyle="None"
         ResizeMode="NoResize" Background="#F9FBFE" Foreground="#253147" FontFamily="Microsoft YaHei UI"
         UseLayoutRounding="True" SnapsToDevicePixels="True" WindowStartupLocation="Manual"
-        PreviewKeyDown="OnKeyDown" Closing="OnClosing" Loaded="OnLoaded">
+        PreviewKeyDown="OnKeyDown" Closing="OnClosing" Loaded="OnLoaded" Deactivated="OnDeactivated">
   <Border x:Name="ShellBorder" BorderBrush="#CED7E6" BorderThickness="1" CornerRadius="10" Background="#F9FBFE"
           MouseLeftButtonDown="OnDrag">
-    <Grid>
+    <Grid Background="Transparent">
       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
         <RowDefinition Height="Auto"/>
       </Grid.RowDefinitions>
-      <Grid x:Name="TitleBar" Margin="16,8,8,0" Visibility="Collapsed">
+      <Grid x:Name="QuickChromeBar" Margin="8,2,4,0" Height="20" Background="Transparent" MouseLeftButtonDown="OnDrag">
+        <Button x:Name="ExpandFullButton" HorizontalAlignment="Right" VerticalAlignment="Center" Content="▴" FontSize="11"
+                Width="20" Height="18" Padding="0" Click="OnExpandToFull" ToolTip="完整界面" AutomationProperties.Name="打开完整界面"/>
+      </Grid>
+      <Grid x:Name="TitleBar" Grid.Row="1" Margin="16,8,8,0" Visibility="Collapsed" Background="Transparent" MouseLeftButtonDown="OnDrag">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
@@ -23,14 +29,20 @@
           <TextBlock x:Name="BrandText" Text="QBOX" FontFamily="Bahnschrift" FontWeight="SemiBold" FontSize="15" Foreground="#2466D1" VerticalAlignment="Center"/>
           <TextBlock Text="文件 · 应用" FontSize="12" Foreground="#8490A3" Margin="12,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
-        <Button x:Name="MenuButton" Grid.Column="1" Content="☰" FontSize="16" Width="32" Height="32" Padding="0" Click="OnMenu" ToolTip="设置与索引" AutomationProperties.Name="设置与索引"/>
-        <Button Grid.Column="2" Content="×" FontSize="18" Width="32" Height="32" Padding="0" Click="OnHide" ToolTip="收起 · Esc" AutomationProperties.Name="收起搜索栏"/>
+        <Button x:Name="CollapseQuickButton" Grid.Column="1" Content="▾" FontSize="12" Width="32" Height="32" Padding="0"
+                Click="OnCollapseToQuick" ToolTip="快捷窗口" AutomationProperties.Name="回到快捷窗口"/>
+        <Button x:Name="MenuButton" Grid.Column="2" Content="☰" FontSize="16" Width="32" Height="32" Padding="0" Click="OnMenu" ToolTip="设置与索引" AutomationProperties.Name="设置与索引"/>
+        <Button Grid.Column="3" Content="×" FontSize="18" Width="32" Height="32" Padding="0" Click="OnHide" ToolTip="收起 · Esc" AutomationProperties.Name="收起搜索栏"/>
       </Grid>
-      <Grid x:Name="SearchBar" Grid.Row="1" Margin="16,8,16,8" MinHeight="44">
+      <Grid x:Name="SearchBar" Grid.Row="2" Margin="16,8,16,8" MinHeight="44" Background="Transparent" MouseLeftButtonDown="OnDrag">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         <TextBox x:Name="QueryBox" BorderThickness="0" Background="Transparent" FontSize="20" Foreground="#253147"
-                 Padding="2,6,40,6" VerticalContentAlignment="Center" TextChanged="OnQueryChanged"
+                 Padding="2,6,8,6" VerticalContentAlignment="Center" TextChanged="OnQueryChanged"
                  AutomationProperties.Name="搜索文件、文件夹和应用" SpellCheck.IsEnabled="False"/>
-        <TextBlock Text="搜索文件、文件夹和应用" FontSize="20" Foreground="#A8B2C1" VerticalAlignment="Center" Margin="2,0,40,0" IsHitTestVisible="False">
+        <TextBlock Text="搜索文件、文件夹和应用" FontSize="20" Foreground="#A8B2C1" VerticalAlignment="Center" Margin="2,0,8,0" IsHitTestVisible="False">
           <TextBlock.Style>
             <Style TargetType="TextBlock">
               <Setter Property="Visibility" Value="Collapsed"/>
@@ -42,10 +54,10 @@
             </Style>
           </TextBlock.Style>
         </TextBlock>
-        <Button x:Name="CompactHideButton" HorizontalAlignment="Right" VerticalAlignment="Center" Content="×" FontSize="18"
+        <Button x:Name="CompactHideButton" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Content="×" FontSize="18"
                 Width="32" Height="32" Padding="0" Click="OnHide" ToolTip="收起 · Esc" AutomationProperties.Name="收起搜索栏"/>
       </Grid>
-      <Grid x:Name="ResultsPane" Grid.Row="2" Margin="8,0,8,8" Visibility="Collapsed">
+      <Grid x:Name="ResultsPane" Grid.Row="3" Margin="8,0,8,8" Visibility="Collapsed">
         <ListBox x:Name="Results" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                  MouseDoubleClick="OnResultDoubleClick" SelectionMode="Single" AutomationProperties.Name="搜索结果">
@@ -106,16 +118,14 @@
           <Button x:Name="BuildButton" Content="建立索引" Margin="0,16,0,0" Padding="14,6" Foreground="#2466D1" Background="#E9F0FF" Click="OnUpdate" Visibility="Collapsed"/>
         </StackPanel>
       </Grid>
-      <Border x:Name="StatusBar" Grid.Row="3" BorderBrush="#E2E8F1" BorderThickness="0,1,0,0" Background="#F0F4FA" MinHeight="32" Visibility="Collapsed">
+      <Border x:Name="StatusBar" Grid.Row="4" BorderBrush="#E2E8F1" BorderThickness="0,1,0,0" Background="#F0F4FA" MinHeight="32" Visibility="Collapsed">
         <Grid Margin="16,6,10,6">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <TextBlock x:Name="StatusText" Text="载入索引…" Foreground="#748198" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,8,0"/>
-          <Button x:Name="MoreButton" Grid.Column="1" Content="更多结果" FontSize="12" Padding="10,4" Click="OnMore" Visibility="Collapsed"/>
-          <TextBlock x:Name="HotkeyText" Grid.Column="2" Text="双击 Ctrl" FontSize="12" Foreground="#70809A" VerticalAlignment="Center" Margin="10,0,2,0"/>
+          <TextBlock x:Name="HotkeyText" Grid.Column="1" Text="双击 Ctrl" FontSize="12" Foreground="#70809A" VerticalAlignment="Center" Margin="10,0,2,0"/>
         </Grid>
       </Border>
     </Grid>
