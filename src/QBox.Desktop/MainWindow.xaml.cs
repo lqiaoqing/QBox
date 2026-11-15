@@ -517,10 +517,7 @@ public partial class MainWindow : Window
         TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
-        CompactHideButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
         ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
-        // 快捷窗口把箭头叠在顶边，多留上边距避免和关闭按钮重叠；完整界面标题栏已占位，恢复常规间距。
-        SearchBar.Margin = full ? new Thickness(16, 8, 16, 8) : new Thickness(16, 18, 16, 8);
         var work = SystemParameters.WorkArea;
         MaxWidth = Math.Max(MinWidth, work.Width - 24);
         UpdateLayout();
