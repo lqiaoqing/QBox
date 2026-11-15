@@ -513,12 +513,14 @@ public partial class MainWindow : Window
         var kind = _chrome.Kind;
         var full = kind == SearchChromeKind.Full;
         var showResults = kind != SearchChromeKind.Compact;
-        QuickChromeBar.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+        ExpandFullButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
         TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
         ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
         CompactHideButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
         ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
+        // 快捷窗口把箭头叠在顶边，多留上边距避免和关闭按钮重叠；完整界面标题栏已占位，恢复常规间距。
+        SearchBar.Margin = full ? new Thickness(16, 8, 16, 8) : new Thickness(16, 18, 16, 8);
         var work = SystemParameters.WorkArea;
         MaxWidth = Math.Max(MinWidth, work.Width - 24);
         UpdateLayout();
@@ -545,15 +547,13 @@ public partial class MainWindow : Window
     {
         var border = ShellBorder.BorderThickness.Top + ShellBorder.BorderThickness.Bottom;
         var search = Math.Max(SearchBar.ActualHeight, 44) + SearchBar.Margin.Top + SearchBar.Margin.Bottom;
-        var quickChrome = QuickChromeBar.Visibility == Visibility.Visible
-            ? Math.Max(QuickChromeBar.ActualHeight, 20) + QuickChromeBar.Margin.Top + QuickChromeBar.Margin.Bottom : 0;
         var title = TitleBar.Visibility == Visibility.Visible
             ? Math.Max(TitleBar.ActualHeight, 36) + TitleBar.Margin.Top + TitleBar.Margin.Bottom : 0;
         var status = StatusBar.Visibility == Visibility.Visible ? Math.Max(StatusBar.ActualHeight, 32) : 0;
-        if (kind == SearchChromeKind.Compact) return border + quickChrome + search;
+        if (kind == SearchChromeKind.Compact) return border + search;
         // 快捷窗口高度按 8 行固定，多出的条目用右侧滚动条翻看；完整界面初始也按 8 行视口，并可再拉高。
         var list = ResultRowHeight * SearchChromeLayout.WindowListRows(kind) + ResultsPane.Margin.Top + ResultsPane.Margin.Bottom;
-        return border + quickChrome + title + search + list + status;
+        return border + title + search + list + status;
     }
 
     private void PlaceWindow(bool resetTop)
