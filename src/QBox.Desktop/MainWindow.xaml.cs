@@ -50,6 +50,9 @@ public partial class MainWindow : Window
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _idleReclaim = new() { Interval = IdleWorkingSetReclaim.Delay };
     private readonly SearchHotPathWarmup _searchWarmup = new();
+    private readonly SearchChromeState _chrome = new();
+    private const double ResultRowHeight = 56;
+    private const int VisibleResultRows = 9;
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -123,11 +126,10 @@ public partial class MainWindow : Window
     public void ShowSearch()
     {
         if (_quitting) return;
-        var work = SystemParameters.WorkArea;
-        MaxHeight = Math.Max(300, work.Height - 40);
-        Height = Math.Min(720, MaxHeight);
-        Left = work.Left + Math.Max(0, (work.Width - Width) / 2);
-        Top = work.Top + Math.Max(20, Math.Min(work.Height * 0.16, work.Height - Height - 20));
+        var wasVisible = IsVisible;
+        if (!wasVisible) _chrome.ShowFromHidden();
+        ApplyChrome();
+        if (!wasVisible) PlaceWindow(true);
         Show();
         WindowState = WindowState.Normal;
         Activate();
@@ -136,7 +138,14 @@ public partial class MainWindow : Window
         QueryBox.Focus();
         QueryBox.SelectAll();
     }
-    private void ToggleSearch() { if (IsVisible && IsActive) Hide(); else ShowSearch(); }
+    private void ToggleSearch()
+    {
+        if (!IsVisible || !IsActive) { ShowSearch(); return; }
+        // 已唤起再按双 Ctrl：先进入完整界面，已在完整界面则收起。
+        if (!_chrome.TryExpandToFull()) { Hide(); return; }
+        ApplyChrome();
+        QueryBox.Focus();
+    }
     private void OnHide(object sender, RoutedEventArgs e) => Hide();
     private void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
@@ -145,11 +154,14 @@ public partial class MainWindow : Window
         {
             _idleReclaim.Stop();
             _update?.SetIdle(false);
+            _chrome.ShowFromHidden();
+            ApplyChrome();
             StartSearchWarmup();
             if (_loaded) _ = SearchAsync();
             return;
         }
         // 结束前台请求而不停止索引监测；下次显示从最新视图重查，旧结果不可打开。
+        _chrome.Reset();
         _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
@@ -276,6 +288,7 @@ public partial class MainWindow : Window
     {
         if (!_loaded || _quitting) return;
         _limit = 9;
+        if (IsVisible && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
         await SearchAsync();
     }
 
@@ -345,6 +358,7 @@ public partial class MainWindow : Window
                     Dispatcher.BeginInvoke(() => { if (_rows.Contains(row)) row.Icon = image; });
                 });
             }
+            if (_chrome.Kind != SearchChromeKind.Compact) ApplyChrome();
         }
         catch (OperationCanceledException) { }
         catch (Exception error)
@@ -407,8 +421,10 @@ public partial class MainWindow : Window
         }
         else if (key == Key.Enter && modifiers == ModifierKeys.None) { e.Handled = true; await OpenAsync(Results.SelectedIndex); }
         else if (key == Key.Down && modifiers == ModifierKeys.Alt) { e.Handled = true; await MoreAsync(); }
-        else if ((key == Key.Down || key == Key.Up) && modifiers == ModifierKeys.None && CurrentResults && _rows.Length != 0)
+        else if ((key == Key.Down || key == Key.Up) && modifiers == ModifierKeys.None && QueryBox.Text.Length != 0 && _rows.Length != 0)
         {
+            if (_chrome.Kind != SearchChromeKind.Full && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
+            if (!CurrentResults) { e.Handled = true; return; }
             Results.SelectedIndex = (Results.SelectedIndex + (key == Key.Down ? 1 : -1) + _rows.Length) % _rows.Length;
             Results.ScrollIntoView(Results.SelectedItem);
             e.Handled = true;
@@ -426,6 +442,65 @@ public partial class MainWindow : Window
         _limit = (int)Math.Min(_total, (long)_limit + 200);
         await SearchAsync();
         QueryBox.Focus();
+    }
+
+    private void ApplyChrome()
+    {
+        if (!IsInitialized) return;
+        var kind = _chrome.Kind;
+        var full = kind == SearchChromeKind.Full;
+        var showResults = kind != SearchChromeKind.Compact;
+        TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+        StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+        ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
+        CompactHideButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+        QueryBox.Padding = new Thickness(2, 6, full ? 8 : 40, 6);
+        ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
+        MinHeight = full ? 240 : 56;
+        var work = SystemParameters.WorkArea;
+        MaxHeight = Math.Max(MinHeight, work.Height - 24);
+        MaxWidth = Math.Max(MinWidth, work.Width - 24);
+        UpdateLayout();
+        Height = Math.Min(MaxHeight, Math.Max(MinHeight, PreferredHeight(kind)));
+        PlaceWindow(false);
+    }
+
+    private double PreferredHeight(SearchChromeKind kind)
+    {
+        var border = ShellBorder.BorderThickness.Top + ShellBorder.BorderThickness.Bottom;
+        var search = Math.Max(SearchBar.ActualHeight, 44) + SearchBar.Margin.Top + SearchBar.Margin.Bottom;
+        var title = TitleBar.Visibility == Visibility.Visible
+            ? Math.Max(TitleBar.ActualHeight, 36) + TitleBar.Margin.Top + TitleBar.Margin.Bottom : 0;
+        var status = StatusBar.Visibility == Visibility.Visible ? Math.Max(StatusBar.ActualHeight, 32) : 0;
+        if (kind == SearchChromeKind.Compact) return border + search;
+        var rows = kind == SearchChromeKind.Full ? VisibleResultRows
+            : QueryBox.Text.Length == 0 || _rows.Length == 0 ? 4 : Math.Clamp(_rows.Length, 1, VisibleResultRows);
+        var list = ResultRowHeight * rows + ResultsPane.Margin.Top + ResultsPane.Margin.Bottom;
+        return border + title + search + list + status;
+    }
+
+    private void PlaceWindow(bool resetTop)
+    {
+        if (!IsInitialized) return;
+        var work = SystemParameters.WorkArea;
+        if (resetTop || !IsVisible)
+        {
+            Left = work.Left + Math.Max(0, (work.Width - Width) / 2);
+            Top = work.Top + Math.Max(16, Math.Min(work.Height * 0.16, work.Height - Height - 16));
+            return;
+        }
+        if (Left + Width > work.Left + work.Width - 8)
+            Left = Math.Max(work.Left + 8, work.Left + work.Width - 8 - Width);
+        if (Left < work.Left + 8) Left = work.Left + 8;
+        if (Top + Height > work.Top + work.Height - 8)
+            Top = Math.Max(work.Top + 8, work.Top + work.Height - Height - 8);
+        if (Top < work.Top + 8) Top = work.Top + 8;
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        if (IsVisible) ApplyChrome();
     }
 
     private void SetEmpty(string title, string detail, bool canBuild)

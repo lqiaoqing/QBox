@@ -67,6 +67,44 @@ internal static class CoreChecks
             using var shown = gate.Begin();
             True(gate.IsCurrent(shown) && !shown.Token.IsCancellationRequested);
         });
+        checks.Run("唤起界面按紧凑、结果列表、完整界面渐进展开", () =>
+        {
+            var chrome = new SearchChromeState();
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            True(!chrome.OnQueryText(""));
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            True(chrome.OnQueryText("foo"));
+            Equal(SearchChromeKind.Results, chrome.Kind);
+            True(!chrome.OnQueryText("food"));
+            Equal(SearchChromeKind.Results, chrome.Kind);
+            True(chrome.OnQueryText(""));
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            chrome.OnQueryText("bar");
+            True(chrome.TryExpandToFull());
+            Equal(SearchChromeKind.Full, chrome.Kind);
+            True(!chrome.OnQueryText(""));
+            Equal(SearchChromeKind.Full, chrome.Kind);
+            True(!chrome.TryExpandToFull());
+            Equal(SearchChromeKind.Full, chrome.Kind);
+            chrome.ShowFromHidden();
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            chrome.TryExpandToFull();
+            chrome.Reset();
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+        });
+        checks.Run("隐藏后再唤起回到紧凑搜索框，热键从结果列表进入完整界面", () =>
+        {
+            var chrome = new SearchChromeState();
+            chrome.OnQueryText("abc");
+            True(chrome.TryExpandToFull());
+            chrome.Reset();
+            chrome.ShowFromHidden();
+            Equal(SearchChromeKind.Compact, chrome.Kind);
+            chrome.OnQueryText("abc");
+            Equal(SearchChromeKind.Results, chrome.Kind);
+            True(chrome.TryExpandToFull());
+            Equal(SearchChromeKind.Full, chrome.Kind);
+        });
         checks.Run("首次搜索显示正在搜索，已有结果的重搜保持底栏", () =>
         {
             True(SearchProgress.ShowSearching(true, false));
