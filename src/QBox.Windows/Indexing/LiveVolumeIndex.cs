@@ -18,6 +18,7 @@ public sealed class LiveVolumeIndex
     public VolumeIndex Base { get; }
     public JournalCheckpoint Checkpoint { get; }
     public int ChangedRecords => _changes.Count;
+    internal int PathCacheCount => _paths.Count;
     public IEnumerable<IndexChange> Changes => _changes.Values;
 
     // 纯检查点推进共享同一不可变变更集合，不能仅因日志游标变化重算查询。
@@ -150,6 +151,34 @@ public sealed class LiveVolumeIndex
         visited.Remove(id);
         if (_paths.Count < 8192) _paths.TryAdd(id.Low, path ?? "");
         return path;
+    }
+
+    public void ReleaseIdleCaches()
+    {
+        _paths.Clear();
+        _reachable.Clear();
+    }
+
+    private const int WarmPathLimit = 256;
+
+    public void PrefetchSearchHotPath(CancellationToken cancellationToken = default)
+    {
+        Base.PrefetchSearchHotPath(cancellationToken);
+        _overlay?.PrefetchSearchHotPath(cancellationToken);
+        if (_changes.Count == 0) return;
+        var warmed = 0;
+        foreach (var change in _changes.Values)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            FileReference directory;
+            if (change.Value is { IsDirectory: true } file) directory = file.File;
+            else if (change.Value is { Names.Count: > 0 } changed) directory = changed.Names[0].Parent;
+            else continue;
+            if (directory.Low == 0 || directory.Low == Base.Nodes[Base.RootNode].File) continue;
+            DirectoryReachable(directory, []);
+            DirectoryPath(directory, []);
+            if (++warmed >= WarmPathLimit) break;
+        }
     }
 
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default,

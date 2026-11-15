@@ -778,6 +778,107 @@ internal static class NtfsIndexChecks
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "renamed", Id(22), true))])]);
             Equal(@"X:\other\renamed\alpha.txt", Search(next, "alpha").Items.Single().Candidate.Target);
         });
+        checks.Run("空闲回收清除增量路径缓存后仍能解析路径", () =>
+        {
+            var original = Snapshot(File(20, "folder", directory: true), File(21, "readme.txt", Id(20)));
+            var live = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "folder-renamed", directory: true))])]);
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+            live.ReleaseIdleCaches();
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+        });
+        checks.Run("显示会触发预热，隐藏会取消", () =>
+        {
+            using var started = new ManualResetEventSlim();
+            using var warmup = new SearchHotPathWarmup();
+            warmup.Begin(token =>
+            {
+                started.Set();
+                token.WaitHandle.WaitOne(TimeSpan.FromSeconds(5));
+                token.ThrowIfCancellationRequested();
+            });
+            True(started.Wait(TimeSpan.FromSeconds(2)));
+            True(warmup.IsRunning);
+            warmup.Cancel();
+            True(warmup.Completion.Wait(TimeSpan.FromSeconds(2)));
+            True(!warmup.IsRunning);
+        });
+        checks.Run("回收后再预热，路径解析与搜索匹配仍正确", () =>
+        {
+            var original = Snapshot(File(20, "folder", directory: true), File(21, "readme.txt", Id(20)), File(22, "windows.txt"));
+            var live = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "folder-renamed", directory: true))])]);
+            live.Base.PrepareSearch();
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+            Equal(1, Search(live, "windows").TotalMatches);
+            live.ReleaseIdleCaches();
+            Equal(0, live.PathCacheCount);
+            live.PrefetchSearchHotPath();
+            True(live.PathCacheCount > 0);
+            Equal(@"X:\folder-renamed\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+            Equal(@"X:\windows.txt", Search(live, "windows").Items.Single().Candidate.Target);
+        });
+        checks.Run("预热与真实搜索并发时匹配结果不变", () =>
+        {
+            var live = new LiveVolumeIndex(Snapshot(File(20, "folder", directory: true), File(21, "alpha.txt", Id(20)), File(22, "alphabet.txt")));
+            live.Base.PrepareSearch();
+            var expected = Search(live, "al");
+            using var warmup = new SearchHotPathWarmup();
+            warmup.Begin([live]);
+            var actual = Search(live, "al");
+            Equal(expected.TotalMatches, actual.TotalMatches);
+            True(expected.Items.Select(hit => hit.Candidate).SequenceEqual(actual.Items.Select(hit => hit.Candidate)));
+            True(warmup.Completion.Wait(TimeSpan.FromSeconds(2)));
+            var after = Search(live, "al");
+            Equal(expected.TotalMatches, after.TotalMatches);
+            True(expected.Items.Select(hit => hit.Candidate).SequenceEqual(after.Items.Select(hit => hit.Candidate)));
+        });
+        checks.Run("映射索引回收后再预热仍能正确匹配", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "folder", directory: true), File(21, "readme.txt", Id(20))));
+            var loaded = new LiveVolumeIndex(VolumeIndexStore.Load(path));
+            loaded.Base.PrepareSearch();
+            loaded = loaded.Apply([new(new(7, 110), [new(Id(20), File(20, "folder-renamed", directory: true))])]);
+            Equal(@"X:\folder-renamed\readme.txt", Search(loaded, "readme").Items.Single().Candidate.Target);
+            loaded.ReleaseIdleCaches();
+            loaded.PrefetchSearchHotPath();
+            Equal(@"X:\folder-renamed\readme.txt", Search(loaded, "readme").Items.Single().Candidate.Target);
+        }));
+        checks.Run("含汉字名称回收后再预热不得中断且匹配不变", () =>
+        {
+            var original = Snapshot(File(20, "资料", directory: true), File(21, "豆包工作.txt", Id(20)), File(22, "readme.txt", Id(20)));
+            var live = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), File(20, "中文资料", directory: true))])]);
+            live.Base.PrepareSearch();
+            var expectedDoubao = Search(live, "doubao");
+            var expectedHan = Search(live, "豆包");
+            Equal(@"X:\中文资料\豆包工作.txt", expectedDoubao.Items.Single().Candidate.Target);
+            Equal(expectedDoubao.TotalMatches, expectedHan.TotalMatches);
+            live.ReleaseIdleCaches();
+            Equal(0, live.PathCacheCount);
+            live.PrefetchSearchHotPath();
+            True(live.PathCacheCount > 0);
+            var afterDoubao = Search(live, "doubao");
+            var afterHan = Search(live, "豆包");
+            Equal(expectedDoubao.TotalMatches, afterDoubao.TotalMatches);
+            Equal(expectedHan.TotalMatches, afterHan.TotalMatches);
+            Equal(@"X:\中文资料\豆包工作.txt", afterDoubao.Items.Single().Candidate.Target);
+            Equal(@"X:\中文资料\豆包工作.txt", afterHan.Items.Single().Candidate.Target);
+            Equal(@"X:\中文资料\readme.txt", Search(live, "readme").Items.Single().Candidate.Target);
+        });
+        checks.Run("映射的汉字索引预热不得抛异常且后续步骤仍执行", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "X.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "资料", directory: true), File(21, "豆包工作.txt", Id(20))));
+            var loaded = new LiveVolumeIndex(VolumeIndexStore.Load(path));
+            loaded.Base.PrepareSearch();
+            loaded = loaded.Apply([new(new(7, 110), [new(Id(20), File(20, "中文资料", directory: true))])]);
+            Equal(@"X:\中文资料\豆包工作.txt", Search(loaded, "doubao").Items.Single().Candidate.Target);
+            loaded.ReleaseIdleCaches();
+            Equal(0, loaded.PathCacheCount);
+            loaded.PrefetchSearchHotPath();
+            True(loaded.PathCacheCount > 0);
+            Equal(@"X:\中文资料\豆包工作.txt", Search(loaded, "doubao").Items.Single().Candidate.Target);
+            Equal(@"X:\中文资料\豆包工作.txt", Search(loaded, "豆包").Items.Single().Candidate.Target);
+        }));
         checks.Run("实时删除父目录不返回子项旧路径", () =>
         {
             var next = new LiveVolumeIndex(original).Apply([new(new(7, 110), [new(Id(20), null)])]);

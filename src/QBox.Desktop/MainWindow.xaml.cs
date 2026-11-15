@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -39,8 +40,9 @@ public partial class MainWindow : Window
     private string? _updateText, _notice, _workerWarning;
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
-    private int _limit = 9, _total;
-    private bool _loading, _searching, _loaded, _quitting, _opening;
+    private int _limit = SearchChromeLayout.QuickResultCap, _total;
+    private bool _loading, _searching, _silentRefresh, _loaded, _quitting, _opening;
+    private bool _dragging;
     private bool _monitorRunning;
     private bool _realtime;
     private bool _catalogRefreshing;
@@ -48,6 +50,10 @@ public partial class MainWindow : Window
     private DateTimeOffset _indexRetryAt = DateTimeOffset.MaxValue;
     private int _indexPathCount;
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly DispatcherTimer _idleReclaim = new() { Interval = IdleWorkingSetReclaim.Delay };
+    private readonly SearchHotPathWarmup _searchWarmup = new();
+    private readonly SearchChromeState _chrome = new();
+    private const double ResultRowHeight = 56;
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -68,6 +74,7 @@ public partial class MainWindow : Window
         BrandText.Text = "QBOX · 全局共享试用";
 #endif
         IsVisibleChanged += OnVisibilityChanged;
+        _idleReclaim.Tick += OnIdleReclaim;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
     }
@@ -120,11 +127,10 @@ public partial class MainWindow : Window
     public void ShowSearch()
     {
         if (_quitting) return;
-        var work = SystemParameters.WorkArea;
-        MaxHeight = Math.Max(300, work.Height - 40);
-        Height = Math.Min(720, MaxHeight);
-        Left = work.Left + Math.Max(0, (work.Width - Width) / 2);
-        Top = work.Top + Math.Max(20, Math.Min(work.Height * 0.16, work.Height - Height - 20));
+        var wasVisible = IsVisible;
+        if (!wasVisible) _chrome.ShowFromHidden();
+        ApplyChrome();
+        if (!wasVisible) PlaceWindow(true);
         Show();
         WindowState = WindowState.Normal;
         Activate();
@@ -133,34 +139,121 @@ public partial class MainWindow : Window
         QueryBox.Focus();
         QueryBox.SelectAll();
     }
-    private void ToggleSearch() { if (IsVisible && IsActive) Hide(); else ShowSearch(); }
+    private void ToggleSearch()
+    {
+        if (!IsVisible || !IsActive) { ShowSearch(); return; }
+        // 已唤起再按双 Ctrl：先进入完整界面，已在完整界面则收起。
+        if (!_chrome.TryExpandToFull()) { Hide(); return; }
+        ApplyChromeAfterKindChange();
+    }
+    private void OnExpandToFull(object sender, RoutedEventArgs e) => ExpandToFull();
+    private void ExpandToFull()
+    {
+        if (!_chrome.TryExpandToFull()) return;
+        ApplyChromeAfterKindChange();
+    }
+    private void OnCollapseToQuick(object sender, RoutedEventArgs e)
+    {
+        if (!_chrome.TryCollapseFromFull(QueryBox.Text)) return;
+        ApplyChromeAfterKindChange();
+    }
+    private void ApplyChromeAfterKindChange()
+    {
+        ApplyChrome();
+        _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
+        QueryBox.Focus();
+        if (IsVisible && QueryBox.Text.Length != 0) _ = SearchAsync();
+    }
     private void OnHide(object sender, RoutedEventArgs e) => Hide();
     private void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (_quitting) return;
         if (IsVisible)
         {
+            _idleReclaim.Stop();
+            _update?.SetIdle(false);
+            _chrome.ShowFromHidden();
+            ApplyChrome();
+            StartSearchWarmup();
             if (_loaded) _ = SearchAsync();
             return;
         }
         // 结束前台请求而不停止索引监测；下次显示从最新视图重查，旧结果不可打开。
+        // 隐藏后不保留输入，下次唤起是空的紧凑搜索框；同一次显示中切完整/快捷界面不走这里。
+        _chrome.Reset();
+        QueryBox.Text = "";
+        _resultQuery = "";
+        _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
         _searching = false;
+        _silentRefresh = false;
         _rows = [];
         _total = 0;
         Results.ItemsSource = _rows;
         Results.IsEnabled = false;
-        MoreButton.Visibility = Visibility.Collapsed;
+        _update?.SetIdle(true);
+        _idleReclaim.Stop();
+        _idleReclaim.Start();
+    }
+
+    private void OnIdleReclaim(object? sender, EventArgs e)
+    {
+        if (_quitting || IsVisible || _searching || _loading || _opening) return;
+        _searchWarmup.Cancel();
+        foreach (var live in _liveIndexes) live.View.ReleaseIdleCaches();
+        _icons.ReleaseIdleCache();
+        IdleWorkingSetReclaim.TrimCurrentProcess();
+        _update?.RequestReclaim();
+    }
+
+    private void StartSearchWarmup()
+    {
+        if (_quitting || !IsVisible) return;
+        _update?.RequestWarmup();
+        _searchWarmup.Begin(_liveIndexes.Select(source => source.View));
     }
     private void OnFocus(object sender, RoutedEventArgs e) => QueryBox.Focus();
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton != MouseButton.Left) return;
-        for (var item = e.OriginalSource as DependencyObject; item != null;
-             item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
-            if (item is System.Windows.Controls.Primitives.ButtonBase) return;
-        DragMove();
+        if (ShouldIgnoreDrag(e.OriginalSource as DependencyObject)) return;
+        _dragging = true;
+        try { DragMove(); }
+        catch (InvalidOperationException) { }
+        finally { _dragging = false; }
+    }
+
+    // 只从空白窗框、搜索行背景和完整界面标题栏拖动，避免抢走按钮、结果行和输入框选区。
+    private static bool ShouldIgnoreDrag(DependencyObject? item)
+    {
+        for (; item != null; item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
+        {
+            if (item is ButtonBase or TextBoxBase or ListBox or ListBoxItem or ScrollBar or Thumb) return true;
+        }
+        return false;
+    }
+
+    // 快捷窗口在失活时收起；拖动、上下文菜单或拖出屏幕时的短暂失活不算点到窗外。
+    private void OnDeactivated(object? sender, EventArgs e)
+    {
+        if (_quitting || !IsVisible || _dragging || !SearchChromeLayout.HideOnDeactivation(_chrome.Kind)) return;
+        if (HasOpenContextMenu()) return;
+        Hide();
+    }
+
+    private bool HasOpenContextMenu()
+    {
+        if (_tray?.ContextMenuStrip?.Visible == true) return true;
+        return IsContextMenuOpen(this);
+    }
+
+    private static bool IsContextMenuOpen(DependencyObject root)
+    {
+        if (root is FrameworkElement element && element.ContextMenu?.IsOpen == true) return true;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (IsContextMenuOpen(VisualTreeHelper.GetChild(root, i))) return true;
+        return false;
     }
 
     private async Task ReloadAsync(bool background = false)
@@ -236,6 +329,7 @@ public partial class MainWindow : Window
             if (_loads.IsCurrent(request))
             {
                 _loading = false;
+                if (IsVisible) StartSearchWarmup();
                 if (_indexes.Length == 0 && _applications.Count == 0) SetEmpty("还没有可用索引", _notice ?? "点击建立索引，收录磁盘上的文件、文件夹和应用。", true);
                 else await SearchAsync();
                 RefreshStatus();
@@ -246,32 +340,43 @@ public partial class MainWindow : Window
     private async void OnQueryChanged(object sender, TextChangedEventArgs e)
     {
         if (!_loaded || _quitting) return;
-        _limit = 9;
+        _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
+        if (IsVisible && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
         await SearchAsync();
     }
 
     private async Task SearchAsync()
     {
         if (_quitting || !IsVisible) return;
+        var query = QueryBox.Text;
+        // 已有当前查询的展示结果时静默换新视图，避免实时更新把底栏闪成「正在搜索…」。
+        var silent = SearchProgress.SilentRefresh(query, _resultQuery, Results.IsEnabled);
         _icons.CancelPending();
         using var request = _queries.Begin();
         _inputVersion = request.Version;
-        Results.IsEnabled = false;
-        if (_loading || _indexes.Length == 0 && _applications.Count == 0) { _searching = false; return; }
-        var query = QueryBox.Text;
+        if (!silent) Results.IsEnabled = false;
+        if (_loading || _indexes.Length == 0 && _applications.Count == 0)
+        { _searching = false; _silentRefresh = false; return; }
         if (query.Length == 0)
         {
             _rows = [];
             _total = 0;
             Results.ItemsSource = _rows;
             _searching = false;
-            MoreButton.Visibility = Visibility.Collapsed;
+            _silentRefresh = false;
             SetEmpty("输入名称，开始搜索", "支持名称片段、首字母和大小写混合输入。", false);
             RefreshStatus();
             return;
         }
         _searching = true;
-        RefreshStatus();
+        _silentRefresh = silent;
+        if (!silent)
+        {
+            // 查询已输入时收起空查询占位，避免完整界面在长搜索期间一直停在「输入名称，开始搜索」。
+            if (!SearchProgress.ShowStartPrompt(query, _searching))
+                EmptyPanel.Visibility = Visibility.Collapsed;
+            RefreshStatus();
+        }
         var indexes = _liveIndexes;
         var shortcuts = _shortcuts;
         var applications = _applications;
@@ -297,12 +402,13 @@ public partial class MainWindow : Window
             _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
                 (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
                     hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"), _settings.ResultShortcuts)).ToArray();
+            var selected = Results.SelectedIndex;
             Results.ItemsSource = _rows;
             Results.IsEnabled = true;
-            Results.SelectedIndex = _rows.Length == 0 ? -1 : 0;
+            Results.SelectedIndex = _rows.Length == 0 ? -1
+                : silent && (uint)selected < (uint)_rows.Length ? selected : 0;
             EmptyPanel.Visibility = _rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (_rows.Length == 0) SetEmpty("没有找到匹配项", "可以尝试名称片段，或在菜单中更新索引。", false);
-            MoreButton.Visibility = _total > _rows.Length ? Visibility.Visible : Visibility.Collapsed;
             foreach (var row in _rows)
             {
                 _icons.Load(row.Hit.Candidate.Target, image =>
@@ -311,6 +417,8 @@ public partial class MainWindow : Window
                     Dispatcher.BeginInvoke(() => { if (_rows.Contains(row)) row.Icon = image; });
                 });
             }
+            if (_chrome.Kind != SearchChromeKind.Compact) ApplyChrome();
+            ScheduleFullAutoFill();
         }
         catch (OperationCanceledException) { }
         catch (Exception error)
@@ -322,8 +430,24 @@ public partial class MainWindow : Window
         }
         finally
         {
-            if (_queries.IsCurrent(request)) { _searching = false; RefreshStatus(); }
+            if (_queries.IsCurrent(request)) { _searching = false; _silentRefresh = false; RefreshStatus(); }
         }
+    }
+
+    // 完整界面在首屏结果已经画出后，按页自动续填到安全上限，不再等点击「更多结果」。
+    private void ScheduleFullAutoFill()
+    {
+        if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
+        var version = _resultVersion;
+        var query = _resultQuery;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_quitting || !IsVisible || _searching || _loading) return;
+            if (_resultVersion != version || _resultQuery != query) return;
+            if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
+            _limit = SearchChromeLayout.NextLimit(_chrome.Kind, _limit, _total);
+            _ = SearchAsync();
+        }, DispatcherPriority.Background);
     }
 
     private bool CurrentResults => !_loading && !_searching && _resultVersion == _inputVersion && _resultQuery == QueryBox.Text;
@@ -372,9 +496,10 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
         else if (key == Key.Enter && modifiers == ModifierKeys.None) { e.Handled = true; await OpenAsync(Results.SelectedIndex); }
-        else if (key == Key.Down && modifiers == ModifierKeys.Alt) { e.Handled = true; await MoreAsync(); }
-        else if ((key == Key.Down || key == Key.Up) && modifiers == ModifierKeys.None && CurrentResults && _rows.Length != 0)
+        else if ((key == Key.Down || key == Key.Up) && modifiers == ModifierKeys.None && QueryBox.Text.Length != 0 && _rows.Length != 0)
         {
+            if (_chrome.Kind != SearchChromeKind.Full && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
+            if (!CurrentResults) { e.Handled = true; return; }
             Results.SelectedIndex = (Results.SelectedIndex + (key == Key.Down ? 1 : -1) + _rows.Length) % _rows.Length;
             Results.ScrollIntoView(Results.SelectedItem);
             e.Handled = true;
@@ -385,20 +510,80 @@ public partial class MainWindow : Window
         if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement(Results, source) is ListBoxItem)
             await OpenAsync(Results.SelectedIndex);
     }
-    private async void OnMore(object sender, RoutedEventArgs e) => await MoreAsync();
-    private async Task MoreAsync()
+    private void ApplyChrome()
     {
-        if (_total <= _rows.Length || _searching) return;
-        _limit = (int)Math.Min(_total, (long)_limit + 200);
-        await SearchAsync();
-        QueryBox.Focus();
+        if (!IsInitialized) return;
+        var kind = _chrome.Kind;
+        var full = kind == SearchChromeKind.Full;
+        var showResults = kind != SearchChromeKind.Compact;
+        ExpandFullButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+        TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+        StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+        ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
+        ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
+        var work = SystemParameters.WorkArea;
+        MaxWidth = Math.Max(MinWidth, work.Width - 24);
+        UpdateLayout();
+        var preferred = PreferredHeight(kind);
+        var workHeight = Math.Max(56, work.Height - 24);
+        // 先放松再收紧宽高约束，避免从完整界面切回时旧的 MinHeight 把快捷窗口卡住。
+        MinHeight = 56;
+        MaxHeight = workHeight;
+        if (full)
+        {
+            MinHeight = 240;
+            MaxHeight = Math.Max(MinHeight, workHeight);
+            Height = Math.Min(MaxHeight, Math.Max(MinHeight, preferred));
+        }
+        else
+        {
+            Height = Math.Min(Math.Max(preferred, 56), workHeight);
+            MinHeight = MaxHeight = Height;
+        }
+        PlaceWindow(false);
+    }
+
+    private double PreferredHeight(SearchChromeKind kind)
+    {
+        var border = ShellBorder.BorderThickness.Top + ShellBorder.BorderThickness.Bottom;
+        var search = Math.Max(SearchBar.ActualHeight, 44) + SearchBar.Margin.Top + SearchBar.Margin.Bottom;
+        var title = TitleBar.Visibility == Visibility.Visible
+            ? Math.Max(TitleBar.ActualHeight, 36) + TitleBar.Margin.Top + TitleBar.Margin.Bottom : 0;
+        var status = StatusBar.Visibility == Visibility.Visible ? Math.Max(StatusBar.ActualHeight, 32) : 0;
+        if (kind == SearchChromeKind.Compact) return border + search;
+        // 快捷窗口高度按 8 行固定，多出的条目用右侧滚动条翻看；完整界面初始也按 8 行视口，并可再拉高。
+        var list = ResultRowHeight * SearchChromeLayout.WindowListRows(kind) + ResultsPane.Margin.Top + ResultsPane.Margin.Bottom;
+        return border + title + search + list + status;
+    }
+
+    private void PlaceWindow(bool resetTop)
+    {
+        if (!IsInitialized) return;
+        var work = SystemParameters.WorkArea;
+        if (resetTop || !IsVisible)
+        {
+            Left = work.Left + Math.Max(0, (work.Width - Width) / 2);
+            Top = work.Top + Math.Max(16, Math.Min(work.Height * 0.16, work.Height - Height - 16));
+            return;
+        }
+        if (Left + Width > work.Left + work.Width - 8)
+            Left = Math.Max(work.Left + 8, work.Left + work.Width - 8 - Width);
+        if (Left < work.Left + 8) Left = work.Left + 8;
+        if (Top + Height > work.Top + work.Height - 8)
+            Top = Math.Max(work.Top + 8, work.Top + work.Height - Height - 8);
+        if (Top < work.Top + 8) Top = work.Top + 8;
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        if (IsVisible) ApplyChrome();
     }
 
     private void SetEmpty(string title, string detail, bool canBuild)
     {
         _rows = [];
         Results.ItemsSource = _rows;
-        MoreButton.Visibility = Visibility.Collapsed;
         EmptyTitle.Text = title;
         EmptyDetail.Text = detail;
         EmptyPanel.Visibility = Visibility.Visible;
@@ -409,7 +594,7 @@ public partial class MainWindow : Window
         if (!IsInitialized) return;
         var snapshot = _snapshotText + (_realtime ? " · 实时更新" : "");
         StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
-            (_searching ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
+            (SearchProgress.ShowSearching(_searching, _silentRefresh) ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
         StatusText.ToolTip = StatusText.Text;
     }
 
@@ -497,6 +682,7 @@ public partial class MainWindow : Window
         try
         {
             await Task.Run(_update.Start, _lifetime.Token);
+            if (!IsVisible) _update.SetIdle(true);
             var exitedPolls = 0;
             while (!_lifetime.IsCancellationRequested)
             {
@@ -625,6 +811,8 @@ public partial class MainWindow : Window
         _quitting = true;
         try { _update?.Cancel(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { _store.Log(error); }
+        _idleReclaim.Stop();
+        _searchWarmup.Cancel();
         _lifetime.Cancel();
         _queries.Dispose(); _loads.Dispose(); _catalogs.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
         if (_tray != null) { var icon = _tray.Icon; _tray.Visible = false; _tray.Dispose(); icon?.Dispose(); }

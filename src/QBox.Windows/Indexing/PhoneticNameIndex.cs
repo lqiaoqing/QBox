@@ -45,4 +45,15 @@ internal sealed class PhoneticNameIndex
             if ((entry.Prepared.PhoneticLetters & mask) == mask) yield return entry;
         }
     }
+
+    internal void Prefetch(CancellationToken cancellationToken)
+    {
+        // Entry 含引用，不能钉住整表做 PrefetchVirtualMemory；按项轻触即可把数组页和 Prepared 拉回工作集。
+        for (var i = 0; i < _entries.Length; i++)
+        {
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            _ = _entries[i].Prepared.PhoneticLetters;
+        }
+    }
+
 }

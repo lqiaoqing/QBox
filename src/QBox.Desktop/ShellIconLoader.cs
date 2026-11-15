@@ -33,6 +33,15 @@ internal sealed class ShellIconLoader : IDisposable
             while (_pending.TryTake(out _)) { }
         }
     }
+    public void ReleaseIdleCache()
+    {
+        lock (_gate)
+        {
+            Interlocked.Increment(ref _version);
+            while (_pending.TryTake(out _)) { }
+            _cache.Clear();
+        }
+    }
     private void Work()
     {
         var initialized = CoInitializeEx(IntPtr.Zero, 2) >= 0;
@@ -41,9 +50,17 @@ internal sealed class ShellIconLoader : IDisposable
             foreach (var request in _pending.GetConsumingEnumerable())
             {
                 if (request.Version != Volatile.Read(ref _version)) continue;
-                if (!_cache.TryGetValue(request.Path, out var image))
+                ImageSource? image;
+                var cached = false;
+                lock (_gate) cached = _cache.TryGetValue(request.Path, out image);
+                if (cached)
                 {
-                    image = Read(request.Path);
+                    if (request.Version == Volatile.Read(ref _version)) request.Done(image);
+                    continue;
+                }
+                image = Read(request.Path);
+                lock (_gate)
+                {
                     if (_cache.Count >= 512) _cache.Clear();
                     _cache[request.Path] = image;
                 }
