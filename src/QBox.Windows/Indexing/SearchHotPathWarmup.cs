@@ -78,5 +78,12 @@ public sealed class SearchHotPathWarmup : IDisposable
         cts?.Dispose();
     }
 
+    public bool Wait(TimeSpan timeout)
+    {
+        Task work;
+        lock (_gate) work = _work;
+        return work.Wait(timeout);
+    }
+
     public void Dispose() => Cancel();
 }

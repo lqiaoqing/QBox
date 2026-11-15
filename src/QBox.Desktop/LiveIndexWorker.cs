@@ -15,6 +15,14 @@ internal static class LiveIndexWorker
         var retry = new Dictionary<string, DateTimeOffset>(StringComparer.OrdinalIgnoreCase);
         var drives = new Dictionary<string, UpdateDrive>(StringComparer.OrdinalIgnoreCase);
         using var cancellation = new CancellationTokenSource();
+        using var searchWarmup = new SearchHotPathWarmup();
+        void PauseWarmupForWrite()
+        {
+            searchWarmup.Cancel();
+            searchWarmup.Wait(TimeSpan.FromSeconds(2));
+            // 写盘打断的预热在窗口仍显示时再排队，避免这一轮 Append/Compact 后不再恢复。
+            if (!IdleWorkingSetReclaim.IsIdle(directory)) IdleWorkingSetReclaim.RequestWarmup(directory);
+        }
         using var timer = new Timer(_ =>
         {
             try
@@ -58,7 +66,7 @@ internal static class LiveIndexWorker
                                 value => { drives[root] = new(root, value.Stage, value.Processed, value.Files); Save("Running"); }, cancellation.Token);
                             sessions.Add(root, session);
                         }
-                        session.Poll(cancellation.Token);
+                        session.Poll(cancellation.Token, PauseWarmupForWrite);
                         drives[root] = new(root, "实时更新中", 0, session.View.Base.FileCount);
                     }
                     catch (OperationCanceledException) { throw; }
@@ -70,34 +78,30 @@ internal static class LiveIndexWorker
                     }
                 }
                 Save("Watching");
+                if (IdleWorkingSetReclaim.IsIdle(directory)) searchWarmup.Cancel();
                 if (IdleWorkingSetReclaim.TryConsumeReclaim(directory))
                 {
+                    searchWarmup.Cancel();
+                    searchWarmup.Wait(TimeSpan.FromSeconds(2));
                     foreach (var session in sessions.Values) session.ReleaseIdleCaches();
                     IdleWorkingSetReclaim.TrimCurrentProcess();
                 }
                 else if (IdleWorkingSetReclaim.TryConsumeWarmup(directory) && !IdleWorkingSetReclaim.IsIdle(directory))
                 {
-                    try
-                    {
-                        foreach (var session in sessions.Values)
-                        {
-                            cancellation.Token.ThrowIfCancellationRequested();
-                            if (IdleWorkingSetReclaim.IsIdle(directory)) break;
-                            session.PrefetchSearchHotPath(cancellation.Token);
-                        }
-                    }
-                    catch (OperationCanceledException) { throw; }
-                    catch (Exception)
-                    {
-                        // 预热失败不影响下一轮 USN 轮询。
-                    }
+                    // 预取放到独立后台线程，不占用 Poll 与 750 ms 空闲等待的主循环。
+                    searchWarmup.Begin(sessions.Values.Select(session => session.View));
                 }
                 if (cancellation.Token.WaitHandle.WaitOne(750)) cancellation.Token.ThrowIfCancellationRequested();
             }
         }
         catch (OperationCanceledException) { Save("Cancelled"); return 0; }
         catch (Exception error) { Save("Failed", error.Message); return 2; }
-        finally { foreach (var session in sessions.Values) session.Dispose(); }
+        finally
+        {
+            searchWarmup.Cancel();
+            searchWarmup.Wait(TimeSpan.FromSeconds(2));
+            foreach (var session in sessions.Values) session.Dispose();
+        }
     }
 
     private sealed class Session : IDisposable
@@ -156,24 +160,24 @@ internal static class LiveIndexWorker
         }
 
         public void ReleaseIdleCaches() => View?.ReleaseIdleCaches();
-        public void PrefetchSearchHotPath(CancellationToken token) => View?.PrefetchSearchHotPath(token);
 
-        public void Poll(CancellationToken token)
+        public void Poll(CancellationToken token, Action? beforeWrite = null)
         {
             if (NativeFileIdentity.Read(_volume.Geometry.Root).VolumeSerial != _volume.Geometry.Serial)
                 throw new IOException("磁盘挂载身份已变化，重新连接后再追赶日志");
             IndexChangeSet batch;
             try { batch = new NtfsChangeReader(_volume).Read(View, token); }
-            catch (JournalGapException) { Compact(token, true); return; }
+            catch (JournalGapException) { beforeWrite?.Invoke(); Compact(token, true); return; }
             if (batch.Checkpoint == View.Checkpoint) return;
             var next = View.Apply([batch]);
             // 无名称变化时只定期保存检查点，崩溃重读这一分钟的 USN 不会漏项。
             if (batch.Changes.Length != 0 || DateTimeOffset.UtcNow - _savedAt > TimeSpan.FromMinutes(1))
             {
+                beforeWrite?.Invoke();
                 IndexChangeLog.Append(_log, batch); _savedAt = DateTimeOffset.UtcNow;
             }
             View = next;
-            if (View.ChangedRecords >= 10000) Compact(token, false);
+            if (View.ChangedRecords >= 10000) { beforeWrite?.Invoke(); Compact(token, false); }
         }
 
         private void Compact(CancellationToken token, bool rebuild)

@@ -48,19 +48,12 @@ internal sealed class PhoneticNameIndex
 
     internal void Prefetch(CancellationToken cancellationToken)
     {
-        if (_entries.Length == 0) return;
-        var handle = System.Runtime.InteropServices.GCHandle.Alloc(_entries, System.Runtime.InteropServices.GCHandleType.Pinned);
-        try
-        {
-            VirtualMemoryPrefetch.Range(handle.AddrOfPinnedObject(),
-                (long)_entries.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<Entry>(), cancellationToken);
-        }
-        finally { handle.Free(); }
-        // Entry 含引用类型，再轻触 Prepared 把拼音热对象拉回工作集。
+        // Entry 含引用，不能钉住整表做 PrefetchVirtualMemory；按项轻触即可把数组页和 Prepared 拉回工作集。
         for (var i = 0; i < _entries.Length; i++)
         {
             if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
             _ = _entries[i].Prepared.PhoneticLetters;
         }
     }
+
 }
