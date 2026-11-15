@@ -6,4 +6,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(QBoxGlobalNameSharing)' == 'true'">
+    <!-- 全局共享仅由试用构建启用，标准构建继续使用局部复用策略。 -->
+    <DefineConstants>$(DefineConstants);QBOX_GLOBAL_NAME_SHARING</DefineConstants>
+  </PropertyGroup>
 </Project>

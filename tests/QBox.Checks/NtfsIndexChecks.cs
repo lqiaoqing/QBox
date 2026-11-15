@@ -358,6 +358,47 @@ internal static class NtfsIndexChecks
             Equal(2, names.Length);
             Equal(2, restored.Candidates("资料").Select(candidate => candidate.Id).Distinct().Count());
         }));
+        checks.Run("共享构建策略跨过唯一名称采样与远距离文本后仍保持契约", () => WithDirectory(directory =>
+        {
+            var files = Enumerable.Range(20, 5000).Select(i => File((ulong)i, $"unique-{i}-" + new string('x', 80)))
+                .Prepend(File(19, "shared-across-entire-pool"))
+                .Append(File(6000, "shared-across-entire-pool")).ToArray();
+            var index = Snapshot(files);
+            var path = Path.Combine(directory, "policy.qbi"); VolumeIndexStore.Save(path, index);
+            var bytes = System.IO.File.ReadAllBytes(path);
+            int Offset(ulong id)
+            {
+                for (var i = 0; i < index.FileCount; i++)
+                    if (BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(92 + i * 28)) == Id(id).Low)
+                    {
+                        var name = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(92 + i * 28 + 8));
+                        return BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(92 + index.FileCount * 28 + name * 17 + 4));
+                    }
+                throw new InvalidDataException("测试文件身份缺失");
+            }
+#if QBOX_GLOBAL_NAME_SHARING
+            Equal(Offset(19), Offset(6000));
+#else
+            True(Offset(19) != Offset(6000));
+#endif
+            Equal(2, VolumeIndexStore.Load(path).Candidates("shared-across").Count());
+        }));
+        checks.Run("强制整理已有 v2 不跳过名称共享且保留基础身份", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "existing-v2.qbi");
+            var bytes = LegacyBytes(Snapshot(File(20, "same-name"), File(21, "same-name")), directory);
+            BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(8), 2);
+            System.Security.Cryptography.SHA256.HashData(bytes.AsSpan(0, bytes.Length - 32)).CopyTo(bytes, bytes.Length - 32);
+            System.IO.File.WriteAllBytes(path, bytes);
+            var original = VolumeIndexStore.Load(path);
+            True(ReferenceEquals(original, original.ShareNameText()));
+            var packed = original.ShareNameText(force: true);
+            True(!ReferenceEquals(original, packed));
+            Equal(original.CreatedAt, packed.CreatedAt); Equal(original.Checkpoint, packed.Checkpoint);
+            var output = Path.Combine(directory, "repacked.qbi"); VolumeIndexStore.Save(output, packed);
+            True(new FileInfo(output).Length < bytes.Length);
+            Equal(2, VolumeIndexStore.Load(output).Candidates("same-name").Count());
+        }));
         checks.Run("有效校验和中的非法名称边界仍拒绝并释放映射", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "volume.qbi");

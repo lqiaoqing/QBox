@@ -40,6 +40,8 @@ pwsh -File scripts/dev.ps1
 
 运行 [`releases/0.2.3/QBox.exe`](releases/0.2.3/QBox.exe)。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。
 
+另有可选的 [0.2.3-global.1 全局名称共享试用版](releases/0.2.3-global.1/README.md)，使用独立程序和数据目录，用于比较内存与查询体验；标准发布版仍为 0.2.3。
+
 旧 v1 索引可直接读取，名称共享在新建/基础合并后生效；0.2.2 无法读取新 v2，降级前保留旧索引副本或使用旧版重建。历史与设置格式不变。
 
 - 默认双击 Ctrl 唤起或收起；上下键选择，Enter 或双击打开，Esc/关闭按钮收起到托盘。退出程序使用托盘菜单。
@@ -56,7 +58,7 @@ pwsh -File scripts/verify.ps1
 pwsh -File scripts/publish.ps1 -OutputRoot work/package
 ```
 
-普通构建没有外部 NuGet 包依赖，`NuGet.Config` 清空包源。`QBox.Checks` 是控制台检查程序，不是 `dotnet test` 项目；务必使用 `verify.ps1`。当前产品基线记录为 685 组匹配检查、2,924 项行为检查，真实 UI/卷操作另有验收记录。
+普通构建没有外部 NuGet 包依赖，`NuGet.Config` 清空包源。`QBox.Checks` 是控制台检查程序，不是 `dotnet test` 项目；务必使用 `verify.ps1`。当前源码验证为 685 组匹配检查、2,926 项行为检查，真实 UI/卷操作另有验收记录。
 
 发布脚本可以从没有 `obj` 的干净仓库直接执行，自动 restore；输出含 CLI、桌面程序及项目/第三方许可。运行窗口中的 EXE 可能被占用，开发时建议输出到 `work/package`，不要覆盖正在运行的正式目录。
 

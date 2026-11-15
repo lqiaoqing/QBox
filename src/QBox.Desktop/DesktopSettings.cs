@@ -2,14 +2,29 @@ using System.Text.Json;
 
 namespace QBox.Desktop;
 
-public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = "DoubleCtrl", bool AutoUpdate = true,
+internal static class DesktopDefaults
+{
+#if QBOX_GLOBAL_NAME_SHARING
+    public const string StateFolder = "QBox.GlobalTrial";
+    public const string DisplayName = "QBox 全局共享试用";
+    public const string Hotkey = "Ctrl+Alt+Space";
+    public const bool AutoUpdate = false;
+#else
+    public const string StateFolder = "QBox";
+    public const string DisplayName = "QBox";
+    public const string Hotkey = "DoubleCtrl";
+    public const bool AutoUpdate = true;
+#endif
+}
+
+public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = DesktopDefaults.Hotkey, bool AutoUpdate = DesktopDefaults.AutoUpdate,
     bool ResultShortcuts = false);
 
 public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob, bool WatchWorker = false)
 {
     public static DesktopOptions Parse(string[] args)
     {
-        var state = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "QBox");
+        var state = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DesktopDefaults.StateFolder);
         string? indexes = null, workerJob = null;
         var hidden = false; var watch = false;
         for (var i = 0; i < args.Length; i++)
@@ -79,8 +94,13 @@ internal sealed class DesktopStore(string stateDirectory)
     {
         if (options.IndexDirectory != null) return options.IndexDirectory;
         if (!string.IsNullOrWhiteSpace(settings.IndexDirectory)) return Path.GetFullPath(settings.IndexDirectory);
+#if QBOX_GLOBAL_NAME_SHARING
+        // 试用版默认只读写自己的缓存，不能自动选中标准版的工作区索引。
+        return Path.Combine(DirectoryPath, "indexes");
+#else
         // 工作区发布版复用已经验证的索引，移动程序后则使用用户数据目录。
         var nearby = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "work", "indexes"));
         return System.IO.Directory.Exists(nearby) ? nearby : Path.Combine(DirectoryPath, "indexes");
+#endif
     }
 }

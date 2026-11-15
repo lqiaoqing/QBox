@@ -11,6 +11,12 @@
     <Description>Windows 文件与应用搜索</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(QBoxGlobalNameSharing)' == 'true'">
+    <AssemblyName>QBox.GlobalTrial</AssemblyName>
+    <Version>0.2.3-global.1</Version>
+    <FileVersion>0.2.3.1</FileVersion>
+    <Product>QBox 全局共享试用版</Product>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../QBox.Core/QBox.Core.csproj" />
     <ProjectReference Include="../QBox.Windows/QBox.Windows.csproj" />

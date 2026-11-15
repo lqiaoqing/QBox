@@ -9,7 +9,7 @@
       <Grid Margin="20,4,10,0" MouseLeftButtonDown="OnDrag">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="QBOX" FontFamily="Bahnschrift" FontWeight="SemiBold" FontSize="15" Foreground="#2466D1" VerticalAlignment="Center"/>
+          <TextBlock x:Name="BrandText" Text="QBOX" FontFamily="Bahnschrift" FontWeight="SemiBold" FontSize="15" Foreground="#2466D1" VerticalAlignment="Center"/>
           <TextBlock Text="文件 · 应用" FontSize="11" Foreground="#8490A3" Margin="13,0,0,0" VerticalAlignment="Center"/>
         </StackPanel>
         <Button x:Name="MenuButton" Grid.Column="1" Content="☰" FontSize="17" Width="35" Click="OnMenu" ToolTip="设置与索引" AutomationProperties.Name="设置与索引"/>

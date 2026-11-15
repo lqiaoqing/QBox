@@ -52,6 +52,8 @@ public static class VolumeIndexStore
                 WriteBlocks(file, index.Nodes.AsSpan(), cancellationToken);
                 WriteBlocks(file, index.Names.AsSpan(), cancellationToken);
                 WriteBlocks(file, index.Text.Span, cancellationToken);
+                // 整理后的文本可已在托管堆，但节点表仍借用旧映射，必须保活到所有块写完。
+                GC.KeepAlive(index);
                 file.Flush();
                 file.Position = 0;
                 var digest = Hash(file, file.Length, cancellationToken);

@@ -140,9 +140,10 @@ public sealed class VolumeIndex
             (pool?.ToString() ?? direct!.ToString()).AsMemory(), cancellationToken, pool?.Shared == true ? 2 : 1);
     }
 
-    public VolumeIndex ShareNameText(CancellationToken cancellationToken = default)
+    public VolumeIndex ShareNameText(CancellationToken cancellationToken = default, bool force = false)
     {
-        if (FormatVersion == 2) return this;
+        // 试用准备需把已有局部共享 v2 重新整理成全局池，不能只按格式号跳过。
+        if (FormatVersion == 2 && !force) return this;
         using var textLease = Text.Pin();
         var pool = new NameTextPool(Nodes.Length);
         var names = new IndexName[Names.Length];

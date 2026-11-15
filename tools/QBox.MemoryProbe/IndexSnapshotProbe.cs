@@ -10,7 +10,7 @@ internal static class IndexSnapshotProbe
     {
         if (Path.GetFullPath(original).Equals(Path.GetFullPath(output), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("探针只允许向独立路径转换，不覆盖原始快照");
-        VolumeIndexStore.Save(output, VolumeIndexStore.Load(original).ShareNameText());
+        VolumeIndexStore.Save(output, VolumeIndexStore.Load(original).ShareNameText(force: true));
     }
 
     public static void Compare(string original, string packed, string output)

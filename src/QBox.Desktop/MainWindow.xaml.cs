@@ -63,6 +63,10 @@ public partial class MainWindow : Window
             _history = new(new UnavailableHistory(_historyWarning));
         }
         InitializeComponent();
+#if QBOX_GLOBAL_NAME_SHARING
+        Title = "QBox 搜索 · 全局共享试用";
+        BrandText.Text = "QBOX · 全局共享试用";
+#endif
         IsVisibleChanged += OnVisibilityChanged;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
@@ -101,7 +105,7 @@ public partial class MainWindow : Window
         try
         {
             using var temporary = System.Drawing.Icon.FromHandle(handle);
-            _tray = new() { Icon = (System.Drawing.Icon)temporary.Clone(), Text = "QBox · " + _hotkey!.Display, Visible = true };
+            _tray = new() { Icon = (System.Drawing.Icon)temporary.Clone(), Text = DesktopDefaults.DisplayName + " · " + _hotkey!.Display, Visible = true };
         }
         finally { DestroyIcon(handle); }
         _tray.DoubleClick += (_, _) => Dispatcher.BeginInvoke(ShowSearch);

@@ -1,0 +1,156 @@
+{
+  "version": "0.2.3-global.1",
+  "date": "2026-11-15",
+  "buildProperty": "QBoxGlobalNameSharing=true",
+  "artifact": {
+    "path": "releases/0.2.3-global.1/QBox.GlobalTrial.exe",
+    "bytes": 1029425,
+    "fileVersion": "0.2.3.1",
+    "sha256": "d507a737bf238f0136fb893672f5ff6a242b65738efbd9dd1b83afdd1dc1315c"
+  },
+  "standardArtifactUnchanged": {
+    "path": "releases/0.2.3/QBox.exe",
+    "sha256": "bcf2bbe8e908289055b3a0da7e267f0c15e72919c3db1e869868c37bb276ea72"
+  },
+  "profile": {
+    "defaultState": "%LOCALAPPDATA%\\QBox.GlobalTrial",
+    "indexSubdirectory": "indexes",
+    "hotkey": "Ctrl+Alt+Space",
+    "autoUpdate": false,
+    "historyCopied": false,
+    "standardInstanceReplaced": false
+  },
+  "preparation": {
+    "mode": "global",
+    "capturedAt": "2026-11-15T17:50:37.2607092+08:00",
+    "sourceModified": false,
+    "volumes": [
+      {
+        "volume": "C",
+        "fileCount": 2292989,
+        "nameCount": 3859519,
+        "sourceBytes": 384727963,
+        "packedBytes": 255088229,
+        "bytesSaved": 129639734,
+        "changedRecords": 5362,
+        "baseStructureAndUtf16Equal": true,
+        "liveChangesEqual": true,
+        "checkpointPreserved": true
+      },
+      {
+        "volume": "D",
+        "fileCount": 637571,
+        "nameCount": 913761,
+        "sourceBytes": 61895759,
+        "packedBytes": 46197541,
+        "bytesSaved": 15698218,
+        "changedRecords": 5720,
+        "baseStructureAndUtf16Equal": true,
+        "liveChangesEqual": true,
+        "checkpointPreserved": true
+      }
+    ]
+  },
+  "sourceBaseBytes": 446623722.0,
+  "trialBaseBytes": 301285770.0,
+  "savedBytes": 145337952.0,
+  "checks": {
+    "standard": {
+      "matchingPassed": 685,
+      "behaviorPassed": 2926,
+      "holdoutIncluded": true,
+      "applicationResourcesPassed": true
+    },
+    "global": {
+      "matchingPassed": 685,
+      "behaviorPassed": 2926,
+      "holdoutIncluded": true,
+      "applicationResourcesPassed": true
+    },
+    "desktopLifecycleReports": [
+      {
+        "name": "global",
+        "result": {
+          "unchangedCatalogPreservedRows": true,
+          "hiddenInputAndRefreshSkipped": true,
+          "hideInvalidatedResults": true,
+          "reshowUsedLatestIndex": true,
+          "staleIconQueueClearedAndReusable": true,
+          "firstShowMs": 348.5405,
+          "changedShowMs": 29.4633,
+          "repeatedShowQueryMs": [
+            28.3572,
+            26.5028,
+            24.286,
+            26.3154,
+            25.48,
+            24.1013,
+            27.5297,
+            25.2627,
+            26.4068,
+            41.4948
+          ],
+          "scope": "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
+        }
+      },
+      {
+        "name": "global-final",
+        "result": {
+          "unchangedCatalogPreservedRows": true,
+          "hiddenInputAndRefreshSkipped": true,
+          "hideInvalidatedResults": true,
+          "reshowUsedLatestIndex": true,
+          "staleIconQueueClearedAndReusable": true,
+          "firstShowMs": 302.6467,
+          "changedShowMs": 47.4277,
+          "repeatedShowQueryMs": [
+            39.7882,
+            27.13,
+            71.8208,
+            54.41,
+            26.7906,
+            24.9789,
+            25.7813,
+            38.7824,
+            39.2634,
+            26.1657
+          ],
+          "scope": "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
+        }
+      },
+      {
+        "name": "standard",
+        "result": {
+          "unchangedCatalogPreservedRows": true,
+          "hiddenInputAndRefreshSkipped": true,
+          "hideInvalidatedResults": true,
+          "reshowUsedLatestIndex": true,
+          "staleIconQueueClearedAndReusable": true,
+          "firstShowMs": 334.6496,
+          "changedShowMs": 58.5378,
+          "repeatedShowQueryMs": [
+            42.3782,
+            38.9786,
+            27.7882,
+            27.0833,
+            26.1883,
+            24.5899,
+            22.5658,
+            41.4192,
+            38.2232,
+            39.7903
+          ],
+          "scope": "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "No new physical MFT indexing benchmark",
+    "No long-running GUI resident-memory measurement",
+    "Offscreen desktop probes do not verify physical hotkeys or full App Startup",
+    "Snapshot preparation is per-volume, not a cross-volume atomic snapshot",
+    "Saved mapped index bytes do not imply equal private resident memory reduction",
+    "Historical broad English queries may be slower with global name sharing"
+  ]
+}

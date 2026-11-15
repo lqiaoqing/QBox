@@ -12,6 +12,11 @@ if (args.Length == 3 && args[0] == "--pack")
     IndexSnapshotProbe.Pack(args[1], args[2]);
     return;
 }
+if (args.Length == 3 && args[0] == "--pack-live")
+{
+    LiveSnapshotPacker.Run(args[1], args[2]);
+    return;
+}
 if (args.Length == 4 && args[0] == "--compare-indexes")
 {
     IndexSnapshotProbe.Compare(args[1], args[2], args[3]);

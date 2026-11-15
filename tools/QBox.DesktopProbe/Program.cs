@@ -16,6 +16,26 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--resources-only")
+        {
+            // 只加载真实 App.xaml 后退出，不运行 Dispatcher，排队的正式 Startup 不会执行。
+            var resources = new App(); resources.InitializeComponent();
+            foreach (var key in new[] { "AppIcon", "FolderIcon", "FileIcon" })
+                if (!resources.Resources.Contains(key)) throw new InvalidDataException("应用资源缺失：" + key);
+            Console.WriteLine("Application resources passed");
+            return 0;
+        }
+        var defaults = DesktopOptions.Parse([]);
+#if QBOX_GLOBAL_NAME_SHARING
+        if (!defaults.StateDirectory.EndsWith("QBox.GlobalTrial", StringComparison.OrdinalIgnoreCase) ||
+            new DesktopSettings().AutoUpdate || new DesktopSettings().Hotkey != "Ctrl+Alt+Space" ||
+            typeof(MainWindow).Assembly.GetName().Name != "QBox.GlobalTrial")
+            throw new InvalidDataException("全局试用的进程或默认状态未隔离");
+#else
+        if (!defaults.StateDirectory.EndsWith("QBox", StringComparison.OrdinalIgnoreCase) ||
+            !new DesktopSettings().AutoUpdate || new DesktopSettings().Hotkey != "DoubleCtrl")
+            throw new InvalidDataException("标准版默认设置发生变化");
+#endif
         var app = new ProbeApp();
         var icon = new System.Windows.Media.DrawingImage(new System.Windows.Media.GeometryDrawing(
             System.Windows.Media.Brushes.Blue, null, new System.Windows.Media.RectangleGeometry(new Rect(0, 0, 32, 32))));
@@ -29,6 +49,12 @@ internal static class Program
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [root], null)!;
         var window = (MainWindow)Activator.CreateInstance(typeof(MainWindow), Private, null,
             [new DesktopOptions(root, root, true, null), store, new DesktopSettings(AutoUpdate: false)], null)!;
+#if QBOX_GLOBAL_NAME_SHARING
+        if (!window.Title.Contains("全局共享试用", StringComparison.Ordinal)) throw new InvalidDataException("试用窗口未标识构建类型");
+        var resolved = (string)store.GetType().GetMethod("ResolveIndexDirectory")!.Invoke(store,
+            [new DesktopOptions(root, null, false, null), new DesktopSettings()])!;
+        if (resolved != Path.Combine(root, "indexes")) throw new InvalidDataException("试用缓存未默认隔离");
+#endif
         void Set(string key, object value) => typeof(MainWindow).GetField(key, Private)!.SetValue(window, value);
         object Get(string key) => typeof(MainWindow).GetField(key, Private)!.GetValue(window)!;
         Task Invoke(string name) => (Task)typeof(MainWindow).GetMethod(name, Private)!.Invoke(window, name == "ReloadAsync" ? [false] : null)!;
