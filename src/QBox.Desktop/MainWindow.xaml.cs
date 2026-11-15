@@ -367,7 +367,13 @@ public partial class MainWindow : Window
         }
         _searching = true;
         _silentRefresh = silent;
-        if (!silent) RefreshStatus();
+        if (!silent)
+        {
+            // 查询已输入时收起空查询占位，避免完整界面在长搜索期间一直停在「输入名称，开始搜索」。
+            if (!SearchProgress.ShowStartPrompt(query, _searching))
+                EmptyPanel.Visibility = Visibility.Collapsed;
+            RefreshStatus();
+        }
         var indexes = _liveIndexes;
         var shortcuts = _shortcuts;
         var applications = _applications;
@@ -393,9 +399,11 @@ public partial class MainWindow : Window
             _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
                 (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
                     hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"), _settings.ResultShortcuts)).ToArray();
+            var selected = Results.SelectedIndex;
             Results.ItemsSource = _rows;
             Results.IsEnabled = true;
-            Results.SelectedIndex = _rows.Length == 0 ? -1 : 0;
+            Results.SelectedIndex = _rows.Length == 0 ? -1
+                : silent && (uint)selected < (uint)_rows.Length ? selected : 0;
             EmptyPanel.Visibility = _rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (_rows.Length == 0) SetEmpty("没有找到匹配项", "可以尝试名称片段，或在菜单中更新索引。", false);
             foreach (var row in _rows)
@@ -407,6 +415,7 @@ public partial class MainWindow : Window
                 });
             }
             if (_chrome.Kind != SearchChromeKind.Compact) ApplyChrome();
+            ScheduleFullAutoFill();
         }
         catch (OperationCanceledException) { }
         catch (Exception error)
@@ -420,6 +429,22 @@ public partial class MainWindow : Window
         {
             if (_queries.IsCurrent(request)) { _searching = false; _silentRefresh = false; RefreshStatus(); }
         }
+    }
+
+    // 完整界面在首屏结果已经画出后，按页自动续填到安全上限，不再等点击「更多结果」。
+    private void ScheduleFullAutoFill()
+    {
+        if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
+        var version = _resultVersion;
+        var query = _resultQuery;
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_quitting || !IsVisible || _searching || _loading) return;
+            if (_resultVersion != version || _resultQuery != query) return;
+            if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
+            _limit = SearchChromeLayout.NextLimit(_chrome.Kind, _limit, _total);
+            _ = SearchAsync();
+        }, DispatcherPriority.Background);
     }
 
     private bool CurrentResults => !_loading && !_searching && _resultVersion == _inputVersion && _resultQuery == QueryBox.Text;

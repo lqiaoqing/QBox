@@ -7,4 +7,8 @@ public static class SearchProgress
         query.Length > 0 && query == displayedQuery && resultsDisplayed;
 
     public static bool ShowSearching(bool searching, bool silentRefresh) => searching && !silentRefresh;
+
+    // 查询框有内容或正在搜索时，不得继续展示「输入名称，开始搜索」。
+    public static bool ShowStartPrompt(string query, bool searching) =>
+        query.Length == 0 && !searching;
 }

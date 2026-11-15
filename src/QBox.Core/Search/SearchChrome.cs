@@ -2,21 +2,40 @@ namespace QBox.Core.Search;
 
 public enum SearchChromeKind { Compact, Results, Full }
 
-// 快捷窗口按 Listary 习惯：可视高度固定 8 行，列表最多约 40 条；完整界面再展示全部命中。
+// 快捷窗口按 Listary 习惯：可视高度固定 8 行，列表最多约 40 条。
+// 完整界面先立即展示一页并显示滚动条，再自动续填到安全上限；短查询可能有数十万命中，不能一次全部物化。
 public static class SearchChromeLayout
 {
     public const int VisibleResultRows = 8;
     public const int QuickResultCap = 40;
+    public const int FullResultPage = 200;
+    public const int FullResultCap = 2000;
 
     public static int ResultLimit(SearchChromeKind kind) =>
-        kind == SearchChromeKind.Full ? int.MaxValue : QuickResultCap;
+        kind == SearchChromeKind.Full ? FullResultPage : QuickResultCap;
+
+    public static int DisplayCap(SearchChromeKind kind) =>
+        kind == SearchChromeKind.Full ? FullResultCap : QuickResultCap;
 
     public static int DisplayedCount(SearchChromeKind kind, int totalMatches)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(totalMatches);
-        var limit = ResultLimit(kind);
-        return totalMatches < limit ? totalMatches : limit;
+        var cap = DisplayCap(kind);
+        return totalMatches < cap ? totalMatches : cap;
     }
+
+    public static int NextLimit(SearchChromeKind kind, int currentLimit, int totalMatches)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(currentLimit);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalMatches);
+        if (kind != SearchChromeKind.Full) return currentLimit;
+        var cap = Math.Min(FullResultCap, totalMatches);
+        if (currentLimit >= cap) return currentLimit;
+        return (int)Math.Min((long)currentLimit + FullResultPage, cap);
+    }
+
+    public static bool ShouldAutoFill(SearchChromeKind kind, int displayed, int totalMatches, int currentLimit) =>
+        NextLimit(kind, currentLimit, totalMatches) > currentLimit && displayed > 0 && displayed < totalMatches;
 
     public static int WindowListRows(SearchChromeKind kind) =>
         kind == SearchChromeKind.Compact ? 0 : VisibleResultRows;

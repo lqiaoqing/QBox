@@ -105,24 +105,44 @@ internal static class CoreChecks
             True(chrome.TryExpandToFull());
             Equal(SearchChromeKind.Full, chrome.Kind);
         });
-        checks.Run("快捷窗口固定 8 行、最多约 40 条，完整界面展示全部", () =>
+        checks.Run("快捷窗口固定 8 行、最多约 40 条，完整界面首屏分页并设安全上限", () =>
         {
             Equal(8, SearchChromeLayout.VisibleResultRows);
             Equal(40, SearchChromeLayout.QuickResultCap);
+            Equal(200, SearchChromeLayout.FullResultPage);
+            Equal(2000, SearchChromeLayout.FullResultCap);
             Equal(40, SearchChromeLayout.ResultLimit(SearchChromeKind.Compact));
             Equal(40, SearchChromeLayout.ResultLimit(SearchChromeKind.Results));
-            True(SearchChromeLayout.ResultLimit(SearchChromeKind.Full) > SearchChromeLayout.QuickResultCap);
+            Equal(200, SearchChromeLayout.ResultLimit(SearchChromeKind.Full));
+            True(SearchChromeLayout.ResultLimit(SearchChromeKind.Full) < int.MaxValue);
+            Equal(2000, SearchChromeLayout.DisplayCap(SearchChromeKind.Full));
             Equal(0, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 0));
             Equal(8, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 8));
             Equal(40, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 40));
             Equal(40, SearchChromeLayout.DisplayedCount(SearchChromeKind.Results, 100));
             Equal(100, SearchChromeLayout.DisplayedCount(SearchChromeKind.Full, 100));
+            Equal(2000, SearchChromeLayout.DisplayedCount(SearchChromeKind.Full, 100_000));
             Equal(0, SearchChromeLayout.WindowListRows(SearchChromeKind.Compact));
             Equal(8, SearchChromeLayout.WindowListRows(SearchChromeKind.Results));
             Equal(8, SearchChromeLayout.WindowListRows(SearchChromeKind.Full));
             True(SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Compact));
             True(SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Results));
             True(!SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Full));
+        });
+        checks.Run("完整界面按页自动续填，到达命中数或安全上限后停止", () =>
+        {
+            Equal(200, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 0, 1000));
+            Equal(400, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 200, 1000));
+            Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 800, 1000));
+            Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 1000, 1000));
+            Equal(2000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 1800, 100_000));
+            Equal(2000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 2000, 100_000));
+            Equal(40, SearchChromeLayout.NextLimit(SearchChromeKind.Results, 40, 1000));
+            True(SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 200, 1000, 200));
+            True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 1000, 1000, 1000));
+            True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 2000, 100_000, 2000));
+            True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 0, 1000, 200));
+            True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Results, 40, 1000, 40));
         });
         checks.Run("完整界面可切回快捷窗口，有查询则回到结果列表", () =>
         {
@@ -152,6 +172,10 @@ internal static class CoreChecks
             True(!SearchProgress.SilentRefresh("bar", "foo", true));
             True(!SearchProgress.SilentRefresh("", "", true));
             True(!SearchProgress.SilentRefresh("foo", "", true));
+            True(SearchProgress.ShowStartPrompt("", false));
+            True(!SearchProgress.ShowStartPrompt("", true));
+            True(!SearchProgress.ShowStartPrompt("1", false));
+            True(!SearchProgress.ShowStartPrompt("1", true));
         });
         checks.Run("空查询和空候选", () =>
         {
