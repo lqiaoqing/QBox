@@ -11,5 +11,6 @@
   <Folder Name="/tools/">
     <Project Path="tools/QBox.DevData/QBox.DevData.csproj" />
     <Project Path="tools/QBox.MemoryProbe/QBox.MemoryProbe.csproj" />
+    <Project Path="tools/QBox.DesktopProbe/QBox.DesktopProbe.csproj" />
   </Folder>
 </Solution>

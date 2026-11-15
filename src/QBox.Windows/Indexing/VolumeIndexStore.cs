@@ -30,7 +30,7 @@ public static class VolumeIndexStore
             {
                 using var writer = new BinaryWriter(file, Encoding.UTF8, leaveOpen: true);
                 writer.Write(Magic);
-                writer.Write(1);
+                writer.Write(index.FormatVersion);
                 var geometry = index.Geometry;
                 writer.Write(geometry.Root);
                 writer.Write(geometry.Serial);
@@ -48,7 +48,7 @@ public static class VolumeIndexStore
                 writer.Write(index.Names.Length);
                 writer.Write(index.Text.Length);
                 writer.Flush();
-                // 固定布局直接分块写出；保留 v1 字节与孤立代理项，减少逐字段/逐字符调用，不牺牲保存速度。
+                // v1/v2 记录布局一致；v2 只复用文本偏移，仍按块原样写出 UTF-16 与孤立代理项。
                 WriteBlocks(file, index.Nodes.AsSpan(), cancellationToken);
                 WriteBlocks(file, index.Names.AsSpan(), cancellationToken);
                 WriteBlocks(file, index.Text.Span, cancellationToken);
@@ -76,8 +76,10 @@ public static class VolumeIndexStore
         if (!CryptographicOperations.FixedTimeEquals(actual, expected)) throw new InvalidDataException("索引校验失败；请保留故障文件并重建");
         file.Position = 0;
         using var reader = new BinaryReader(file, Encoding.UTF8, leaveOpen: true);
-        if (!reader.ReadBytes(8).AsSpan().SequenceEqual(Magic) || reader.ReadInt32() != 1)
+        if (!reader.ReadBytes(8).AsSpan().SequenceEqual(Magic))
             throw new InvalidDataException("索引格式版本无效");
+        var version = reader.ReadInt32();
+        if (version is not (1 or 2)) throw new InvalidDataException("索引格式版本无效");
         var root = reader.ReadString();
         var geometry = new NtfsGeometry(root, reader.ReadUInt64(), reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(),
             reader.ReadInt64(), reader.ReadInt64(), reader.ReadUInt16(), reader.ReadUInt16());
@@ -87,15 +89,15 @@ public static class VolumeIndexStore
         var nameCount = reader.ReadInt32();
         var textCount = reader.ReadInt32();
         // 在分配数组前用剩余文件长度交叉核对，损坏的计数不能触发任意大分配。
-        if (nodeCount <= 0 || nameCount < nodeCount || textCount < nameCount ||
+        if (nodeCount <= 0 || nameCount < nodeCount || textCount <= 0 || version == 1 && textCount < nameCount ||
             nodeCount * 28L + nameCount * 17L + textCount * 2L != bodyLength - file.Position)
             throw new InvalidDataException("索引计数与文件长度不符");
         var mapped = new MappedIndexStorage(file, file.Position, nodeCount, nameCount, textCount);
         try
         {
-            // 校验、格式和快照身份保持原样；只改变承载方式，旧索引无需重建或迁移。
+            // 旧 v1 继续直接映射；新建或合并产生 v2，转换时仍保留原基础身份。
             return new(geometry, checkpoint, created, new IndexNodeTable(mapped), new IndexNameTable(mapped),
-                mapped.Text, cancellationToken);
+                mapped.Text, cancellationToken, version);
         }
         catch { mapped.Dispose(); throw; }
     }

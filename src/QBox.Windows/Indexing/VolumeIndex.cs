@@ -6,6 +6,7 @@ using QBox.Core.Search;
 using QBox.Windows.Ntfs;
 using QBox.Core.History;
 using System.Globalization;
+using System.Numerics;
 
 namespace QBox.Windows.Indexing;
 
@@ -51,6 +52,7 @@ public sealed class VolumeIndex
     internal IndexNameTable Names { get; }
     internal ReadOnlyMemory<char> Text { get; }
     internal int RootNode { get; }
+    internal int FormatVersion { get; }
     public NtfsGeometry Geometry { get; }
     public JournalCheckpoint Checkpoint { get; }
     public DateTimeOffset CreatedAt { get; }
@@ -79,10 +81,10 @@ public sealed class VolumeIndex
 
     internal VolumeIndex(NtfsGeometry geometry, JournalCheckpoint checkpoint, DateTimeOffset createdAt,
         IndexNode[] nodes, IndexName[] names, string text)
-        : this(geometry, checkpoint, createdAt, new IndexNodeTable(nodes), new IndexNameTable(names), text.AsMemory()) { }
+        : this(geometry, checkpoint, createdAt, new IndexNodeTable(nodes), new IndexNameTable(names), text.AsMemory(), formatVersion: 2) { }
 
     internal VolumeIndex(NtfsGeometry geometry, JournalCheckpoint checkpoint, DateTimeOffset createdAt,
-        IndexNodeTable nodes, IndexNameTable names, ReadOnlyMemory<char> text, CancellationToken cancellationToken = default)
+        IndexNodeTable nodes, IndexNameTable names, ReadOnlyMemory<char> text, CancellationToken cancellationToken = default, int formatVersion = 1)
     {
         Geometry = geometry;
         Checkpoint = checkpoint;
@@ -90,6 +92,7 @@ public sealed class VolumeIndex
         Nodes = nodes;
         Names = names;
         Text = text;
+        FormatVersion = formatVersion;
         using var textLease = Text.Pin();
         RootNode = -1;
         for (var i = 0; i < nodes.Length; i++)
@@ -99,19 +102,23 @@ public sealed class VolumeIndex
 
     public static VolumeIndex Create(NtfsGeometry geometry, JournalCheckpoint checkpoint,
         IEnumerable<IndexedFile> files, CancellationToken cancellationToken = default)
+        => Create(geometry, checkpoint, files, cancellationToken, true);
+
+    internal static VolumeIndex Create(NtfsGeometry geometry, JournalCheckpoint checkpoint,
+        IEnumerable<IndexedFile> files, CancellationToken cancellationToken, bool shareNameText)
     {
         var source = files.OrderBy(f => f.File.Low).ToArray();
         var identities = new Dictionary<FileReference, int>(source.Length);
-        var recordNumbers = new HashSet<ulong>();
         for (var i = 0; i < source.Length; i++)
         {
-            if (source[i].File.High != 0 || !identities.TryAdd(source[i].File, i) ||
-                !recordNumbers.Add(source[i].File.Low & 0x0000ffffffffffffUL))
+            // 物理编号唯一性统一由发布前 ValidatePhysicalRecords 完整检查，避免重复的大 HashSet。
+            if (source[i].File.High != 0 || !identities.TryAdd(source[i].File, i))
                 throw new InvalidDataException("索引包含重复记录或不支持的文件身份");
         }
         var nodes = new IndexNode[source.Length];
         var names = new List<IndexName>();
-        var text = new StringBuilder();
+        var pool = shareNameText ? new NameTextPool(source.Length) : null;
+        var direct = pool == null ? new StringBuilder() : null;
         for (var i = 0; i < source.Length; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -123,12 +130,30 @@ public sealed class VolumeIndex
             {
                 if (!identities.TryGetValue(name.Parent, out var parent))
                     throw new InvalidDataException($"文件 {file.File.Low:x16} 的父目录 {name.Parent.Low:x16} 缺失，索引尚未追齐");
-                names.Add(new(parent, text.Length, name.Name.Length, name.Namespace, name.Attributes));
-                text.Append(name.Name);
+                var offset = pool?.Add(name.Name) ?? direct!.Length;
+                direct?.Append(name.Name);
+                names.Add(new(parent, offset, name.Name.Length, name.Namespace, name.Attributes));
             }
             nodes[i] = new(file.File.Low, first, names.Count - first, file.IsDirectory, file.LastUsn, file.LinkCount);
         }
-        return new(geometry, checkpoint, DateTimeOffset.UtcNow, nodes, names.ToArray(), text.ToString());
+        return new(geometry, checkpoint, DateTimeOffset.UtcNow, new IndexNodeTable(nodes), new IndexNameTable(names.ToArray()),
+            (pool?.ToString() ?? direct!.ToString()).AsMemory(), cancellationToken, pool?.Shared == true ? 2 : 1);
+    }
+
+    public VolumeIndex ShareNameText(CancellationToken cancellationToken = default)
+    {
+        if (FormatVersion == 2) return this;
+        using var textLease = Text.Pin();
+        var pool = new NameTextPool(Nodes.Length);
+        var names = new IndexName[Names.Length];
+        for (var i = 0; i < names.Length; i++)
+        {
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            var name = Names[i];
+            names[i] = new(name.Parent, pool.Add(Text.Slice(name.Offset, name.Length)), name.Length, name.Namespace, name.Attributes);
+        }
+        // 格式转换不改变基础身份，已有增量日志、历史键和持有旧映射的查询仍然有效。
+        return new(Geometry, Checkpoint, CreatedAt, Nodes, new IndexNameTable(names), pool.ToString().AsMemory(), cancellationToken, 2);
     }
 
     public IEnumerable<IndexedFile> ExportFiles()
@@ -328,6 +353,7 @@ public sealed class VolumeIndex
         }
     }
 
+
     private bool InPackagePath(string path) => path.StartsWith(Geometry.Root + @"WindowsApps\", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith(Geometry.Root + @"Program Files\WindowsApps\", StringComparison.OrdinalIgnoreCase);
 
@@ -452,20 +478,34 @@ public sealed class VolumeIndex
             end += node.NameCount;
         }
         if (end != Names.Length) throw new InvalidDataException("索引存在未归属名称");
-        var textEnd = 0;
-        for (var i = 0; i < Names.Length; i++)
+        if (FormatVersion == 1) ValidateSequentialText(cancellationToken);
+        else
         {
-            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
-            var name = Names[i];
-            if ((uint)name.Parent >= Nodes.Length || !Nodes[name.Parent].IsDirectory || name.Namespace > 3 ||
-                name.Offset != textEnd || name.Length <= 0 || name.Length > Text.Length - textEnd)
-                throw new InvalidDataException("索引名称或父目录无效");
-            var value = Text.Span.Slice(name.Offset, name.Length);
-            if (value.ContainsAny('\\', '/', '\0') || value.SequenceEqual(".."))
-                throw new InvalidDataException("索引名称包含非法路径分量");
-            textEnd += name.Length;
+            var textEnd = 0;
+            // v2 的首次引用按顺序铺满名称池，后续引用必须指向完整的已有片段；位图仅在校验期间存在。
+            var starts = new ulong[(int)((Text.Length + 63L) / 64)];
+            for (var i = 0; i < Names.Length; i++)
+            {
+                if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                var name = Names[i];
+                if ((uint)name.Parent >= Nodes.Length || !Nodes[name.Parent].IsDirectory || name.Namespace > 3 ||
+                    name.Offset < 0 || name.Offset > textEnd || name.Length <= 0 || name.Length > Text.Length - name.Offset)
+                    throw new InvalidDataException("索引名称或父目录无效");
+                if (name.Offset != textEnd)
+                {
+                    if ((starts[name.Offset >> 6] & (1UL << (name.Offset & 63))) == 0 ||
+                        NextTextBoundary(starts, name.Offset, textEnd, cancellationToken) - name.Offset != name.Length)
+                        throw new InvalidDataException("共享名称未指向完整文本片段");
+                    continue;
+                }
+                var value = Text.Span.Slice(name.Offset, name.Length);
+                if (value.ContainsAny('\\', '/', '\0') || value.SequenceEqual(".."))
+                    throw new InvalidDataException("索引名称包含非法路径分量");
+                starts[textEnd >> 6] |= 1UL << (textEnd & 63);
+                textEnd += name.Length;
+            }
+            if (textEnd != Text.Length) throw new InvalidDataException("索引存在未归属名称字符");
         }
-        if (textEnd != Text.Length) throw new InvalidDataException("索引存在未归属名称字符");
         // 每个名称均验证到根目录，重命名、父目录删除和记录复用不能留下可打开的伪路径。
         var state = new byte[Nodes.Length];
         state[RootNode] = 2;
@@ -488,6 +528,40 @@ public sealed class VolumeIndex
             for (var j = Nodes[i].FirstName; j < Nodes[i].FirstName + Nodes[i].NameCount; j++)
                 if (i != RootNode && (Names[j].Parent == i || Text.Span.Slice(Names[j].Offset, Names[j].Length).SequenceEqual(".")))
                     throw new InvalidDataException("非根目录名称不能引用自身或使用点目录");
+    }
+
+    private void ValidateSequentialText(CancellationToken cancellationToken)
+    {
+        // v1 保持原连续校验热路径，不为不共享的快照支付 v2 偏移与边界判断成本。
+        var end = 0;
+        for (var i = 0; i < Names.Length; i++)
+        {
+            if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+            var name = Names[i];
+            if ((uint)name.Parent >= Nodes.Length || !Nodes[name.Parent].IsDirectory || name.Namespace > 3 ||
+                name.Offset != end || name.Length <= 0 || name.Length > Text.Length - end)
+                throw new InvalidDataException("索引名称或父目录无效");
+            var value = Text.Span.Slice(name.Offset, name.Length);
+            if (value.ContainsAny('\\', '/', '\0') || value.SequenceEqual(".."))
+                throw new InvalidDataException("索引名称包含非法路径分量");
+            end += name.Length;
+        }
+        if (end != Text.Length) throw new InvalidDataException("索引存在未归属名称字符");
+    }
+
+    private static int NextTextBoundary(ulong[] starts, int offset, int end, CancellationToken token)
+    {
+        var next = offset + 1;
+        var word = next >> 6;
+        if (word >= starts.Length) return end;
+        var bits = starts[word] & (ulong.MaxValue << (next & 63));
+        while (bits == 0)
+        {
+            if ((word & 4095) == 0) token.ThrowIfCancellationRequested();
+            if (++word >= starts.Length || word * 64L >= end) return end;
+            bits = starts[word];
+        }
+        return Math.Min(end, word * 64 + BitOperations.TrailingZeroCount(bits));
     }
 
     private void ValidatePhysicalRecords(CancellationToken cancellationToken)

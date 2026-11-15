@@ -8,13 +8,16 @@ using QBox.Windows.Ntfs;
 
 internal static class IndexingBenchmark
 {
-    public static void Run(string output, bool remap)
+    public static void Run(string output, bool remap, bool repeatedNames = false)
     {
         Directory.CreateDirectory(output);
+        var collectBetweenRounds = Environment.GetEnvironmentVariable("QBOX_PROBE_INDEXING_COLLECT") == "1";
         var runs = new List<object>();
         for (var pass = 0; pass < 5; pass++)
         {
-            using var volume = new ReplayVolume();
+            // 可选轮间回收只用于隔离上一轮暂存图，收集阶段不计入各阶段计时，产品不启用此行为。
+            if (collectBetweenRounds) { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }
+            using var volume = new ReplayVolume(repeatedNames);
             var builder = new NtfsIndexBuilder(volume);
             var path = Path.Combine(output, $"pass-{pass}.qbi");
             var timer = Stopwatch.StartNew();
@@ -68,7 +71,7 @@ internal static class IndexingBenchmark
         File.WriteAllText(Path.Combine(output, "report.json"), JsonSerializer.Serialize(new
         {
             fixture = "201001 records from deterministic cache reconciliation; 2000 USN renames",
-            physicalDiskThroughputMeasured = false, remapAfterSave = remap, runs
+            physicalDiskThroughputMeasured = false, remapAfterSave = remap, repeatedNames, collectBetweenRounds, runs
         }, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }));
     }
 
@@ -81,13 +84,14 @@ internal static class IndexingBenchmark
         private UsnChange[] _changes = [];
         private long _next = 100;
         private static FileReference Id(ulong number) => new(number | (7UL << 48));
-        public ReplayVolume()
+        public ReplayVolume(bool repeatedNames)
         {
             _records[0] = new(Id(0), default, false, [], [new(0, 15, 65536, [new(0, 16, 0)])], false);
             _records[5] = Record(5, ".", Root, true);
             for (ulong i = 0; i < 1000; i++) _records[20 + i] = Record(20 + i, $"folder-{i}", Root, true);
             for (ulong i = 0; i < 200000; i++)
-                _records[2000 + i] = Record(2000 + i, $"Alpha-{i:D6}-资料.txt", Id(20 + i % 1000), false);
+                // 重复名称夹具跨目录共享同名；同一目录内仍保持名称唯一。
+                _records[2000 + i] = Record(2000 + i, $"Alpha-{(repeatedNames ? i / 1000 : i):D6}-资料.txt", Id(20 + i % 1000), false);
         }
         private static MftRecord Record(ulong id, string name, FileReference parent, bool directory) =>
             new(Id(id), default, directory, [new(parent, name, 1, 0, 0)], [], false, LastUsn: 100);

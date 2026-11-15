@@ -20,6 +20,9 @@ public sealed class LiveVolumeIndex
     public int ChangedRecords => _changes.Count;
     public IEnumerable<IndexChange> Changes => _changes.Values;
 
+    // 纯检查点推进共享同一不可变变更集合，不能仅因日志游标变化重算查询。
+    public bool HasSameSearchContent(LiveVolumeIndex other) => ReferenceEquals(Base, other.Base) && ReferenceEquals(_changes, other._changes);
+
     public bool HasShortcutChangesFrom(LiveVolumeIndex previous)
     {
         foreach (var pair in _changes)
@@ -65,7 +68,8 @@ public sealed class LiveVolumeIndex
             if (names.Length == 0) files.Remove(file.File);
             else if (names.Length != file.Names.Count) files[file.File] = file with { Names = names };
         }
-        if (files.Count != 0) _overlay = VolumeIndex.Create(index.Geometry, checkpoint, files.Values);
+        // 短命覆盖层顺序写文本，避免每次 USN 应用建去重表；基础合并时再共享重复名称。
+        if (files.Count != 0) _overlay = VolumeIndex.Create(index.Geometry, checkpoint, files.Values, default, false);
     }
 
     public IndexedFile? FindFile(FileReference id)

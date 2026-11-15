@@ -55,6 +55,18 @@ internal static class CoreChecks
             True(!gate.IsCurrent(request));
             Throws<ObjectDisposedException>(() => gate.Begin());
         });
+        checks.Run("隐藏取消使进行中及已完成请求失效，唤出仍可开始新查询", () =>
+        {
+            using var gate = new LatestQueryGate();
+            using var first = gate.Begin();
+            True(gate.Cancel() > first.Version);
+            True(first.Token.IsCancellationRequested && !gate.IsCurrent(first));
+            var completed = gate.Begin(); completed.Dispose();
+            gate.Cancel();
+            True(!gate.IsCurrent(completed));
+            using var shown = gate.Begin();
+            True(gate.IsCurrent(shown) && !shown.Token.IsCancellationRequested);
+        });
         checks.Run("空查询和空候选", () =>
         {
             True(matcher.Match("", "").IsMatch);

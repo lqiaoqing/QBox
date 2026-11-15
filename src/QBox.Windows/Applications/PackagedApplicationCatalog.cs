@@ -17,6 +17,9 @@ public sealed class PackagedApplicationCatalog
     public static PackagedApplicationCatalog Empty { get; } = new([]);
     public int Count => _entries.Length;
     public string? Warning { get; private init; }
+
+    // 错误状态仍由调用者刷新；检索内容一致时继续复用已有预处理名称。
+    public bool HasSameSearchContent(PackagedApplicationCatalog other) => _entries.AsSpan().SequenceEqual(other._entries);
     private PackagedApplicationCatalog(SearchCandidate[] entries)
     {
         _entries = entries;

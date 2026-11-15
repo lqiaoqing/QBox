@@ -9,7 +9,9 @@ namespace QBox.Desktop;
 
 internal sealed class ShellIconLoader : IDisposable
 {
-    private readonly BlockingCollection<(string Path, Action<ImageSource?> Done)> _pending = new();
+    private readonly BlockingCollection<(string Path, Action<ImageSource?> Done, long Version)> _pending = new();
+    private readonly object _gate = new();
+    private long _version;
     private readonly Dictionary<string, ImageSource?> _cache = new(StringComparer.Ordinal);
     public ShellIconLoader()
     {
@@ -19,7 +21,17 @@ internal sealed class ShellIconLoader : IDisposable
     }
     public void Load(string path, Action<ImageSource?> done)
     {
-        if (!_pending.IsAddingCompleted) _pending.Add((path, done));
+        lock (_gate)
+            if (!_pending.IsAddingCompleted) _pending.Add((path, done, _version));
+    }
+    public void CancelPending()
+    {
+        lock (_gate)
+        {
+            // 先清过期队列再接收新批次；已进入 Shell 的调用仅丢弃回调，不强行中断 COM。
+            Interlocked.Increment(ref _version);
+            while (_pending.TryTake(out _)) { }
+        }
     }
     private void Work()
     {
@@ -28,13 +40,14 @@ internal sealed class ShellIconLoader : IDisposable
         {
             foreach (var request in _pending.GetConsumingEnumerable())
             {
+                if (request.Version != Volatile.Read(ref _version)) continue;
                 if (!_cache.TryGetValue(request.Path, out var image))
                 {
                     image = Read(request.Path);
                     if (_cache.Count >= 512) _cache.Clear();
                     _cache[request.Path] = image;
                 }
-                request.Done(image);
+                if (request.Version == Volatile.Read(ref _version)) request.Done(image);
             }
         }
         finally { if (initialized) CoUninitialize(); }
@@ -65,7 +78,10 @@ internal sealed class ShellIconLoader : IDisposable
             if (item != 0) Marshal.FreeCoTaskMem(item);
         }
     }
-    public void Dispose() => _pending.CompleteAdding();
+    public void Dispose()
+    {
+        lock (_gate) { CancelPending(); _pending.CompleteAdding(); }
+    }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct ShellFileInfo
     {

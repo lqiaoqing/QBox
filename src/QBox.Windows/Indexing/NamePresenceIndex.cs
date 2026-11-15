@@ -49,6 +49,33 @@ internal sealed class NamePresenceIndex
         }
         cancellationToken.ThrowIfCancellationRequested();
         _unicode = unicode.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray());
+        for (var letter = 0; letter < _ascii.Length; letter++)
+        {
+            // 只转换载荷不超过位图八分之一的极稀疏字符，避免在临界密度牺牲位运算吞吐。
+            if (_ascii[letter] is not { } bitmap) continue;
+            var count = 0;
+            var maximum = _words / 4;
+            for (var word = 0; word < bitmap.Length && count <= maximum; word++)
+            {
+                if ((word & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                count += BitOperations.PopCount(bitmap[word]);
+            }
+            if (count > maximum) continue;
+            var names = new int[count];
+            var position = 0;
+            for (var word = 0; word < bitmap.Length; word++)
+            {
+                if ((word & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
+                var bits = bitmap[word];
+                while (bits != 0)
+                {
+                    names[position++] = word * 64 + BitOperations.TrailingZeroCount(bits);
+                    bits &= bits - 1;
+                }
+            }
+            _unicode.Add(letter, names);
+            _ascii[letter] = null;
+        }
     }
 
     public int Owner(int name) => _owners[name];
@@ -63,8 +90,9 @@ internal sealed class NamePresenceIndex
         {
             if (letter < 128)
             {
-                if (_ascii[letter] is not { } map) yield break;
-                maps.Add(map);
+                if (_ascii[letter] is { } map) maps.Add(map);
+                else if (_unicode.TryGetValue(letter, out var names)) sparse.Add(names);
+                else yield break;
             }
             else
             {
@@ -95,8 +123,14 @@ internal sealed class NamePresenceIndex
                 {
                     if ((scanned++ & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                     var bit = 1UL << (name & 63);
-                    if (dense.Any(map => (map[name >> 6] & bit) == 0) ||
-                        sparse.Any(names => !ReferenceEquals(names, smallest) && Array.BinarySearch(names, name) < 0)) continue;
+                    var matches = true;
+                    // 稀疏列表逐项扫描时不为每个名称创建 LINQ 闭包，避免符号/低频英文查询额外分配。
+                    foreach (var map in dense)
+                        if ((map[name >> 6] & bit) == 0) { matches = false; break; }
+                    if (!matches) continue;
+                    foreach (var names in sparse)
+                        if (!ReferenceEquals(names, smallest) && Array.BinarySearch(names, name) < 0) { matches = false; break; }
+                    if (!matches) continue;
                     // 交集只排除缺字名称；字序、重复次数和匹配分值仍由原匹配器确定。
                     selected[name >> 6] |= bit;
                 }

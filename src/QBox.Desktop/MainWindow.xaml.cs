@@ -63,6 +63,7 @@ public partial class MainWindow : Window
             _history = new(new UnavailableHistory(_historyWarning));
         }
         InitializeComponent();
+        IsVisibleChanged += OnVisibilityChanged;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
     }
@@ -130,6 +131,24 @@ public partial class MainWindow : Window
     }
     private void ToggleSearch() { if (IsVisible && IsActive) Hide(); else ShowSearch(); }
     private void OnHide(object sender, RoutedEventArgs e) => Hide();
+    private void OnVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (_quitting) return;
+        if (IsVisible)
+        {
+            if (_loaded) _ = SearchAsync();
+            return;
+        }
+        // 结束前台请求而不停止索引监测；下次显示从最新视图重查，旧结果不可打开。
+        _inputVersion = _queries.Cancel();
+        _icons.CancelPending();
+        _searching = false;
+        _rows = [];
+        _total = 0;
+        Results.ItemsSource = _rows;
+        Results.IsEnabled = false;
+        MoreButton.Visibility = Visibility.Collapsed;
+    }
     private void OnFocus(object sender, RoutedEventArgs e) => QueryBox.Focus();
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {
@@ -229,6 +248,8 @@ public partial class MainWindow : Window
 
     private async Task SearchAsync()
     {
+        if (_quitting || !IsVisible) return;
+        _icons.CancelPending();
         using var request = _queries.Begin();
         _inputVersion = request.Version;
         Results.IsEnabled = false;
@@ -537,12 +558,13 @@ public partial class MainWindow : Window
                     if (!ReferenceEquals(before, _liveIndexes) || directory != _indexDirectory) continue;
                     if (after.Where((source, i) => !ReferenceEquals(source, before[i])).Any())
                     {
+                        var contentChanged = after.Where((source, i) => !source.View.HasSameSearchContent(before[i].View)).Any();
                         if (after.Where((source, i) => source.View.HasShortcutChangesFrom(before[i].View)).Any())
                             _catalogRefreshAt = DateTimeOffset.MinValue;
-                        MigrateHistory(before.Select(source => source.View).ToArray(), after.Select(source => source.View).ToArray());
+                        if (contentChanged) MigrateHistory(before.Select(source => source.View).ToArray(), after.Select(source => source.View).ToArray());
                         _liveIndexes = after;
                         // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
-                        await SearchAsync();
+                        if (contentChanged) await SearchAsync();
                     }
                     if (!_catalogRefreshing && DateTimeOffset.UtcNow - _catalogRefreshAt > TimeSpan.FromSeconds(30)) _ = RefreshCatalogsAsync();
                 }
@@ -576,10 +598,15 @@ public partial class MainWindow : Window
             var result = await Task.Run(() => (Shortcuts: ShortcutCatalog.Load(live, request.Token),
                 Applications: PackagedApplicationCatalog.Load(request.Token)), request.Token);
             if (!_catalogs.IsCurrent(request) || !ReferenceEquals(indexes, _indexes)) return;
-            _shortcuts = result.Shortcuts;
-            if (result.Applications.Warning == null) _applications = result.Applications;
+            var changed = !_shortcuts.HasSameSearchContent(result.Shortcuts);
+            if (changed) _shortcuts = result.Shortcuts;
+            if (result.Applications.Warning == null)
+            {
+                if (!_applications.HasSameSearchContent(result.Applications)) { _applications = result.Applications; changed = true; }
+            }
             else _notice = result.Applications.Warning;
-            await SearchAsync();
+            if (changed) await SearchAsync();
+            else RefreshStatus();
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)

@@ -1,0 +1,475 @@
+{
+  "date": "2026-11-15",
+  "productVersion": "0.2.3",
+  "baselineCommit": "a0a8d8c",
+  "baselineRuntimeLibraries": {
+    "QBox.Core.dll": "99f93e00bc6be2c63dd306b0569e37726ab96848a36f53afe2b83189f4354257",
+    "QBox.Windows.dll": "c251c1b585b0056257f98449126afb00f4c963bd05bccce6f159ae0e84d0e1d1"
+  },
+  "nameSharingPolicy": {
+    "maximumReuseDistanceBytes": 262144,
+    "uniqueOnlySampleNames": 4096,
+    "overlayDeduplication": false,
+    "globalDeduplicationNotAdopted": true,
+    "reason": "Global sharing increased several broad-query times; bounded sharing preserves text locality"
+  },
+  "allStructureComparison": [
+    {
+      "filesCompared": 2292989,
+      "namesCompared": 3859519,
+      "allMetadataAndRawUtf16Equal": true,
+      "logicalSha256": "dfe61f3db4d12cf2aca13adcec2a78bcca8a78624372437e7f9aab03962daa60",
+      "originalBytes": 384727963,
+      "packedBytes": 364514893,
+      "bytesSaved": 20213070,
+      "originalFormat": 1,
+      "packedFormat": 2,
+      "basicIdentityAndCheckpointPreserved": true
+    },
+    {
+      "filesCompared": 627468,
+      "namesCompared": 895375,
+      "allMetadataAndRawUtf16Equal": true,
+      "logicalSha256": "e1804e0c8cc87274e43236eb9c3aed2f74f99e37d46dca96949312d40d055b50",
+      "originalBytes": 60510169,
+      "packedBytes": 52839763,
+      "bytesSaved": 7670406,
+      "originalFormat": 1,
+      "packedFormat": 2,
+      "basicIdentityAndCheckpointPreserved": true
+    }
+  ],
+  "totalBaseBytesSaved": 27883476,
+  "asciiPolicy": {
+    "sparsePayloadMaximumFractionOfBitmap": 0.125,
+    "highFrequencyPath": "existing dense bitmaps",
+    "preparedManagedBytesSaved": 10273560,
+    "estimateIsNotPrivateResidentReduction": true
+  },
+  "memoryProbe": {
+    "scope": "Same frozen bases/deltas, shortcut and registered-app sources, empty history, explicit probe GC",
+    "baselineLoadAndPrepareMs": 2987.6622,
+    "candidateLoadAndPrepareMs": 2987.721,
+    "baselinePrepared": {
+      "stage": "prepared",
+      "beforeCollectionPrivateBytes": 115527680,
+      "privateBytes": 115527680,
+      "workingSetBytes": 582144000,
+      "managedBytes": 73251672,
+      "peakWorkingSetBytes": 590069760
+    },
+    "candidatePrepared": {
+      "stage": "prepared",
+      "beforeCollectionPrivateBytes": 110825472,
+      "privateBytes": 110825472,
+      "workingSetBytes": 556498944,
+      "managedBytes": 62978112,
+      "peakWorkingSetBytes": 563126272
+    },
+    "baselineQueried": {
+      "stage": "queried",
+      "beforeCollectionPrivateBytes": 157356032,
+      "privateBytes": 147738624,
+      "workingSetBytes": 640036864,
+      "managedBytes": 100462128,
+      "peakWorkingSetBytes": 657334272
+    },
+    "candidateQueried": {
+      "stage": "queried",
+      "beforeCollectionPrivateBytes": 147935232,
+      "privateBytes": 132841472,
+      "workingSetBytes": 602996736,
+      "managedBytes": 90185760,
+      "peakWorkingSetBytes": 622379008
+    }
+  },
+  "queries": [
+    {
+      "query": "Any",
+      "totalMatches": 211632,
+      "responseSha256": "d83d73cb4b69048b52ea37ecd2b0398e3e62f5176d61e276d9f7090aa364cf85",
+      "baselineWarmMedianMs": 59.620400000000004,
+      "candidateWarmMedianMs": 58.822199999999995
+    },
+    {
+      "query": "800Q",
+      "totalMatches": 838,
+      "responseSha256": "5456593e8c2bf7912380aa295846c6c6f9953f87ded8fc04ba0ce74b423116ed",
+      "baselineWarmMedianMs": 5.08035,
+      "candidateWarmMedianMs": 5.51995
+    },
+    {
+      "query": ".code",
+      "totalMatches": 96083,
+      "responseSha256": "61ec23095860b21e2b5b2e7d98b3b36f0bb5433bcf633b4bc926e263049253c5",
+      "baselineWarmMedianMs": 97.93005,
+      "candidateWarmMedianMs": 98.03375
+    },
+    {
+      "query": "nd",
+      "totalMatches": 1188277,
+      "responseSha256": "74d6bd159436a4aac202529f1935c1bae1c0319694122a06dedc17a3f0033028",
+      "baselineWarmMedianMs": 143.48905000000002,
+      "candidateWarmMedianMs": 146.62920000000003
+    },
+    {
+      "query": "Tra",
+      "totalMatches": 853112,
+      "responseSha256": "fb5437aec9d9b6ddb73f60119c2c8861b5ce11092ce36856ed87483fa2ec3728",
+      "baselineWarmMedianMs": 122.39245,
+      "candidateWarmMedianMs": 125.3743
+    },
+    {
+      "query": "chatgpt",
+      "totalMatches": 4231,
+      "responseSha256": "0c5ea033edc1d13b8ec5e988c113823625bacea38ed350f21d36af1c22cb8956",
+      "baselineWarmMedianMs": 32.196250000000006,
+      "candidateWarmMedianMs": 33.46395
+    },
+    {
+      "query": "rtt",
+      "totalMatches": 900331,
+      "responseSha256": "b449d9bda7c1f72c616fb5e15e0bde1024c39e90a04a6162654364b0b6d6f63d",
+      "baselineWarmMedianMs": 148.43054999999998,
+      "candidateWarmMedianMs": 150.35219999999998
+    },
+    {
+      "query": "doubao",
+      "totalMatches": 62009,
+      "responseSha256": "a993aaf17f2a164060bf8a4e3ed2250f00c44bfcdf7cc1a71c717dc4751f127c",
+      "baselineWarmMedianMs": 88.21565000000001,
+      "candidateWarmMedianMs": 89.04465
+    },
+    {
+      "query": "qianwen",
+      "totalMatches": 190,
+      "responseSha256": "d9e3bfe601b7eb9c638dad5ad696f00ba74a3529cb8df02590cfb5ced2cdc98f",
+      "baselineWarmMedianMs": 3.9332,
+      "candidateWarmMedianMs": 4.23095
+    },
+    {
+      "query": "豆包",
+      "totalMatches": 5,
+      "responseSha256": "1c32d0323148f1323dc4aa8177f77de1d92829941c840061c64e000b25b9ff4b",
+      "baselineWarmMedianMs": 0.43535,
+      "candidateWarmMedianMs": 0.42385
+    },
+    {
+      "query": "千问",
+      "totalMatches": 0,
+      "responseSha256": "02179d59460f60d8a0a7cff78bfb15af6b07a5ed688193401796fa9e39b2ca20",
+      "baselineWarmMedianMs": 0.29115,
+      "candidateWarmMedianMs": 0.28185
+    },
+    {
+      "query": "资料",
+      "totalMatches": 7,
+      "responseSha256": "7302d075aa9869027f24f4d9e621d00dc769899e2cbbb5d655f4364936165f42",
+      "baselineWarmMedianMs": 0.33699999999999997,
+      "candidateWarmMedianMs": 0.32755
+    },
+    {
+      "query": "工作",
+      "totalMatches": 32,
+      "responseSha256": "7c7d882e283601826e6557da4fe59fca851c56ff2d88243ca966d1e87cba5e5f",
+      "baselineWarmMedianMs": 0.5111,
+      "candidateWarmMedianMs": 0.4656
+    },
+    {
+      "query": "中",
+      "totalMatches": 86,
+      "responseSha256": "788f11d013212571e20ef55f4d8796e9afdb1d92f330c4d539fb9fdc8b79abca",
+      "baselineWarmMedianMs": 0.5206999999999999,
+      "candidateWarmMedianMs": 0.49144999999999994
+    },
+    {
+      "query": "任意中文不存在探针",
+      "totalMatches": 0,
+      "responseSha256": "5ac0c32639e32896645cba3f118812bfe1494b5c9741935b180fce41204163f5",
+      "baselineWarmMedianMs": 0.29710000000000003,
+      "candidateWarmMedianMs": 0.3133
+    },
+    {
+      "query": "资",
+      "totalMatches": 58,
+      "responseSha256": "2d4cc2e811184f4b0845435d0808541a9c8ee333d49778a9dd243f4042d7e8aa",
+      "baselineWarmMedianMs": 0.38555,
+      "candidateWarmMedianMs": 0.40095000000000003
+    },
+    {
+      "query": "😀",
+      "totalMatches": 1,
+      "responseSha256": "52d2456aa77aa23b8d025d97e90fea019289c9dc791fc6d0f7735e92933e4b5b",
+      "baselineWarmMedianMs": 0.22615,
+      "candidateWarmMedianMs": 0.23399999999999999
+    },
+    {
+      "query": "𠀀",
+      "totalMatches": 0,
+      "responseSha256": "9a2773f2b768d2d8ab3db1e4107a92ecd6feb84a962b2f494274007b1eddf50a",
+      "baselineWarmMedianMs": 0.3188,
+      "candidateWarmMedianMs": 0.28815
+    },
+    {
+      "query": "文a",
+      "totalMatches": 22,
+      "responseSha256": "2ae67c52933c07f5b272e833a0790aafbf00724cfb7993fe7112d0ebd39f04cf",
+      "baselineWarmMedianMs": 0.40085000000000004,
+      "candidateWarmMedianMs": 0.3967
+    },
+    {
+      "query": "ſ",
+      "totalMatches": 2035202,
+      "responseSha256": "208fafb8ed98a6eab801de273370b6fbd9e6dfcc6b1b14ba0b80afe83d9be8ee",
+      "baselineWarmMedianMs": 553.6260500000001,
+      "candidateWarmMedianMs": 550.18705
+    },
+    {
+      "query": "ı",
+      "totalMatches": 0,
+      "responseSha256": "d2c6d37696b57dc31a2f78c65760f57922b43186ddeda2b0f67aecc82bbb69ba",
+      "baselineWarmMedianMs": 0.21945,
+      "candidateWarmMedianMs": 0.18995
+    },
+    {
+      "query": "",
+      "totalMatches": 3042276,
+      "responseSha256": "5f756a00f05cf9ed9657ec4e946fe7f5939e1023681ba20353402ef9085a2036",
+      "baselineWarmMedianMs": 391.73885,
+      "candidateWarmMedianMs": 406.84029999999996
+    },
+    {
+      "query": "@",
+      "totalMatches": 8003,
+      "responseSha256": "b4ddc5e6c95234dcb2aa10d69a8059caabfaf83216d3b8bf1927fd32aea02ce9",
+      "baselineWarmMedianMs": 2.1128,
+      "candidateWarmMedianMs": 2.2433500000000004
+    },
+    {
+      "query": "!",
+      "totalMatches": 45,
+      "responseSha256": "ca34ae5af76d0c1bf286571005de9b942d15f37ea52fe17d9c488e544d69fef6",
+      "baselineWarmMedianMs": 0.31745,
+      "candidateWarmMedianMs": 0.2455
+    },
+    {
+      "query": "a@",
+      "totalMatches": 5166,
+      "responseSha256": "fa0de8d615b15743446b4698d509e12edff02807ba9b46932a5ac088d3a7a56a",
+      "baselineWarmMedianMs": 2.5416,
+      "candidateWarmMedianMs": 2.28585
+    },
+    {
+      "query": "[",
+      "totalMatches": 450,
+      "responseSha256": "10ff791b69b37ab86f8caf6147c58d9d3dd65d6773c384ea5a8c59f484411de7",
+      "baselineWarmMedianMs": 0.38215,
+      "candidateWarmMedianMs": 0.3649
+    },
+    {
+      "query": "#",
+      "totalMatches": 86,
+      "responseSha256": "2764400af557b95f19b0d1339d898fe5e229f550eac0b7fb7bfe76f89689a44c",
+      "baselineWarmMedianMs": 0.28645,
+      "candidateWarmMedianMs": 0.21275
+    }
+  ],
+  "queryCoverage": "Total matches plus top 9 full SearchHit fields; structural equality checked separately for every node/name/raw UTF-16",
+  "queryProtocol": {
+    "sameProcess": true,
+    "isolatedAssemblyContexts": true,
+    "wholeCorpusWarmupPasses": 2,
+    "alternatingRounds": 8,
+    "explicitGcBetweenQueries": false,
+    "scope": "Same frozen logical data, empty history, 27 queries; total + top9 full fields digest, all structure checked separately"
+  },
+  "uniqueNameIndexReplay": {
+    "buildMs": {
+      "baseline": 358.44635,
+      "candidate": 304.7856
+    },
+    "saveMs": {
+      "baseline": 68.5555,
+      "candidate": 63.014300000000006
+    },
+    "loadMs": {
+      "baseline": 21.688499999999998,
+      "candidate": 21.3063
+    },
+    "incrementalMs": {
+      "baseline": 6.01945,
+      "candidate": 6.23035
+    },
+    "appendMs": {
+      "baseline": 5.317,
+      "candidate": 5.1984
+    },
+    "compactMs": {
+      "baseline": 233.37995,
+      "candidate": 236.4435
+    },
+    "representativePhaseSumMs": {
+      "baseline": 692.9119000000001,
+      "candidate": 626.64145
+    },
+    "collectBetweenRounds": true
+  },
+  "repeatedNameIndexReplay": {
+    "buildMs": {
+      "baseline": 381.03864999999996,
+      "candidate": 341.25030000000004
+    },
+    "saveMs": {
+      "baseline": 63.663399999999996,
+      "candidate": 37.79625
+    },
+    "loadMs": {
+      "baseline": 21.703000000000003,
+      "candidate": 13.77315
+    },
+    "incrementalMs": {
+      "baseline": 6.3694500000000005,
+      "candidate": 6.2471
+    },
+    "appendMs": {
+      "baseline": 5.8137,
+      "candidate": 5.7448
+    },
+    "compactMs": {
+      "baseline": 301.3918,
+      "candidate": 237.36175
+    },
+    "representativePhaseSumMs": {
+      "baseline": 791.1381,
+      "candidate": 644.0696
+    },
+    "collectBetweenRounds": true
+  },
+  "naturalRoundIndexReplay": {
+    "unique": {
+      "buildMs": {
+        "baseline": 347.4018,
+        "candidate": 320.4325
+      },
+      "saveMs": {
+        "baseline": 64.96775,
+        "candidate": 67.9212
+      },
+      "loadMs": {
+        "baseline": 22.004399999999997,
+        "candidate": 22.11605
+      },
+      "incrementalMs": {
+        "baseline": 6.5588999999999995,
+        "candidate": 6.52685
+      },
+      "appendMs": {
+        "baseline": 6.998800000000001,
+        "candidate": 6.03655
+      },
+      "compactMs": {
+        "baseline": 229.69245,
+        "candidate": 259.36445
+      },
+      "representativePhaseSumMs": {
+        "baseline": 729.49615,
+        "candidate": 694.9185500000001
+      },
+      "collectBetweenRounds": false
+    },
+    "repeated": {
+      "buildMs": {
+        "baseline": 384.0519,
+        "candidate": 368.73355000000004
+      },
+      "saveMs": {
+        "baseline": 61.9407,
+        "candidate": 36.4081
+      },
+      "loadMs": {
+        "baseline": 20.6399,
+        "candidate": 13.7742
+      },
+      "incrementalMs": {
+        "baseline": 6.40705,
+        "candidate": 6.9396
+      },
+      "appendMs": {
+        "baseline": 6.0484,
+        "candidate": 6.13835
+      },
+      "compactMs": {
+        "baseline": 274.14785,
+        "candidate": 271.84465
+      },
+      "representativePhaseSumMs": {
+        "baseline": 751.18175,
+        "candidate": 703.0976
+      },
+      "collectBetweenRounds": false
+    }
+  },
+  "indexTimingControl": "Controlled final replay collects before each round, outside timed phases; natural-round reports retained to show GC-related variation. Not natural product tail latency.",
+  "indexReplayScope": "201001 cache-reconciliation records and 2000 USN renames, not physical full-volume MFT throughput",
+  "desktopLifecycle": {
+    "unchangedCatalogPreservedRows": true,
+    "hiddenInputAndRefreshSkipped": true,
+    "hideInvalidatedResults": true,
+    "reshowUsedLatestIndex": true,
+    "staleIconQueueClearedAndReusable": true,
+    "firstShowMs": 341.69,
+    "changedShowMs": 27.1512,
+    "repeatedShowQueryMs": [
+      27.7318,
+      40.3117,
+      42.307,
+      26.3246,
+      28.6279,
+      26.2528,
+      27.5838,
+      27.021,
+      27.378,
+      25.6758
+    ],
+    "scope": "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
+  },
+  "validation": {
+    "matchingChecks": 685,
+    "behaviorChecks": 2924
+  },
+  "formalInstanceReplaced": false,
+  "formalIndexesConverted": false,
+  "artifact": {
+    "name": "releases/0.2.3/QBox.exe",
+    "fileVersion": "0.2.3.0",
+    "sha256": "bcf2bbe8e908289055b3a0da7e267f0c15e72919c3db1e869868c37bb276ea72",
+    "bytes": 985869
+  },
+  "formatRollout": "v1 remains readable without conversion; new builds and base merges use bounded sharing when useful. v2 cannot be read by 0.2.2.",
+  "rawReportSha256": {
+    "baseline-final-query.json": "cdb6edd0f4d09b4bb7e59b1e459c7488e0319c7f638b7d3098d2316aee036b23",
+    "candidate-final-query.json": "866196d76448b79a3e1beb6dcfc039bad582dbadcdc302d6fe9042f51dd0d215",
+    "candidate-local-a.json": "b9f47460c6ed0ed458550ca67f915d091c9095af8895c265c2c6f91831ae2d27",
+    "candidate-local-b.json": "d24f4bcdb14e68546d75c5789cc626eedf18febed72097f617b32bc20098db7b",
+    "structure-local-C.json": "e2c882f490c1d71657ba1f3272b8b3cef73d6313305142a07ae90a41248622e5",
+    "structure-local-D.json": "093a0ccf3a5f45cef817598f7c9083fba7fdfadb1f5c09405284afb6f098246e",
+    "baseline-final-unique/report.json": "be633ac21060412a6ee5b6a32f810e908a1e149ebf5ce13878822f5549317348",
+    "candidate-final-unique/report.json": "6ff0835f5da5b93ca41b865c18614888b7c38f86772376483cf112805a4ccccb",
+    "baseline-gate-repeated/report.json": "6da34d72521986da1177d6c0251e8352a21256e14a079a1417e5e3ad66d70fd2",
+    "candidate-gate-repeated/report.json": "221c13e4303beade9378365edc9dfa6b46fe470d4092908fdee7c9c6d6032994",
+    "desktop-final/report.json": "8b2a3f98c4c87e711fe328812cbebcdd619c7b934a914321ad08f57ee8e2874f",
+    "paired-query.json": "9211c7199fc257ffd3be339532f928b738b490cb1196d0e69e4bb95b1907d0ad",
+    "baseline-controlled-unique/report.json": "dfa66cbb2b7cf46f62182a1045d99ede1e4a83d6e466334343b90a3d4a7bc3b0",
+    "candidate-controlled-unique/report.json": "6248537df065c302fb5242e441a0f3ec1441c1275cd55d3975887e65a67a4b33",
+    "baseline-controlled-repeated/report.json": "a7508d27022734536e5a307f8163436dcd54adae8b7bdfd3fc91e00414d0f353",
+    "candidate-controlled-repeated/report.json": "b0a89e3e7cfa9794c777eb19d92df1298583839a0c17d658be05201ff81ec718",
+    "paired-helper/Entry.cs": "40675fe9a131833cfcfbb2202284b69118d5c6014c4951a60b036121f5b2d791",
+    "paired-runner/Program.cs": "4748c522614f4f9da653b459d78c35c11fc9a3436d92d6248e4e3d3828a2e401"
+  },
+  "limits": [
+    "One machine and finite workloads, not a universal performance guarantee",
+    "Sub-millisecond query times fluctuate; not every keyword is faster",
+    "GC only in diagnostic process, not in product",
+    "Desktop probe uses offscreen window and placeholder icons; no physical IME/hotkey or end-to-end activation validation"
+  ]
+}

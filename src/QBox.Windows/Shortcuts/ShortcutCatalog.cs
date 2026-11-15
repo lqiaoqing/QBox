@@ -9,13 +9,30 @@ namespace QBox.Windows.Shortcuts;
 
 public sealed class ShortcutCatalog
 {
-    private sealed record Entry(SearchCandidate Canonical, SearchCandidate[] Aliases, string ExecutableTarget);
+    private sealed record Entry(SearchCandidate Canonical, SearchCandidate[] Aliases, ShortcutAction Action)
+    {
+        public string ExecutableTarget => Action.Target;
+    }
     private readonly Entry[] _entries;
     private readonly HashSet<string> _replaced;
     private readonly Dictionary<string, PreparedApplicationName> _names;
     public static ShortcutCatalog Empty { get; } = new([], []);
     public int ActionCount => _entries.Length;
     public int ShortcutCount => _replaced.Count;
+
+    public bool HasSameSearchContent(ShortcutCatalog other)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (_entries.Length != other._entries.Length || !_replaced.SetEquals(other._replaced)) return false;
+        for (var i = 0; i < _entries.Length; i++)
+        {
+            var left = _entries[i]; var right = other._entries[i];
+            // 动作参数和别名同样影响打开与匹配，不能只比较条数、主名称或 EXE 路径。
+            if (left.Canonical != right.Canonical || left.Action != right.Action ||
+                !left.Aliases.AsSpan().SequenceEqual(right.Aliases)) return false;
+        }
+        return true;
+    }
     private ShortcutCatalog(Entry[] entries, HashSet<string> replaced)
     {
         _entries = entries;
@@ -76,7 +93,7 @@ public sealed class ShortcutCatalog
             // 固定按来源顺序选主项，新增别名不会因本次查询的匹配分数改变学习身份。
             var ordered = group.Value.OrderBy(candidate => Array.FindIndex(folders, root => candidate.Target.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 .ThenBy(candidate => candidate.Target, StringComparer.Ordinal).ToArray();
-            return new Entry(ordered[0] with { Kind = SearchItemKind.Application, IsApplicationEntry = true }, ordered, group.Key.Target);
+            return new Entry(ordered[0] with { Kind = SearchItemKind.Application, IsApplicationEntry = true }, ordered, group.Key);
         }).OrderBy(entry => entry.Canonical.Id, StringComparer.Ordinal).ToArray();
         return new(entries, entries.SelectMany(entry => entry.Aliases).Select(candidate => candidate.Id).ToHashSet(StringComparer.Ordinal));
     }

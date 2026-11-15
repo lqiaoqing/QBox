@@ -15,6 +15,13 @@ internal static class ShortcutChecks
         var action = new ShortcutAction(@"C:\Apps\tool.exe", "--profile one", @"C:\Work", 1, 0x80);
         var canonical = Link("a", "Alpha Tool"); var alias = Link("b", "Beta Tool");
         var catalog = ShortcutCatalog.Create([canonical, alias], [root], _ => action);
+        checks.Run("快捷方式目录重读内容相同可复用，名称或别名变化必须更新", () =>
+        {
+            True(catalog.HasSameSearchContent(ShortcutCatalog.Create([alias, canonical], [root], _ => action)));
+            True(!catalog.HasSameSearchContent(ShortcutCatalog.Create([canonical], [root], _ => action)));
+            True(!catalog.HasSameSearchContent(ShortcutCatalog.Create([canonical, alias with { Name = "Renamed Tool" }], [root], _ => action)));
+            True(!catalog.HasSameSearchContent(ShortcutCatalog.Create([canonical with { Target = canonical.Target + ".other" }, alias], [root], _ => action)));
+        });
         SearchResponse Search(string query, SelectionHistory? history = null)
         {
             var collector = new SearchCollector(query);
@@ -45,6 +52,8 @@ internal static class ShortcutChecks
             {
                 var result = ShortcutCatalog.Create([canonical, alias], [root], candidate => candidate.Id == "a" ? action : different);
                 Equal(2, result.ActionCount);
+                var changed = ShortcutCatalog.Create([canonical, alias], [root], _ => different);
+                True(!catalog.HasSameSearchContent(changed));
             });
         checks.Run("未知链接和开始菜单外的副本保留原始文件入口", () =>
         {

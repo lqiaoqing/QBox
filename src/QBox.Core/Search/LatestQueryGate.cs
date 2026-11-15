@@ -22,6 +22,17 @@ public sealed class LatestQueryGate : IDisposable
         lock (_gate) return !_disposed && request.Version == _version && !request.Token.IsCancellationRequested;
     }
 
+    public long Cancel()
+    {
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            // 隐藏窗口也要使已完成的结果失效，但门控仍可供下次唤出使用。
+            _active?.Cancel();
+            return ++_version;
+        }
+    }
+
     public void Dispose()
     {
         lock (_gate)

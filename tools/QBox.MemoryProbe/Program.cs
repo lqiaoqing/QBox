@@ -7,15 +7,28 @@ using QBox.Windows.Indexing;
 using QBox.Windows.Shortcuts;
 using QBox.Windows.Applications;
 
+if (args.Length == 3 && args[0] == "--pack")
+{
+    IndexSnapshotProbe.Pack(args[1], args[2]);
+    return;
+}
+if (args.Length == 4 && args[0] == "--compare-indexes")
+{
+    IndexSnapshotProbe.Compare(args[1], args[2], args[3]);
+    return;
+}
+
 if (args.Length >= 2 && args[0] == "--indexing")
 {
-    IndexingBenchmark.Run(args[1], args.Contains("--remap"));
+    IndexingBenchmark.Run(args[1], args.Contains("--remap"), args.Contains("--repeated-names"));
     return;
 }
 if (args.Length is < 2 or > 3) throw new ArgumentException("用法：QBox.MemoryProbe <索引目录> <报告路径> [--live]");
 var includeDesktop = args.Length == 3 && args[2] == "--desktop";
 var useLive = includeDesktop || args.Length == 3 && args[2] == "--live";
 var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true };
+var repetitions = int.TryParse(Environment.GetEnvironmentVariable("QBOX_PROBE_QUERY_PASSES"), out var requested) ? requested : 3;
+if (repetitions is < 3 or > 30) throw new ArgumentException("查询探针重复次数必须为 3～30");
 var stages = new List<object>();
 var process = Process.GetCurrentProcess();
 void Sample(string stage)
@@ -51,12 +64,12 @@ if (includeDesktop) Sample("catalogs");
 var history = new SelectionHistory();
 var cases = new List<object>();
 foreach (var query in new[] { "Any", "800Q", ".code", "nd", "Tra", "chatgpt", "rtt", "doubao", "qianwen",
-    "豆包", "千问", "资料", "工作", "中", "任意中文不存在探针", "资", "😀", "𠀀", "文a", "ſ", "ı", "" })
+    "豆包", "千问", "资料", "工作", "中", "任意中文不存在探针", "资", "😀", "𠀀", "文a", "ſ", "ı", "", "@", "!", "a@", "[", "#" })
 {
     var timings = new List<double>();
     string? digest = null;
     var total = 0;
-    for (var pass = 0; pass < 3; pass++)
+    for (var pass = 0; pass < repetitions; pass++)
     {
         clock.Restart();
         var collector = new SearchCollector(query, 9);
@@ -69,13 +82,13 @@ foreach (var query in new[] { "Any", "800Q", ".code", "nd", "Tra", "chatgpt", "r
                 replacedShortcutIds: shortcuts.ReplacedIds(query), representedExecutables: shortcuts.MatchedExecutableTargets(query));
         var result = collector.Finish();
         timings.Add(clock.Elapsed.TotalMilliseconds);
-        // 全部 SearchHit 字段和总数参与摘要；报告不保存机器上的真实文件路径。
+        // 前九项全部 SearchHit 字段和总数参与摘要；报告不保存机器上的真实文件路径。
         var current = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(result, json)));
         if (digest != null && digest != current) throw new InvalidDataException("重复查询结果不一致");
         digest = current; total = result.TotalMatches;
     }
     cases.Add(new { query, totalMatches = total, responseSha256 = digest, timesMs = timings });
-    Console.WriteLine($"query {query}: total={total}, warm={timings[2]:F2} ms");
+    Console.WriteLine($"query {query}: total={total}, warm={timings.Skip(1).Order().ElementAt((repetitions - 1) / 2):F2} ms");
 }
 Sample("queried");
 var report = new { sourceFiles = paths.Select(path =>
@@ -84,7 +97,7 @@ var report = new { sourceFiles = paths.Select(path =>
         return new { name = Path.GetFileName(path), bytes = file.Length,
             sha256 = Convert.ToHexStringLower(SHA256.HashData(file)) };
     }),
-    useLive, includeDesktop, catalogMs, shortcutActions = shortcuts.ActionCount,
+    useLive, includeDesktop, repetitions, catalogMs, shortcutActions = shortcuts.ActionCount,
     applications = applications.Count, applicationCatalogWarning = applications.Warning != null,
     changedRecords = live?.Sum(view => view.ChangedRecords) ?? 0,
     fileCount = indexes.Sum(index => (long)index.FileCount), nameCount = indexes.Sum(index => (long)index.NameCount),

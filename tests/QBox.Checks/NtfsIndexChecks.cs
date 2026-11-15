@@ -285,7 +285,7 @@ internal static class NtfsIndexChecks
             Equal(@"X:\new资料😀", next.Candidates("new").Single().Target);
             Equal(0, next.Candidates("old").Count());
         }));
-        checks.Run("映射快照再保存保持 v1 字节与孤立代理项", () => WithDirectory(directory =>
+        checks.Run("映射快照再保存保持当前格式字节与孤立代理项", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "volume.qbi");
             var copy = Path.Combine(directory, "copy.qbi");
@@ -294,12 +294,76 @@ internal static class NtfsIndexChecks
             True(System.IO.File.ReadAllBytes(path).SequenceEqual(System.IO.File.ReadAllBytes(copy)));
             Equal("𠀀资料😀", VolumeIndexStore.Load(copy).Candidates("资料").Single().Name);
         }));
+        checks.Run("旧 v1 转换共享名称保留全结构、基础身份、增量和旧映射", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            var index = Snapshot(File(20, "folder-a", directory: true), File(21, "shared资料\ud800", Id(20)),
+                File(22, "folder-b", directory: true), File(23, "shared资料\ud800", Id(22)), File(24, "Shared资料\ud800"));
+            System.IO.File.WriteAllBytes(path, LegacyBytes(index, directory));
+            var legacy = VolumeIndexStore.Load(path);
+            var before = legacy.ExportFiles().ToArray();
+            var old = new SearchCollector("shared"); legacy.SearchInto(old, new SelectionHistory().ForQuery("shared"));
+            var log = IndexChangeLog.PathFor(path);
+            IndexChangeLog.Reset(log, legacy);
+            IndexChangeLog.Append(log, new(new(7, 110), [new(Id(21), File(21, "renamed资料", Id(20)))]));
+            var pooled = legacy.ShareNameText();
+            Equal(legacy.Geometry, pooled.Geometry); Equal(legacy.Checkpoint, pooled.Checkpoint); Equal(legacy.CreatedAt, pooled.CreatedAt);
+            VolumeIndexStore.Save(path, pooled);
+            var restored = VolumeIndexStore.Load(path);
+            var after = restored.ExportFiles().ToArray();
+            Equal(before.Length, after.Length);
+            for (var i = 0; i < before.Length; i++)
+            {
+                Equal(before[i] with { Names = [] }, after[i] with { Names = [] });
+                True(before[i].Names.SequenceEqual(after[i].Names));
+            }
+            Equal(3, old.Finish().TotalMatches);
+            long cursor = 0;
+            var live = new LiveVolumeIndex(restored).Apply(IndexChangeLog.Read(log, restored, ref cursor));
+            Equal("renamed资料", live.FindFile(Id(21))!.Names[0].Name);
+            Equal(2, BinaryPrimitives.ReadInt32LittleEndian(System.IO.File.ReadAllBytes(path).AsSpan(8)));
+            True(new FileInfo(path).Length < LegacyBytes(index, directory).Length);
+        }));
+        foreach (var kind in new[] { "中间偏移", "跨片段长度", "未引用文本", "非根点目录" })
+            checks.Run("共享名称仍拒绝有正确摘要的非法引用：" + kind, () => WithDirectory(directory =>
+            {
+                var path = Path.Combine(directory, "bad.qbi");
+                VolumeIndexStore.Save(path, Snapshot(File(20, "alpha"), File(21, "beta"), File(22, "alpha")));
+                var bytes = System.IO.File.ReadAllBytes(path);
+                var namesAt = 92 + 4 * 28;
+                var last = namesAt + 3 * 17;
+                if (kind == "中间偏移") BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(last + 4), 2);
+                if (kind == "跨片段长度") BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(last + 8), 9);
+                if (kind == "未引用文本")
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(namesAt + 2 * 17 + 4), 1);
+                    BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(namesAt + 2 * 17 + 8), 5);
+                }
+                if (kind == "非根点目录")
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(last + 4), 0);
+                    BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(last + 8), 1);
+                }
+                System.Security.Cryptography.SHA256.HashData(bytes.AsSpan(0, bytes.Length - 32)).CopyTo(bytes, bytes.Length - 32);
+                System.IO.File.WriteAllBytes(path, bytes);
+                Throws<InvalidDataException>(() => VolumeIndexStore.Load(path));
+            }));
+        checks.Run("长名称共享跨越多个校验位图字且保留独立身份", () => WithDirectory(directory =>
+        {
+            var longName = new string('a', 300) + "资料\ud800";
+            var index = Snapshot(File(20, longName), File(21, new string('b', 200)), File(22, longName));
+            var path = Path.Combine(directory, "long.qbi"); VolumeIndexStore.Save(path, index);
+            var restored = VolumeIndexStore.Load(path);
+            var names = restored.ExportFiles().SelectMany(file => file.Names).Where(name => name.Name == longName).ToArray();
+            Equal(2, names.Length);
+            Equal(2, restored.Candidates("资料").Select(candidate => candidate.Id).Distinct().Count());
+        }));
         checks.Run("有效校验和中的非法名称边界仍拒绝并释放映射", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "volume.qbi");
             VolumeIndexStore.Save(path, Snapshot(File(20, "file")));
             var bytes = System.IO.File.ReadAllBytes(path);
-            // v1 的固定头在三字符卷根下为 92 字节；首条名称偏移不得越过字符区。
+            // v1/v2 的固定头在三字符卷根下均为 92 字节；名称偏移不得越过字符区。
             System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(92 + 2 * 28 + 4), int.MaxValue);
             System.Security.Cryptography.SHA256.HashData(bytes.AsSpan(0, bytes.Length - 32)).CopyTo(bytes, bytes.Length - 32);
             System.IO.File.WriteAllBytes(path, bytes);
@@ -468,6 +532,25 @@ internal static class NtfsIndexChecks
             "ſı_资料.txt", "İ资料.txt", "Ⱥⱥ资料.txt", "𐐀𐐨资料.txt", "e\u0301资料.txt" }
             .Select((name, i) => File((ulong)(100 + i), name, directory: i % 3 == 0))
             .Append(File(200, "long-report.txt") with { Names = [new(Root, "long-report.txt", 1, 0), new(Root, "中文~1.TXT", 2, 0)] }).ToArray());
+        var sparseAscii = Snapshot(Enumerable.Range(100, 1024).Select(i => File((ulong)i, $"alpha_{i}.txt"))
+            .Append(File(2000, "rare@资料!.txt")).Append(File(2001, "long-report.txt") with
+            { Names = [new(Root, "long-report.txt", 1, 0), new(Root, "RARE@1.TXT", 2, 0)] }).ToArray());
+        foreach (var query in new[] { "@", "!", "@资", "@a", "@1", "AL", "012", "a_a", "@!", "不存在@" })
+            checks.Run("稀疏 ASCII 与完整匹配的全部结果字段一致：" + query, () =>
+            {
+                var reference = new SearchEngine(new()).Search(query, sparseAscii.Candidates(query), 2000);
+                var collector = new SearchCollector(query, 2000);
+                sparseAscii.SearchInto(collector, new SelectionHistory().ForQuery(query));
+                var actual = collector.Finish();
+                Equal(reference.TotalMatches, actual.TotalMatches); Equal(reference.Items.Count, actual.Items.Count);
+                for (var i = 0; i < reference.Items.Count; i++)
+                {
+                    Equal(reference.Items[i].Candidate, actual.Items[i].Candidate);
+                    Equal(reference.Items[i].Group, actual.Items[i].Group);
+                    Equal(reference.Items[i].Match.AlignmentScore, actual.Items[i].Match.AlignmentScore);
+                    True(reference.Items[i].Match.Highlights.SequenceEqual(actual.Items[i].Match.Highlights));
+                }
+            });
         foreach (var query in new[] { "资料", "资", "料资", "资料资料", "资料资", "中文A", "😀", "𠀀", "𠮷", "𠀀𠮷", "𐐨", "ı", "ſ", "İ", "ⱥ", "Ⱥ", "e\u0301", "中文~1", "无匹配探针" })
             foreach (var limit in new[] { 0, 1, 9, 100 })
                 checks.Run($"Unicode 预筛与原完整遍历的结果及高亮一致 [{query}] / {limit}", () =>
@@ -608,6 +691,17 @@ internal static class NtfsIndexChecks
             var renamed = Search(next, "alphabet").Items.Single().Candidate;
             True(history.ForQuery("al").Get(renamed.Id).ExactQuery != null);
             True(history.ForQuery("al").Get(selected.Id).ExactQuery == null);
+        });
+        checks.Run("纯检查点推进复用检索内容，真实改名和基础换代必须失效", () =>
+        {
+            var first = new LiveVolumeIndex(original);
+            var cursorOnly = first.Apply([new(new(7, 110), [])]);
+            True(first.HasSameSearchContent(cursorOnly));
+            Equal(110L, cursorOnly.Checkpoint.NextUsn);
+            var renamed = cursorOnly.Apply([new(new(7, 120), [new(Id(21), File(21, "renamed.txt"))])]);
+            True(!cursorOnly.HasSameSearchContent(renamed));
+            True(renamed.HasSameSearchContent(renamed.Apply([new(new(7, 130), [])])));
+            True(!first.HasSameSearchContent(new LiveVolumeIndex(Snapshot(File(21, "alpha.txt")))));
         });
         checks.Run("记录复用或硬链接歧义不会迁移历史", () =>
         {
@@ -767,6 +861,32 @@ internal static class NtfsIndexChecks
 
     // 独立栈帧退出后不再留下 JIT 临时强引用，测量真实的映射所有者回收。
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static byte[] LegacyBytes(VolumeIndex index, string directory)
+    {
+        var path = Path.Combine(directory, "legacy-fixture.tmp");
+        VolumeIndexStore.Save(path, index);
+        var bytes = System.IO.File.ReadAllBytes(path);
+        var namesAt = 92 + index.FileCount * 28;
+        var textAt = namesAt + index.NameCount * 17;
+        using var body = new MemoryStream();
+        body.Write(bytes.AsSpan(0, textAt));
+        var offset = 0;
+        for (var i = 0; i < index.NameCount; i++)
+        {
+            var position = namesAt + i * 17;
+            var source = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(position + 4));
+            var length = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(position + 8));
+            body.Write(bytes.AsSpan(textAt + source * 2, length * 2));
+            // 显式构造旧格式的连续独占文本，避免用新读写器互验冒充 v1 兼容性。
+            BinaryPrimitives.WriteInt32LittleEndian(body.GetBuffer().AsSpan(position + 4), offset);
+            offset += length;
+        }
+        BinaryPrimitives.WriteInt32LittleEndian(body.GetBuffer().AsSpan(8), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(body.GetBuffer().AsSpan(88), offset);
+        var content = body.ToArray();
+        return [.. content, .. System.Security.Cryptography.SHA256.HashData(content)];
+    }
+
     private static WeakReference LoadWeak(string path) => new(VolumeIndexStore.Load(path));
 
     private static FileReference Id(ulong number, ushort sequence = 7) => new(number | ((ulong)sequence << 48));

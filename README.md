@@ -1,6 +1,6 @@
 # QBox
 
-Windows 文件、目录和应用的快捷搜索工具，后续扩展为剪贴板与截图工具箱。当前产品发布版 **0.2.2**；功能变化见 [CHANGELOG](CHANGELOG.md)，接续目标见 [ROADMAP](ROADMAP.md)。
+Windows 文件、目录和应用的快捷搜索工具，后续扩展为剪贴板与截图工具箱。当前产品构建版 **0.2.3**；功能变化见 [CHANGELOG](CHANGELOG.md)，接续目标见 [ROADMAP](ROADMAP.md)。
 
 ## 开发者快速开始
 
@@ -31,13 +31,16 @@ pwsh -File scripts/dev.ps1
 - 本地固定 NTFS 卷的 MFT 初建、USN 增量与后台合并；普通窗口与独立管理员工作进程分离，失败保留可用视图。
 - 0.2.1 增加 Unicode 稀疏预筛，修复汉字查询遍历全索引的延迟。详细结果见 [对照数据](docs/2026-11-14-搜索补全/unicode-prefilter-validation.json)。
 - 0.2.2 共享只读基础索引、按需生成路径并流式读取应用快捷方式，降低常驻内存；验证见 [内存优化记录](docs/2026-11-15-内存优化.md)。
+- 0.2.3 增加有距离上限的名称共享、低频 ASCII 稀疏预筛，并跳过无变化重查和隐藏窗口的前台任务；实际收益与性能边界见 [续作记录](docs/2026-11-15-内存优化续作.md)。
 - 尚未完全达到 Listary 的冷启动相关性标准，排名规则研究暂停。剪贴板、截图模块未开发；未将非 NTFS/网络卷列为已支持能力。
 
 产品运行不加载 Listary，不调用其搜索接口或读取其配置/历史。完整边界见 [ROADMAP](ROADMAP.md)。
 
 ## 使用发布版
 
-运行 [`releases/0.2.2/QBox.exe`](releases/0.2.2/QBox.exe)。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。
+运行 [`releases/0.2.3/QBox.exe`](releases/0.2.3/QBox.exe)。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。
+
+旧 v1 索引可直接读取，名称共享在新建/基础合并后生效；0.2.2 无法读取新 v2，降级前保留旧索引副本或使用旧版重建。历史与设置格式不变。
 
 - 默认双击 Ctrl 唤起或收起；上下键选择，Enter 或双击打开，Esc/关闭按钮收起到托盘。退出程序使用托盘菜单。
 - Alt+1～9 结果快捷键默认关闭，可在菜单自行启用；不兼容 Ctrl+数字。避免与截图工具热键冲突。
@@ -53,7 +56,7 @@ pwsh -File scripts/verify.ps1
 pwsh -File scripts/publish.ps1 -OutputRoot work/package
 ```
 
-普通构建没有外部 NuGet 包依赖，`NuGet.Config` 清空包源。`QBox.Checks` 是控制台检查程序，不是 `dotnet test` 项目；务必使用 `verify.ps1`。当前产品基线记录为 685 组匹配检查、2,904 项行为检查，真实 UI/卷操作另有验收记录。
+普通构建没有外部 NuGet 包依赖，`NuGet.Config` 清空包源。`QBox.Checks` 是控制台检查程序，不是 `dotnet test` 项目；务必使用 `verify.ps1`。当前产品基线记录为 685 组匹配检查、2,924 项行为检查，真实 UI/卷操作另有验收记录。
 
 发布脚本可以从没有 `obj` 的干净仓库直接执行，自动 restore；输出含 CLI、桌面程序及项目/第三方许可。运行窗口中的 EXE 可能被占用，开发时建议输出到 `work/package`，不要覆盖正在运行的正式目录。
 

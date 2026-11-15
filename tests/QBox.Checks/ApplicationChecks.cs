@@ -12,6 +12,14 @@ internal static class ApplicationChecks
         const string appId = "Example.Tools_1234567890abc!Main";
         var catalog = PackagedApplicationCatalog.Create([new("Atlas Notes", appId), new("Notes Atlas", appId),
             new("Another Atlas", "Example.Tools_1234567890abc!Other"), new("Unregistered", "Win32-Desktop-Id")]);
+        checks.Run("系统应用目录内容相同可复用，别名或身份变化必须更新", () =>
+        {
+            var first = PackagedApplicationCatalog.Create([new("Atlas Notes", appId), new("Notes Atlas", appId)]);
+            True(first.HasSameSearchContent(PackagedApplicationCatalog.Create([new("Notes Atlas", appId), new("Atlas Notes", appId)])));
+            True(!first.HasSameSearchContent(PackagedApplicationCatalog.Create([new("Atlas Notes", appId)])));
+            True(!first.HasSameSearchContent(PackagedApplicationCatalog.Create([new("Renamed", appId), new("Notes Atlas", appId)])));
+            True(!first.HasSameSearchContent(PackagedApplicationCatalog.Create([new("Atlas Notes", appId + "2"), new("Notes Atlas", appId)])));
+        });
         checks.Run("注册应用以 AUMID 保持身份，名称变化不改变 ID", () =>
         {
             var renamed = PackagedApplicationCatalog.Create([new("Renamed Tool", appId)]);
