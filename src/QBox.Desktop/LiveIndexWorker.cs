@@ -75,6 +75,23 @@ internal static class LiveIndexWorker
                     foreach (var session in sessions.Values) session.ReleaseIdleCaches();
                     IdleWorkingSetReclaim.TrimCurrentProcess();
                 }
+                else if (IdleWorkingSetReclaim.TryConsumeWarmup(directory) && !IdleWorkingSetReclaim.IsIdle(directory))
+                {
+                    try
+                    {
+                        foreach (var session in sessions.Values)
+                        {
+                            cancellation.Token.ThrowIfCancellationRequested();
+                            if (IdleWorkingSetReclaim.IsIdle(directory)) break;
+                            session.PrefetchSearchHotPath(cancellation.Token);
+                        }
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception)
+                    {
+                        // 预热失败不影响下一轮 USN 轮询。
+                    }
+                }
                 if (cancellation.Token.WaitHandle.WaitOne(750)) cancellation.Token.ThrowIfCancellationRequested();
             }
         }
@@ -139,6 +156,7 @@ internal static class LiveIndexWorker
         }
 
         public void ReleaseIdleCaches() => View?.ReleaseIdleCaches();
+        public void PrefetchSearchHotPath(CancellationToken token) => View?.PrefetchSearchHotPath(token);
 
         public void Poll(CancellationToken token)
         {

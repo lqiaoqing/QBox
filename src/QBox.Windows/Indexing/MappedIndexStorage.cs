@@ -65,6 +65,19 @@ internal sealed unsafe class MappedIndexStorage : SafeHandle
     public ReadOnlySpan<IndexNode> NodeSpan => new((byte*)handle + _nodesOffset, NodeCount);
     public ReadOnlySpan<IndexName> NameSpan => new((byte*)handle + _namesOffset, NameCount);
 
+    internal void PrefetchNodes(CancellationToken cancellationToken) =>
+        PrefetchRegion(_nodesOffset, NodeCount * 28L, cancellationToken);
+
+    internal void PrefetchNames(CancellationToken cancellationToken) =>
+        PrefetchRegion(_namesOffset, NameCount * 17L, cancellationToken);
+
+    private void PrefetchRegion(long offset, long length, CancellationToken cancellationToken)
+    {
+        if (IsInvalid || IsClosed || length <= 0) return;
+        try { VirtualMemoryPrefetch.Range(handle + (nint)offset, length, cancellationToken); }
+        finally { GC.KeepAlive(this); }
+    }
+
     protected override bool ReleaseHandle()
     {
         // SafeHandle 的关键终结器兜底回收；搜索结果中的 Memory 会继续持有映射，不受换版影响。
@@ -105,6 +118,11 @@ internal readonly struct IndexNodeTable
         }
     }
     public Enumerator GetEnumerator() => new(this);
+    internal void Prefetch(CancellationToken cancellationToken)
+    {
+        if (_owned != null) VirtualMemoryPrefetch.Array(_owned, cancellationToken);
+        else _mapped?.PrefetchNodes(cancellationToken);
+    }
     public struct Enumerator(IndexNodeTable table)
     {
         private int _index = -1;
@@ -131,6 +149,11 @@ internal readonly struct IndexNameTable
         }
     }
     public Enumerator GetEnumerator() => new(this);
+    internal void Prefetch(CancellationToken cancellationToken)
+    {
+        if (_owned != null) VirtualMemoryPrefetch.Array(_owned, cancellationToken);
+        else _mapped?.PrefetchNames(cancellationToken);
+    }
     public struct Enumerator(IndexNameTable table)
     {
         private int _index = -1;

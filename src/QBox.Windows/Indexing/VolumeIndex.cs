@@ -72,6 +72,22 @@ public sealed class VolumeIndex
         }
     }
 
+    public void PrefetchSearchHotPath(CancellationToken cancellationToken = default)
+    {
+        NamePresenceIndex? presence;
+        PhoneticNameIndex? phonetic;
+        lock (_presenceLock)
+        {
+            presence = _presence;
+            phonetic = _phonetic;
+        }
+        // 已构建的预筛直接拉回工作集；尚未构建时不在预热里全量扫名称页。
+        presence?.Prefetch(cancellationToken);
+        phonetic?.Prefetch(cancellationToken);
+        Nodes.Prefetch(cancellationToken);
+        Names.Prefetch(cancellationToken);
+    }
+
     private IEnumerable<int> SearchNames(string query, CancellationToken cancellationToken)
     {
         PrepareSearch(cancellationToken);

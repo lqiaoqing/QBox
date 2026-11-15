@@ -159,6 +159,28 @@ public sealed class LiveVolumeIndex
         _reachable.Clear();
     }
 
+    private const int WarmPathLimit = 256;
+
+    public void PrefetchSearchHotPath(CancellationToken cancellationToken = default)
+    {
+        Base.PrefetchSearchHotPath(cancellationToken);
+        _overlay?.PrefetchSearchHotPath(cancellationToken);
+        if (_changes.Count == 0) return;
+        var warmed = 0;
+        foreach (var change in _changes.Values)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            FileReference directory;
+            if (change.Value is { IsDirectory: true } file) directory = file.File;
+            else if (change.Value is { Names.Count: > 0 } changed) directory = changed.Names[0].Parent;
+            else continue;
+            if (directory.Low == 0 || directory.Low == Base.Nodes[Base.RootNode].File) continue;
+            DirectoryReachable(directory, []);
+            DirectoryPath(directory, []);
+            if (++warmed >= WarmPathLimit) break;
+        }
+    }
+
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default,
         ISet<string>? replacedShortcutIds = null, IReadOnlySet<string>? representedExecutables = null)
     {

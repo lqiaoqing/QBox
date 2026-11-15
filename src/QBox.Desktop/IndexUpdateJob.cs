@@ -53,6 +53,7 @@ internal sealed class IndexUpdateJob : IDisposable
     public void Cancel() => File.WriteAllText(Path.Combine(_jobDirectory, "cancel"), "");
     public void SetIdle(bool idle) => IdleWorkingSetReclaim.SetIdle(_jobDirectory, idle);
     public void RequestReclaim() => IdleWorkingSetReclaim.RequestReclaim(_jobDirectory);
+    public void RequestWarmup() => IdleWorkingSetReclaim.RequestWarmup(_jobDirectory);
     public UpdateStatus? Read()
     {
         try

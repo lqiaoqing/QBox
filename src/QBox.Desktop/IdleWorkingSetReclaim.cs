@@ -8,15 +8,21 @@ internal static class IdleWorkingSetReclaim
     public static readonly TimeSpan Delay = TimeSpan.FromSeconds(30);
     internal const string IdleFileName = "idle";
     internal const string ReclaimFileName = "reclaim";
+    internal const string WarmupFileName = "warmup";
 
     public static void SetIdle(string? jobDirectory, bool idle)
     {
         if (string.IsNullOrEmpty(jobDirectory)) return;
         var idlePath = Path.Combine(jobDirectory, IdleFileName);
         var reclaimPath = Path.Combine(jobDirectory, ReclaimFileName);
+        var warmupPath = Path.Combine(jobDirectory, WarmupFileName);
         try
         {
-            if (idle) File.WriteAllText(idlePath, "1");
+            if (idle)
+            {
+                File.WriteAllText(idlePath, "1");
+                File.Delete(warmupPath);
+            }
             else
             {
                 File.Delete(idlePath);
@@ -33,6 +39,13 @@ internal static class IdleWorkingSetReclaim
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
     }
 
+    public static void RequestWarmup(string? jobDirectory)
+    {
+        if (string.IsNullOrEmpty(jobDirectory)) return;
+        try { File.WriteAllText(Path.Combine(jobDirectory, WarmupFileName), "1"); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+    }
+
     public static bool TryConsumeReclaim(string jobDirectory)
     {
         var path = Path.Combine(jobDirectory, ReclaimFileName);
@@ -40,6 +53,16 @@ internal static class IdleWorkingSetReclaim
         try { File.Delete(path); return true; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
     }
+
+    public static bool TryConsumeWarmup(string jobDirectory)
+    {
+        var path = Path.Combine(jobDirectory, WarmupFileName);
+        if (!File.Exists(path)) return false;
+        try { File.Delete(path); return true; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    public static bool IsIdle(string jobDirectory) => File.Exists(Path.Combine(jobDirectory, IdleFileName));
 
     public static void TrimCurrentProcess()
     {

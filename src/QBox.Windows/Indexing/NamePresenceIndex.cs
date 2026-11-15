@@ -172,4 +172,19 @@ internal sealed class NamePresenceIndex
         }
         finally { ArrayPool<ulong>.Shared.Return(selected); }
     }
+
+    internal void Prefetch(CancellationToken cancellationToken)
+    {
+        VirtualMemoryPrefetch.Array(_owners, cancellationToken);
+        foreach (var bitmap in _ascii)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            VirtualMemoryPrefetch.Array(bitmap, cancellationToken);
+        }
+        foreach (var names in _unicode.Values)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            VirtualMemoryPrefetch.Array(names, cancellationToken);
+        }
+    }
 }

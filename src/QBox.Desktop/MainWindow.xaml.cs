@@ -49,6 +49,7 @@ public partial class MainWindow : Window
     private int _indexPathCount;
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _idleReclaim = new() { Interval = IdleWorkingSetReclaim.Delay };
+    private readonly SearchHotPathWarmup _searchWarmup = new();
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -144,10 +145,12 @@ public partial class MainWindow : Window
         {
             _idleReclaim.Stop();
             _update?.SetIdle(false);
+            StartSearchWarmup();
             if (_loaded) _ = SearchAsync();
             return;
         }
         // 结束前台请求而不停止索引监测；下次显示从最新视图重查，旧结果不可打开。
+        _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
         _searching = false;
@@ -164,10 +167,18 @@ public partial class MainWindow : Window
     private void OnIdleReclaim(object? sender, EventArgs e)
     {
         if (_quitting || IsVisible || _searching || _loading || _opening) return;
+        _searchWarmup.Cancel();
         foreach (var live in _liveIndexes) live.View.ReleaseIdleCaches();
         _icons.ReleaseIdleCache();
         IdleWorkingSetReclaim.TrimCurrentProcess();
         _update?.RequestReclaim();
+    }
+
+    private void StartSearchWarmup()
+    {
+        if (_quitting || !IsVisible) return;
+        _update?.RequestWarmup();
+        _searchWarmup.Begin(_liveIndexes.Select(source => source.View));
     }
     private void OnFocus(object sender, RoutedEventArgs e) => QueryBox.Focus();
     private void OnDrag(object sender, MouseButtonEventArgs e)
@@ -252,6 +263,7 @@ public partial class MainWindow : Window
             if (_loads.IsCurrent(request))
             {
                 _loading = false;
+                if (IsVisible) StartSearchWarmup();
                 if (_indexes.Length == 0 && _applications.Count == 0) SetEmpty("还没有可用索引", _notice ?? "点击建立索引，收录磁盘上的文件、文件夹和应用。", true);
                 else await SearchAsync();
                 RefreshStatus();
@@ -643,6 +655,7 @@ public partial class MainWindow : Window
         try { _update?.Cancel(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { _store.Log(error); }
         _idleReclaim.Stop();
+        _searchWarmup.Cancel();
         _lifetime.Cancel();
         _queries.Dispose(); _loads.Dispose(); _catalogs.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
         if (_tray != null) { var icon = _tray.Icon; _tray.Visible = false; _tray.Dispose(); icon?.Dispose(); }
