@@ -1,6 +1,6 @@
 # QBox 全局名称共享试用版
 
-双击 [QBox.GlobalTrial.exe](QBox.GlobalTrial.exe)，需要 Windows x64 和 .NET 10 桌面运行时。窗口和托盘均标有“全局共享试用”。标准发布版仍为 0.2.3。
+双击 [QBox.GlobalTrial.exe](QBox.GlobalTrial.exe)，需要 Windows x64 和 .NET 10 桌面运行时。窗口和托盘均标有“全局共享试用”。标准发布版现为 0.2.4。
 
 - 唤起键为 **Ctrl+Alt+空格**。正式版仍使用原来的双击 Ctrl。
 - 配置、历史、索引全部独立存放在 `%LOCALAPPDATA%\QBox.GlobalTrial`。本机已准备好 C、D 盘的全局共享索引及当时的增量记录，可以直接搜索。
