@@ -1,15 +1,15 @@
 # QBox Rust 搜索引擎校验
 
 日期：2026-11-16（Asia/Shanghai）
-工作树：`D:\Work\workspace\QBox-rust-engine`
+工作树：`%RUST_WORKTREE%`
 分支：`feat/rust-engine-validation`
 基线提交：`75b9a9275daf2d3d900d64c3308fb06d015f67c3`（`release: publish QBox 0.2.5`）
-原始仓库 `D:\Work\workspace\QBox` 仍在 `codex/feat-new`，未改主干工作区，未 push。
+原始仓库 `%REPO_ROOT%` 仍在 `codex/feat-new`，未改主干工作区，未 push。
 
 ## 工具链（提醒）
 
 - rustup 1.29.3，rustc / cargo 1.100.0，默认 `stable-x86_64-pc-windows-gnu`
-- 安装位置：`C:\Users\zsj\.cargo`、`C:\Users\zsj\.rustup`
+- 安装位置：`%USERPROFILE%\.cargo`、`%USERPROFILE%\.rustup`
 - 必须使用 rust-mingw 自带链接器（`gnu-linker.cmd` + `link-self-contained=yes`）。系统 MinGW-w64 gcc 8.1 链接出的 exe 会在本机 Windows 11 26200 上因 `kernel32.dll` 不再导出 `WaitOnAddress` 而以 `0xC0000139` 启动失败。
 - 构建产物：`work/rust-target`
 
@@ -31,13 +31,13 @@
 
 ## 复制的只读索引
 
-- 目的目录：`D:\Work\workspace\QBox-rust-engine\work\rust-validation\indexes`（工作树自己的 state，`work/` 已被 gitignore）
-- 来源：正式版正在使用的 `D:\Work\workspace\QBox\work\indexes\{C,D}.qbi`。复制时以共享读打开（`FileShare.ReadWrite|Delete`），未写入、未抢锁、未打开源文件的写句柄。未复制 `.qbd` / `.lock`：本轮公平对比只用静态 `.qbi`。
+- 目的目录：`%RUST_WORKTREE%\work\rust-validation\indexes`（工作树自己的 state，`work/` 已被 gitignore）
+- 来源：正式版正在使用的 `%REPO_ROOT%\work\indexes\{C,D}.qbi`。复制时以共享读打开（`FileShare.ReadWrite|Delete`），未写入、未抢锁、未打开源文件的写句柄。未复制 `.qbd` / `.lock`：本轮公平对比只用静态 `.qbi`。
 - 试用目录里的 `{C,D}.qbi` 大小与时间戳和正式版相同，未再拷一份。正式版与试用目录的 `.qbd` 不同，也未使用。
 - `C.qbi`：212,915,109 字节，SHA-256 `DF1D6D91FF7807A3EC3FE734C12AC8D9522921CDEBA0FEBB2959F9CB8F43953B`
 - `D.qbi`：77,979,759 字节，SHA-256 `BE37E4900DF29186BBDAAEE1DD1C03FE75AD015A4F79411150BEEFADDA4421C7`
 
-禁止写入的路径均未改动：`D:\Work\workspace\QBox\work\indexes`、`%LOCALAPPDATA%\QBox`、`D:\Work\workspace\QBox-first-paint\work\first-paint-state`。
+禁止写入的路径均未改动：`%REPO_ROOT%\work\indexes`、`%LOCALAPPDATA%\QBox`、`%FIRST_PAINT_WORKTREE%\work\first-paint-state`。
 
 ## 只读 walker
 
@@ -77,7 +77,7 @@ Rust 五次：`1` [306.161, 294.041, 295.239, 301.754, 302.567]；`豆包` [0.10
 
 首屏正确性：四个查询的命中总数与首屏次序均与 C# 引擎路径一致，没有错位。耗时方面，两端在 `1` 上都低于 1 秒，但 Rust 中位时约为 C# 的 2.2 倍，未达到「明确快 30%」的对照标准。`豆包` 的 Rust 更快，但只有约 0.2 ms，样本太小。`CODE` 的最好一次略快、中位更慢；`python` 整体更慢。这份对照还不能说明产品层替换会更快。
 
-原始仓库 `D:\Work\workspace\QBox` 仍在 `codex/feat-new`（`75b9a9275daf2d3d900d64c3308fb06d015f67c3`），工作区干净。未启动或停止正式版 0.2.4 / 0.2.5，未结束 first-paint 试用进程，未 push。
+原始仓库 `%REPO_ROOT%` 仍在 `codex/feat-new`（`75b9a9275daf2d3d900d64c3308fb06d015f67c3`），工作区干净。未启动或停止正式版 0.2.4 / 0.2.5，未结束 first-paint 试用进程，未 push。
 
 ## 热路径优化后再测（去掉 UTF-16 到 String 的拷贝）
 
@@ -188,7 +188,7 @@ FFI 的大结果（`1`）比直接引擎路径慢，主要来自跨 ABI 的结�
 - `DesktopOptions` 新增 `--search-engine csharp|rust`，默认 `csharp`。`MainWindow` 在 `ReloadAsync` 中打开/刷新 sidecar，搜索走 Rust；加载或运行失败会记录日志并回退 C#。`MonitorIndexesAsync` 与 `RefreshCatalogsAsync` 会刷新 Rust 的 `.qbd`/目录快照；`Quit` 释放句柄。
 - CLI `search`/`open` 支持 `--search-engine rust`（需要 `--index-directory`，或目录中只有一个 `.qbi`），失败时回退 C#。
 - `publish-desktop.ps1` 构建 `qbox_engine.dll` 并复制到 `QBox.exe` 同级；独立包位于 `work/trial-package`。
-- 试用 state：`work/trial-state`，索引为 `work/trial-state/indexes` 的副本；`settings.json` 关闭自动更新。未写 `D:\Work\workspace\QBox\work\indexes`、`%LOCALAPPDATA%\QBox` 或 first-paint state。
+- 试用 state：`work/trial-state`，索引为 `work/trial-state/indexes` 的副本；`settings.json` 关闭自动更新。未写 `%REPO_ROOT%\work\indexes`、`%LOCALAPPDATA%\QBox` 或 first-paint state。
 
 实机结果：
 
@@ -262,7 +262,7 @@ live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 
 
 同一套索引上，优化前 Rust live 为 `1` 1.416×、`豆包` 0.984×、`CODE` 0.993×、`python` 0.931×；`CODE` / `python` 已从打平收回。本轮四查询中位都不慢于同一索引上的 C#。`1` 在这组官方数字里是 1.18×，没有稳定跨过 30% 门槛；更安静的一组（`csharp-bench-live-opt.json` / `rust-bench-live-opt4.json`）是 `1` 396.566 / 271.425（1.461×）、`豆包` 0.712 / 0.605（1.176×）、`CODE` 227.839 / 146.604（1.554×）、`python` 75.614 / 42.817（1.766×），首屏同样完全一致。live 仍明显慢于静态 `.qbi`（静态 `CODE` / `python` 约 2.0×），剩余成本来自确有目录变更的祖先链，以及「1」这类大查询仍要为匹配的 EXE 解析路径。
 
-未改主干 `D:\Work\workspace\QBox`（仍为 `codex/feat-new` / `75b9a92`），未 push、未发布、未动生产索引；`live-indexes` 的 mtime 与大小未变。产品默认仍是 C#。本轮不做 Rust UI。
+未改主干 `%REPO_ROOT%`（仍为 `codex/feat-new` / `75b9a92`），未 push、未发布、未动生产索引；`live-indexes` 的 mtime 与大小未变。产品默认仍是 C#。本轮不做 Rust UI。
 
 ## 基础索引替换（2026-11-16）
 
@@ -271,3 +271,18 @@ live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 
 修复改在 `VolumeIndexStore.Save`：先把旧 `.qbi` 改名挪走，再把新文件落到原名，读端继续使用旧映射。失败时尽量把备份改回原名；`Load` / `AcquireWriter` 若只看到 `.old` 会先恢复。官方仅 C# 映射的路径同样走这条替换，行为更稳，不改变搜索结果。新增检查：读端除映射外再握一个带 `FILE_SHARE_DELETE` 的句柄时，`Save` 仍须成功且旧查询完整。`QBox.Checks` 行为检查 2942/2942 通过。
 
 实机：隔离包 `work/live-opt-fix-package`，状态 `work/live-opt-fix-state`（从 `live-opt-state` 复制，含已胀大的 `C.qbd`）。GUI PID 37452（未提权，已加载 `qbox_engine.dll`），worker PID 31296。C 卷在 16:37:04（Asia/Shanghai）完成 compact：`C.qbi` 由 212,915,109 / 12:14:17 / SHA-256 `DF1D6D91FF7807A3EC3FE734C12AC8D9522921CDEBA0FEBB2959F9CB8F43953B` 换成 220,499,105 / SHA-256 `71DE4E6E1BDCC76D961B1DC96A47AE453D7B8924C0D144C3D00F9E1BC139A94E`，`C.qbd` 从约 27 MB 重置后正常续写，状态为「实时更新中」，无拒绝访问。随后 90 秒 `C.qbi` 不再重写，worker 工作集约 23 MB、私有内存约 29 MB，没有每 30 秒再冲到 1 GB。D 卷仍为「实时更新中」，本轮未观察到 D 的 compact。GUI 仍运行时，CLI `--search-engine rust` 对同一索引目录查询 `python` 返回 104,999 命中。
+
+
+## 合并复核（2026-11-16）
+
+本节描述当前实现；上文两次改名替换基础索引的方案仅保留为历史记录。
+
+- 基础索引改为 `File.Replace`；C# 读取句柄保持只读访问，同时共享读、写、删除，允许替换端在校验和映射期间打开目标。替换瞬间的新打开可能短暂失败，现有桌面读取路径保留上次可用视图后重试。
+- FFI 取消注册在减少活跃搜索计数前结束，返回缓冲区释放覆盖成功后的取消分支；可选参数和 AUMID 按长度、内容交错解码。
+- 过期重载创建的 Rust 引擎异步释放；GNU 链接器相对 crate 定位。
+- 换目录源码副本完成构建：C# 匹配 685/685、行为 2950/2950；Rust 单元测试 7/7，匹配 685/685、拼音 36/36、排序收集 2058/2058。
+- 真实 DLL 验证 null、空和非空启动参数往返；400 次并发保存无写端失败；旧映射与新读取分别看到正确快照；100 轮搜索、取消与释放并发结束。
+
+路径占位符 `%REPO_ROOT%`、`%RUST_WORKTREE%`、`%FIRST_PAINT_WORKTREE%` 指相应仓库目录；`%USERPROFILE%` 指当前用户目录。历史记录中的实际路径需替换为本机位置。
+
+默认搜索引擎仍为 C#。Rust 通过 `--search-engine rust` 显式启用；本次复核不代表 macOS 支持、多日稳定性或真实全盘索引吞吐验收。

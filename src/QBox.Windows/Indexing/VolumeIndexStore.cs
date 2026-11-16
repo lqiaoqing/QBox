@@ -108,7 +108,8 @@ public static class VolumeIndexStore
     {
         var absolute = Path.GetFullPath(path);
         RecoverIfReplacedAway(absolute);
-        using var file = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536);
+        // ReplaceFile 需要在读端校验/映射期间打开目标文件；共享写入不改变此句柄的只读权限。
+        using var file = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536);
         if (file.Length < 128) throw new InvalidDataException("索引文件被截断");
         var bodyLength = file.Length - 32;
         var actual = Hash(file, bodyLength, cancellationToken);

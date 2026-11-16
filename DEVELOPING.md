@@ -63,6 +63,18 @@ dotnet run --project src/QBox.Cli -c Release --no-build -- search --index-direct
 
 `verify.ps1` 包含留出样本，非管理员即可运行。构建成功、自动检查、内核计时、实际输入法/GUI 和真实卷恢复是不同证据，分别记录；`dotnet test` 不会代替本仓库的检查入口。
 
+## Rust 搜索引擎试验
+
+默认搜索仍使用 C#。`--search-engine rust` 可用于桌面程序和 CLI 的索引查询，加载或调用失败会记录原因并回退 C#；本轮尚未提供 macOS 版本。
+
+普通 .NET 构建和自动检查不要求 Rust。发布脚本现在还会构建并复制 `qbox_engine.dll`，因此发布环境需要 Windows x64 Rust 工具链；GNU 工具链使用仓库自带的相对路径链接器包装，MSVC 工具链需要相应链接工具。
+
+在 `rust/qbox-engine` 目录运行 `cargo test --locked --lib` 和 `cargo run --locked --release --bin engine-harness`，可验证 Rust 匹配、拼音和排序对照。运行 `cargo build --locked --release --lib` 后，DLL 位于仓库的 `work/rust-target/release`。
+
+桌面发布包把 DLL 放在 EXE 同级。CLI 发布包和开发输出可通过环境变量 `QBOX_ENGINE_DLL` 指向该 DLL 的绝对路径；试用时仍须使用独立状态、历史和索引副本，不启动正式全盘更新。
+
+迁移范围、实验结果与限制见 [Rust 引擎记录](rust/qbox-engine/NOTES.md)。
+
 ## 真实 NTFS 测试
 
 只有需要验证卷读取、USN 或真实全盘来源时才使用。先发布 CLI：
