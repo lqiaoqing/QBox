@@ -328,7 +328,12 @@ public partial class MainWindow : Window
                     Warning: warnings.Count == 0 ? null : "部分索引暂不可用：" + string.Join("；", warnings),
                     Shortcuts: shortcuts, Applications: applications, Rust: rust, RustWarning: rustWarning);
             }, request.Token);
-            if (!_loads.IsCurrent(request)) return;
+            if (!_loads.IsCurrent(request))
+            {
+                // 过期重载新建的引擎不会挂到 _rustEngine 上，必须就地释放，否则原生句柄与索引映射永久泄漏。
+                if (snapshot.Rust is { } stale) _ = Task.Run(stale.Dispose);
+                return;
+            }
             var indexes = snapshot.Indexes;
             MigrateHistory(_liveIndexes.Length == 0 ? snapshot.Live.Select(source => new LiveVolumeIndex(source.View.Base)).ToArray() :
                 _liveIndexes.Select(source => source.View).ToArray(), snapshot.Live.Select(source => source.View).ToArray());
