@@ -4,5 +4,6 @@ target-dir = "../../work/rust-target"
 
 [target.x86_64-pc-windows-gnu]
 # Windows 11 26200 的 kernel32 不再导出 WaitOnAddress；必须用 rust-mingw 自带的导入库。
-linker = "D:\\Work\\workspace\\QBox-rust-engine\\rust\\qbox-engine\\gnu-linker.cmd"
+# 裸文件名只按 PATH 查找，必须带 ./ 前缀才相对 crate 目录解析，换目录克隆后才能链接。
+linker = "./gnu-linker.cmd"
 rustflags = ["-C", "link-self-contained=yes"]
