@@ -1,6 +1,8 @@
 //! 忠实移植 `src/QBox.Core/Matching/FuzzyMatcher.cs` 的对齐分值与 CanMatch 行为。
 //! 拼音与格式查询不在本模块；685 组 ASCII 对照样本只覆盖内部对齐分值。
 
+use crate::cancel::{CancelToken, Canceled};
+
 /// UTF-16 高亮区间，起点与长度与 C# `TextRange` 一致。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TextRange {
@@ -77,17 +79,23 @@ impl<'a> PreparedQuery<'a> {
     }
 
     pub fn can_match(&self, candidate: &str) -> bool {
+        self.can_match_with(candidate, CancelToken::NONE)
+            .expect("未取消")
+    }
+
+    pub fn can_match_with(&self, candidate: &str, cancel: CancelToken) -> Result<bool, Canceled> {
+        cancel.check()?;
         if let (Some(ascii_upper), true) = (self.ascii_upper.as_deref(), candidate.is_ascii()) {
             let needles = ascii_upper.as_bytes();
             let haystack = candidate.as_bytes();
             // 单字符 ASCII/数字查询走等价的 IndexOf，避免短查询在全量预筛里反复切切片。
             if needles.len() == 1 {
                 let letter = needles[0];
-                return if letter.is_ascii_uppercase() {
+                return Ok(if letter.is_ascii_uppercase() {
                     find_any(haystack, letter, letter + 32).is_some()
                 } else {
                     haystack.iter().any(|&b| b == letter)
-                };
+                });
             }
             let mut remaining = haystack;
             for &letter in needles {
@@ -98,37 +106,54 @@ impl<'a> PreparedQuery<'a> {
                 };
                 match find_any(remaining, letter, lower) {
                     Some(at) => remaining = &remaining[at + 1..],
-                    None => return false,
+                    None => return Ok(false),
                 }
             }
-            return true;
+            return Ok(true);
         }
         let mut next = 0;
         for rune in candidate.chars() {
             if next == self.query.len() {
-                return true;
+                return Ok(true);
             }
             if equivalent(self.query[next], rune) {
                 next += 1;
             }
         }
-        next == self.query.len()
+        Ok(next == self.query.len())
     }
 
     pub fn score(&self, candidate: &str) -> i32 {
-        if !self.can_match(candidate) {
-            0
-        } else {
-            self.score_matched(candidate)
-        }
+        self.score_with(candidate, CancelToken::NONE)
+            .expect("未取消")
     }
 
-    fn score_matched(&self, candidate: &str) -> i32 {
+    pub fn score_with(&self, candidate: &str, cancel: CancelToken) -> Result<i32, Canceled> {
+        Ok(if !self.can_match_with(candidate, cancel)? {
+            0
+        } else {
+            self.score_matched_with(candidate, cancel)?
+        })
+    }
+
+    pub fn score_matched(&self, candidate: &str) -> i32 {
+        self.score_matched_with(candidate, CancelToken::NONE)
+            .expect("未取消")
+    }
+
+    pub fn score_matched_with(
+        &self,
+        candidate: &str,
+        cancel: CancelToken,
+    ) -> Result<i32, Canceled> {
+        cancel.check()?;
         if self.query.is_empty() {
-            return 1;
+            return Ok(1);
         }
         if self.ascii_upper.is_none() || !candidate.is_ascii() {
-            return self.match_candidate(candidate).alignment_score;
+            return Ok(self
+                .match_candidate_with(candidate, cancel)?
+                .alignment_score);
         }
         let query = self.ascii_upper.as_ref().unwrap().as_bytes();
         let cand = candidate.as_bytes();
@@ -204,19 +229,28 @@ impl<'a> PreparedQuery<'a> {
             }
             std::mem::swap(&mut previous_end, &mut current_end);
         }
-        1.max(best[width - 1].max(acronym_score))
+        Ok(1.max(best[width - 1].max(acronym_score)))
     }
 
     pub fn match_candidate(&self, candidate: &str) -> MatchResult {
-        if !self.can_match(candidate) {
-            return MatchResult::none();
+        self.match_candidate_with(candidate, CancelToken::NONE)
+            .expect("未取消")
+    }
+
+    pub fn match_candidate_with(
+        &self,
+        candidate: &str,
+        cancel: CancelToken,
+    ) -> Result<MatchResult, Canceled> {
+        if !self.can_match_with(candidate, cancel)? {
+            return Ok(MatchResult::none());
         }
         if self.query.is_empty() {
-            return MatchResult {
+            return Ok(MatchResult {
                 is_match: true,
                 alignment_score: 1,
                 highlights: Vec::new(),
-            };
+            });
         }
 
         let tokens = tokenize(candidate);
@@ -346,11 +380,11 @@ impl<'a> PreparedQuery<'a> {
                 positions,
             };
         }
-        MatchResult {
+        Ok(MatchResult {
             is_match: true,
             alignment_score: result.score,
             highlights: ranges(&tokens, result.positions.as_deref()),
-        }
+        })
     }
 }
 

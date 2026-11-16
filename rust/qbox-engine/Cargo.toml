@@ -2,13 +2,18 @@
 name = "qbox-engine"
 version = "0.1.0"
 edition = "2021"
-description = "QBox search-engine validation port; Day 1 focuses on FuzzyMatcher parity."
+description = "QBox search-engine validation port of FuzzyMatcher, pinyin names, collector, and ordering."
 publish = false
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 
 [[bin]]
 name = "match-harness"
 path = "src/bin/match_harness.rs"
+
+[[bin]]
+name = "engine-harness"
+path = "src/bin/engine_harness.rs"
