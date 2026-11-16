@@ -12,6 +12,7 @@ using System.ComponentModel;
 using QBox.Windows.Indexing;
 using QBox.Windows.Shortcuts;
 using QBox.Windows.Applications;
+using QBox.Windows.Search;
 using QBox.Windows;
 
 namespace QBox.Cli;
@@ -90,6 +91,10 @@ internal static class CliApplication
             var query = Required(options, "query");
             var sources = new[] { "index", "index-directory", "catalog" }.Count(options.ContainsKey);
             if (sources != 1) throw new ArgumentException("请指定 --index、--index-directory 或 --catalog 中的一项");
+            var engine = options.GetValueOrDefault("search-engine") ?? "csharp";
+            if (engine is not ("csharp" or "rust")) throw new ArgumentException("--search-engine 只能是 csharp 或 rust");
+            if (engine == "rust" && options.ContainsKey("catalog"))
+                throw new ArgumentException("--search-engine rust 不支持 --catalog 候选文件");
             IEnumerable<SearchCandidate> candidates;
             VolumeIndex[]? indexes = null;
             LiveVolumeIndex[]? live = null;
@@ -112,17 +117,38 @@ internal static class CliApplication
                 if (indexes == null) result = new SearchEngine(history).Search(query, candidates, limit, cancellation.Token);
                 else
                 {
-                    var collector = new SearchCollector(query, limit, cancellation.Token);
                     var view = history.ForQuery(query);
                     var applications = PackagedApplicationCatalog.Load(cancellation.Token);
                     if (applications.Warning != null) Console.Error.WriteLine(applications.Warning);
-                    applications.SearchInto(collector, view, cancellation.Token);
                     var shortcuts = ShortcutCatalog.Load(live!, cancellation.Token);
-                    shortcuts.SearchInto(collector, view, cancellation.Token);
-                    var replaced = shortcuts.ReplacedIds(query);
-                    var representedExecutables = shortcuts.MatchedExecutableTargets(query);
-                    foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, replaced, representedExecutables);
-                    result = collector.Finish();
+                    var useRust = engine == "rust";
+                    if (useRust)
+                    {
+                        try
+                        {
+                            using var rust = RustSearchEngine.Open(RustIndexDirectory(options));
+                            var refresh = rust.Refresh(EngineCatalogSnapshot.Create(applications, shortcuts));
+                            if (refresh == RustRefreshResult.BaseChanged) throw new InvalidDataException("Rust 引擎基础索引已变化");
+                            result = rust.Search(query, limit, view, cancellation.Token);
+                        }
+                        catch (Exception error) when (IsRustError(error))
+                        {
+                            Console.Error.WriteLine("Rust 引擎不可用，回退 C#：" + error.Message);
+                            useRust = false;
+                            result = default!;
+                        }
+                    }
+                    else result = default!;
+                    if (!useRust)
+                    {
+                        var collector = new SearchCollector(query, limit, cancellation.Token);
+                        applications.SearchInto(collector, view, cancellation.Token);
+                        shortcuts.SearchInto(collector, view, cancellation.Token);
+                        var replaced = shortcuts.ReplacedIds(query);
+                        var representedExecutables = shortcuts.MatchedExecutableTargets(query);
+                        foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, replaced, representedExecutables);
+                        result = collector.Finish();
+                    }
                 }
                 if (options.ContainsKey("json")) WriteJson(result);
                 else
@@ -145,12 +171,32 @@ internal static class CliApplication
                 var applications = PackagedApplicationCatalog.Load(cancellation.Token);
                 // 仅在临时历史中把指定 ID 提到首位，避免打开时物化全盘结果或提前污染用户历史。
                 var lookup = new SelectionHistory(); lookup.RecordSelection(id, query);
-                var collector = new SearchCollector(query, 1, cancellation.Token);
                 var view = lookup.ForQuery(query);
-                applications.SearchInto(collector, view, cancellation.Token);
-                shortcuts.SearchInto(collector, view, cancellation.Token);
-                foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, shortcuts.ReplacedIds(query), shortcuts.MatchedExecutableTargets(query));
-                candidate = collector.Finish().Items.FirstOrDefault(hit => hit.Candidate.Id == id)?.Candidate;
+                var useRust = engine == "rust";
+                if (useRust)
+                {
+                    try
+                    {
+                        using var rust = RustSearchEngine.Open(RustIndexDirectory(options));
+                        var refresh = rust.Refresh(EngineCatalogSnapshot.Create(applications, shortcuts));
+                        if (refresh == RustRefreshResult.BaseChanged) throw new InvalidDataException("Rust 引擎基础索引已变化");
+                        candidate = rust.Search(query, 1, view, cancellation.Token).Items
+                            .FirstOrDefault(hit => hit.Candidate.Id == id)?.Candidate;
+                    }
+                    catch (Exception error) when (IsRustError(error))
+                    {
+                        Console.Error.WriteLine("Rust 引擎不可用，回退 C#：" + error.Message);
+                        useRust = false;
+                    }
+                }
+                if (!useRust)
+                {
+                    var collector = new SearchCollector(query, 1, cancellation.Token);
+                    applications.SearchInto(collector, view, cancellation.Token);
+                    shortcuts.SearchInto(collector, view, cancellation.Token);
+                    foreach (var index in live!) index.SearchInto(collector, view, cancellation.Token, shortcuts.ReplacedIds(query), shortcuts.MatchedExecutableTargets(query));
+                    candidate = collector.Finish().Items.FirstOrDefault(hit => hit.Candidate.Id == id)?.Candidate;
+                }
             }
             if (candidate == null) throw new ArgumentException($"找不到目标 ID：{id}");
             var activated = await new SearchActions(history).ActivateAsync(candidate, query,
@@ -228,7 +274,7 @@ internal static class CliApplication
         {
             if (!args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"无效参数：{args[i]}");
             var key = args[i][2..];
-            if (key is not ("catalog" or "history" or "query" or "limit" or "id" or "json" or "drive" or "index" or "index-directory"))
+            if (key is not ("catalog" or "history" or "query" or "limit" or "id" or "json" or "drive" or "index" or "index-directory" or "search-engine"))
                 throw new ArgumentException($"未知选项：--{key}");
             if (values.ContainsKey(key)) throw new ArgumentException($"重复选项：--{key}");
             if (key == "json") values.Add(key, null);
@@ -243,6 +289,21 @@ internal static class CliApplication
 
     private static string Required(Dictionary<string, string?> options, string key) =>
         options.TryGetValue(key, out var value) && value != null ? value : throw new ArgumentException($"缺少 --{key}");
+
+    private static string RustIndexDirectory(Dictionary<string, string?> options)
+    {
+        if (options.TryGetValue("index-directory", out var directory) && directory != null)
+            return Path.GetFullPath(directory);
+        var index = Path.GetFullPath(Required(options, "index"));
+        var parent = Path.GetDirectoryName(index) ?? throw new ArgumentException("索引路径无效");
+        if (Directory.GetFiles(parent, "*.qbi").Length != 1)
+            throw new ArgumentException("--search-engine rust 需要 --index-directory，或目录中只有一个 .qbi");
+        return parent;
+    }
+
+    private static bool IsRustError(Exception error) =>
+        error is InvalidOperationException or IOException or InvalidDataException or UnauthorizedAccessException
+            or DllNotFoundException or BadImageFormatException or EntryPointNotFoundException;
 
     private static string Highlighted(string text, IReadOnlyList<TextRange> ranges)
     {
@@ -277,10 +338,11 @@ internal static class CliApplication
         index-build --drive <C:> --index <索引.qbi>
         index-sync --drive <C:> --index <索引.qbi>
         index-info --index <索引.qbi>
-        search --index <索引.qbi> --query <查询> [--history <历史.json>] [--limit 50] [--json]
-        search --index-directory <索引目录> --query <查询> [--history <历史.json>] [--limit 50] [--json]
+        search --index <索引.qbi> --query <查询> [--history <历史.json>] [--limit 50] [--json] [--search-engine rust]
+        search --index-directory <索引目录> --query <查询> [--history <历史.json>] [--limit 50] [--json] [--search-engine rust]
         search --catalog <候选.json> --query <查询> [--history <历史.json>] [--limit 50] [--json]
         open --catalog <候选.json> --query <查询> --id <目标ID> [--history <历史.json>]
+        open --index-directory <索引目录> --query <查询> --id <目标ID> [--history <历史.json>] [--search-engine rust]
         recent [--history <历史.json>]
 
         卷读取命令需要管理员权限，仅以只读方式访问 NTFS；不创建或修改 USN 日志。

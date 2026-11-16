@@ -20,26 +20,30 @@ internal static class DesktopDefaults
 public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = null, string Hotkey = DesktopDefaults.Hotkey, bool AutoUpdate = DesktopDefaults.AutoUpdate,
     bool ResultShortcuts = false);
 
-public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob, bool WatchWorker = false)
+public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob,
+    bool WatchWorker = false, string SearchEngine = "csharp")
 {
     public static DesktopOptions Parse(string[] args)
     {
         var state = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DesktopDefaults.StateFolder);
         string? indexes = null, workerJob = null;
-        var hidden = false; var watch = false;
+        var hidden = false; var watch = false; var engine = "csharp";
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--start-hidden") { hidden = true; continue; }
             if (args[i] == "--watch-worker") { watch = true; continue; }
             var key = args[i];
-            if (key is not ("--state-directory" or "--index-directory" or "--sync-worker") || ++i == args.Length)
+            if (key is not ("--state-directory" or "--index-directory" or "--sync-worker" or "--search-engine") || ++i == args.Length)
                 throw new ArgumentException($"无效的启动参数：{key}");
             if (key == "--state-directory") state = args[i];
             else if (key == "--index-directory") indexes = args[i];
+            else if (key == "--search-engine") engine = args[i];
             else workerJob = args[i];
         }
+        if (engine is not ("csharp" or "rust"))
+            throw new ArgumentException("--search-engine 只能是 csharp 或 rust");
         return new(Path.GetFullPath(state), indexes == null ? null : Path.GetFullPath(indexes), hidden,
-            workerJob == null ? null : Path.GetFullPath(workerJob), watch);
+            workerJob == null ? null : Path.GetFullPath(workerJob), watch, engine);
     }
 }
 

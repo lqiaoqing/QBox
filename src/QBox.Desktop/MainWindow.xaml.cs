@@ -14,6 +14,7 @@ using QBox.Windows;
 using QBox.Windows.Indexing;
 using QBox.Windows.Shortcuts;
 using QBox.Windows.Applications;
+using QBox.Windows.Search;
 
 namespace QBox.Desktop;
 
@@ -28,6 +29,9 @@ public partial class MainWindow : Window
     private readonly LatestQueryGate _queries = new(), _loads = new();
     private readonly LatestQueryGate _catalogs = new();
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly bool _rustRequested;
+    private RustSearchEngine? _rustEngine;
+    private int _rustDisabled;
     private readonly ShellIconLoader _icons = new();
     private VolumeIndex[] _indexes = [];
     private LiveIndexFile[] _liveIndexes = [];
@@ -79,6 +83,7 @@ public partial class MainWindow : Window
         _idleReclaim.Tick += OnIdleReclaim;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
+        _rustRequested = options.SearchEngine == "rust";
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -295,9 +300,32 @@ public partial class MainWindow : Window
                 if (result.Select(i => i.Geometry.Serial).Distinct().Count() != result.Length)
                     throw new InvalidDataException("同一个磁盘存在重复索引，请选择正确的索引目录");
                 foreach (var index in result) index.PrepareSearch(request.Token);
+                var shortcuts = ShortcutCatalog.Load(live.Select(source => source.View).ToArray(), request.Token);
+                var applications = PackagedApplicationCatalog.Load(request.Token);
+                RustSearchEngine? rust = null;
+                string? rustWarning = null;
+                if (_rustRequested)
+                {
+                    try
+                    {
+                        var engine = RustSearchEngine.Open(directory);
+                        try
+                        {
+                            var refresh = engine.Refresh(EngineCatalogSnapshot.Create(applications, shortcuts));
+                            if (refresh == RustRefreshResult.BaseChanged)
+                                throw new InvalidDataException("Rust 引擎基础索引已变化");
+                        }
+                        catch { engine.Dispose(); throw; }
+                        rust = engine;
+                    }
+                    catch (Exception error) when (IsRustError(error))
+                    {
+                        rustWarning = "Rust 引擎加载失败，使用 C# 引擎：" + error.Message;
+                    }
+                }
                 return (Indexes: result, Live: live, Failures: failures, PathCount: paths.Length,
                     Warning: warnings.Count == 0 ? null : "部分索引暂不可用：" + string.Join("；", warnings),
-                    Shortcuts: ShortcutCatalog.Load(live.Select(source => source.View).ToArray(), request.Token), Applications: PackagedApplicationCatalog.Load(request.Token));
+                    Shortcuts: shortcuts, Applications: applications, Rust: rust, RustWarning: rustWarning);
             }, request.Token);
             if (!_loads.IsCurrent(request)) return;
             var indexes = snapshot.Indexes;
@@ -310,7 +338,11 @@ public partial class MainWindow : Window
             _shortcuts = snapshot.Shortcuts;
             _catalogRefreshAt = DateTimeOffset.UtcNow;
             if (snapshot.Applications.Warning == null || _applications.Count == 0) _applications = snapshot.Applications;
-            _notice = snapshot.Warning ?? snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
+            var previousRust = _rustEngine;
+            _rustEngine = snapshot.Rust;
+            if (previousRust != null) _ = Task.Run(previousRust.Dispose);
+            Interlocked.Exchange(ref _rustDisabled, 0);
+            _notice = snapshot.RustWarning ?? snapshot.Warning ?? snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
             if (indexes.Length != 0)
             {
                 var volumes = string.Join(" · ", indexes.Select(i => i.Geometry.Root[..2]));
@@ -382,12 +414,22 @@ public partial class MainWindow : Window
         var indexes = _liveIndexes;
         var shortcuts = _shortcuts;
         var applications = _applications;
+        var rustEngine = _rustEngine;
         var limit = _limit;
         var history = _history.ForQuery(query);
         try
         {
             var response = await Task.Run(() =>
             {
+                if (rustEngine != null && Volatile.Read(ref _rustDisabled) == 0)
+                {
+                    try { return rustEngine.Search(query, limit, history, request.Token); }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception error) when (IsRustError(error))
+                    {
+                        if (Interlocked.Exchange(ref _rustDisabled, 1) == 0) _store.Log(error);
+                    }
+                }
                 var collector = new SearchCollector(query, limit, request.Token);
                 applications.SearchInto(collector, history, request.Token);
                 shortcuts.SearchInto(collector, history, request.Token);
@@ -396,6 +438,7 @@ public partial class MainWindow : Window
                 foreach (var index in indexes) index.View.SearchInto(collector, history, request.Token, replaced, representedExecutables);
                 return collector.Finish();
             }, request.Token);
+            if (Volatile.Read(ref _rustDisabled) != 0) _notice ??= "Rust 搜索引擎出错，已回退 C# 引擎。";
             // UI 线程上的版本复核同时约束展示和打开，取消来不及的旧查询也不能抢回结果。
             if (!_queries.IsCurrent(request) || _loading) return;
             _resultVersion = request.Version;
@@ -793,6 +836,20 @@ public partial class MainWindow : Window
                             _catalogRefreshAt = DateTimeOffset.MinValue;
                         if (contentChanged) MigrateHistory(before.Select(source => source.View).ToArray(), after.Select(source => source.View).ToArray());
                         _liveIndexes = after;
+                        if (contentChanged && _rustRequested && _rustEngine is { } rust)
+                        {
+                            try
+                            {
+                                var refresh = await Task.Run(() => rust.Refresh(null), _lifetime.Token);
+                                if (refresh == RustRefreshResult.BaseChanged)
+                                {
+                                    await ReloadAsync(true);
+                                    continue;
+                                }
+                            }
+                            catch (OperationCanceledException) { }
+                            catch (Exception error) when (IsRustError(error)) { DisableRust(error); }
+                        }
                         // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
                         if (contentChanged) await SearchAsync();
                     }
@@ -817,6 +874,15 @@ public partial class MainWindow : Window
         { _store.Log(error); _notice = "索引已更新，历史迁移未保存：" + error.Message; }
     }
 
+    private static bool IsRustError(Exception error) =>
+        error is InvalidOperationException or IOException or InvalidDataException or UnauthorizedAccessException
+            or DllNotFoundException or BadImageFormatException or EntryPointNotFoundException;
+
+    private void DisableRust(Exception error)
+    {
+        if (Interlocked.Exchange(ref _rustDisabled, 1) == 0) _store.Log(error);
+    }
+
     private async Task RefreshCatalogsAsync()
     {
         if (_catalogRefreshing) return;
@@ -835,6 +901,25 @@ public partial class MainWindow : Window
                 if (!_applications.HasSameSearchContent(result.Applications)) { _applications = result.Applications; changed = true; }
             }
             else _notice = result.Applications.Warning;
+            if (_rustRequested && _rustEngine is { } rust && Volatile.Read(ref _rustDisabled) == 0)
+            {
+                try
+                {
+                    var catalogs = EngineCatalogSnapshot.Create(_applications, _shortcuts);
+                    var refresh = await Task.Run(() => rust.Refresh(catalogs), request.Token);
+                    if (refresh == RustRefreshResult.BaseChanged)
+                    {
+                        await ReloadAsync(true);
+                        return;
+                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception error) when (IsRustError(error))
+                {
+                    DisableRust(error);
+                    changed = true;
+                }
+            }
             if (changed) await SearchAsync();
             else RefreshStatus();
         }
@@ -854,6 +939,8 @@ public partial class MainWindow : Window
         _idleReclaim.Stop();
         _searchWarmup.Cancel();
         _lifetime.Cancel();
+        _rustEngine?.Dispose();
+        _rustEngine = null;
         _queries.Dispose(); _loads.Dispose(); _catalogs.Dispose(); _icons.Dispose(); _hotkey?.Dispose();
         if (_tray != null) { var icon = _tray.Icon; _tray.Visible = false; _tray.Dispose(); icon?.Dispose(); }
         Close();
