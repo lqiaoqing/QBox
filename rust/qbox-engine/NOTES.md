@@ -112,6 +112,16 @@ Rust 五次：`1` [94.107, 84.969, 83.082, 85.489, 97.424]；`豆包` [0.097, 0.
 
 成功标准是 `1` / `CODE` / `python` 的 Rust 中位时至少比 C# 快 30%（加速比 ≥ 1.30×），且首屏仍然一致。本轮三个查询的中位加速比为 2.547× / 1.798× / 1.784×，**达到了该标准**；四个查询的命中总数与首屏次序均一致。需要说明：本次 C# 的 `1` 波动较大（157–256 ms，中位 217.718 ms），上一轮未优化对照里同一 C# 宿主中位约 135.401 ms。即便用上一轮更紧的 C# 中位来比本次 Rust（`1` 85.489、`CODE` 94.684、`python` 25.198），加速比仍约为 1.58× / 1.84× / 1.87×，同样超过 30%。
 
+## 实施前复核（2026-11-16，阶段 0）
+
+- 基线确认：HEAD `9125abf`，工作区干净；`cargo test --lib` 与 `cargo run --release --bin engine-harness` 实跑通过，ASCII 685/685、拼音 36/36、排序收集 2058/2058。release 二进制退出码为 0，没有 `0xC0000139`。
+- 链接器仍由 `.cargo/config.toml` 指向 `gnu-linker.cmd`，后者使用 rustup sysroot 下 self-contained 的 `x86_64-w64-mingw32-gcc.exe`，`link-self-contained=yes` 保持不变。
+- GUI 搜索顺序（`MainWindow.SearchAsync`，后台线程）：`SearchCollector(query, limit, token)` → `PackagedApplicationCatalog.SearchInto` → `ShortcutCatalog.SearchInto` → `ReplacedIds` → `MatchedExecutableTargets` → 按已加载卷顺序对每个 `LiveVolumeIndex.SearchInto` → `Finish`。CLI `search` / `open` 走同一顺序。
+- 每个 `LiveVolumeIndex.SearchInto` 先 `Base.SearchInto`（存在变更目录时用 live 路径解析），再 `_overlay.SearchInto`（总是解析 live 路径）。卷顺序按 `.qbi` 文件名 Ordinal（当前 C 再 D），禁止并行扫卷。
+- 单个 `VolumeIndex.SearchInto` 先按 presence 索引筛字面候选：`.lnk`/`.exe` 去扩展名可匹配时优先展示友好名，否则回退完整名；DOS 8.3 别名可命中但不重复占位；EXE 在非包目录且分值 >1 时作为直接应用入口，`representedExecutables` 中的目标不再标记。随后跑拼音补充命中，与字面入口互斥，使用 supplemental 桶；查询含 `.lnk` 时跳过快捷方式来源与替换逻辑。
+- 收集器保持 7 个 lane、动态容量和 `Mixed` 前十规则；总命中数在过滤后即计数，即使 `limit == 0` 也继续统计。索引身份为 `ntfs:{serial:x16}:{file:x16}:{parent:x16}:{sha256(utf16 name)}`，历史信号按 `(file,parent,hash)` 关联。
+- 后续接入 Rust 时必须保持上述来源顺序、卷顺序、路径解析与历史桶规则不变；不得为提速并行扫卷或提前截断语料。
+
 ## 仍挡住产品 go / no-go 的事项
 
 - 本轮证明静态 `.qbi` 首屏可以对齐，并且去掉热路径字符串拷贝后，Rust 引擎路径在 `1` / `CODE` / `python` 上中位快于 C# 引擎路径至少 30%。尚未接入 UI / FFI，也未覆盖应用、快捷方式和 live `.qbd` 覆盖层。
