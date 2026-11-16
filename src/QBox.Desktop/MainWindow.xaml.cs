@@ -320,6 +320,7 @@ public partial class MainWindow : Window
                     }
                     catch (Exception error) when (IsRustError(error))
                     {
+                        _store.Log(error);
                         rustWarning = "Rust 引擎加载失败，使用 C# 引擎：" + error.Message;
                     }
                 }
