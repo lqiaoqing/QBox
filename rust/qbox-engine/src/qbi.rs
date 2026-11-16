@@ -2,7 +2,7 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -88,7 +88,7 @@ pub struct VolumeIndex {
 impl VolumeIndex {
     pub fn load(path: impl AsRef<Path>) -> io::Result<Self> {
         let path = path.as_ref().to_path_buf();
-        let file = File::open(&path)?;
+        let file = open_index_file(&path)?;
         let mmap = unsafe { MmapOptions::new().map(&file)? };
         Self::parse(path, Storage::Mmap(mmap), true)
     }
@@ -226,22 +226,45 @@ impl VolumeIndex {
         unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const u16, length as usize) }
     }
 
-    // 按 C# VolumeIndex.FindFile 的语义把节点物化成带名称的只读记录；节点本身已按文件编号排序。
-    pub fn find_file(&self, file: u64) -> Option<MaterializedFile> {
+    // 节点按完整 64 位文件引用排序；先二分定位，避免可达性检查为每个目录物化名称。
+    pub fn find_node_index(&self, file: u64) -> Option<i32> {
         let mut low = 0i32;
         let mut high = self.node_count - 1;
         while low <= high {
             let at = low + (high - low) / 2;
-            let node = self.node(at);
             // node.File / FileReference.Low 是完整 64 位文件引用；只有记录号才取低 48 位。
-            if node.file < file {
+            let node_file = self.node(at).file;
+            if node_file < file {
                 low = at + 1;
-                continue;
-            }
-            if node.file > file {
+            } else if node_file > file {
                 high = at - 1;
-                continue;
+            } else {
+                return Some(at);
             }
+        }
+        None
+    }
+
+    // 只收集目录硬链接的父编号和命名空间，供 live 判断祖先是否变更。
+    pub fn directory_name_links(&self, file: u64) -> Option<Vec<(u64, u8)>> {
+        let index = self.find_node_index(file)?;
+        let node = self.node(index);
+        if !node.is_directory() {
+            return None;
+        }
+        let mut links = Vec::with_capacity(node.name_count as usize);
+        for name_index in node.first_name..(node.first_name + node.name_count) {
+            let name = self.name(name_index);
+            links.push((self.node(name.parent).file, name.namespace));
+        }
+        Some(links)
+    }
+
+    // 按 C# VolumeIndex.FindFile 的语义把节点物化成带名称的只读记录。
+    pub fn find_file(&self, file: u64) -> Option<MaterializedFile> {
+        let at = self.find_node_index(file)?;
+        let node = self.node(at);
+        {
             let mut names = Vec::with_capacity(node.name_count as usize);
             for index in node.first_name..(node.first_name + node.name_count) {
                 let name = self.name(index);
@@ -260,23 +283,12 @@ impl VolumeIndex {
                 names,
             });
         }
-        None
     }
 
     pub fn file_names(&self, file: u64) -> Option<LightFile> {
-        let mut low = 0i32;
-        let mut high = self.node_count - 1;
-        while low <= high {
-            let at = low + (high - low) / 2;
-            let node = self.node(at);
-            if node.file < file {
-                low = at + 1;
-                continue;
-            }
-            if node.file > file {
-                high = at - 1;
-                continue;
-            }
+        let at = self.find_node_index(file)?;
+        let node = self.node(at);
+        {
             let mut names = Vec::with_capacity(node.name_count as usize);
             for index in node.first_name..(node.first_name + node.name_count) {
                 let name = self.name(index);
@@ -292,7 +304,6 @@ impl VolumeIndex {
                 names,
             });
         }
-        None
     }
 
     pub fn root_file(&self) -> u64 {
@@ -347,8 +358,14 @@ impl VolumeIndex {
         });
         let query_has_exe = contains_dot_exe_ignore_case(collector.query().text());
         // 单次查询内复用父目录可达性与目录路径，避免每个候选都进全局缓存锁。
-        let mut reachable_cache: HashMap<u64, bool> = HashMap::new();
-        let mut path_cache: HashMap<u64, Option<String>> = HashMap::new();
+        let (mut reachable_cache, mut path_cache, mut needs_live_cache) = match live {
+            Some(live) => live.new_query_caches(),
+            None => (
+                crate::live::SeededMap::empty(),
+                crate::live::SeededMap::empty(),
+                crate::live::SeededMap::empty(),
+            ),
+        };
         let package_windows_apps = format!("{}WindowsApps\\", self.geometry.root);
         let package_program_files = format!("{}Program Files\\WindowsApps\\", self.geometry.root);
         let selected = presence.select(collector.query().text(), self, cancel)?;
@@ -398,14 +415,14 @@ impl VolumeIndex {
             if resolve_paths {
                 let live = live.unwrap();
                 let parent = self.node(name.parent).file;
-                if !live.parent_reachable_cached(parent, &mut reachable_cache) {
+                if !live.parent_reachable_cached(parent, &mut reachable_cache, &mut needs_live_cache) {
                     continue;
                 }
             }
             // 只有可能成为直接应用入口的 EXE 才需要完整路径；C# 的结果条件与这里等价。
             let needs_live_path = executable && friendly_match && !query_has_exe;
             let live_path = if resolve_paths && needs_live_path {
-                live.unwrap().path_for_index_cached(self, i, &mut path_cache)
+                live.unwrap().path_for_index_cached(self, i, &mut path_cache, &mut needs_live_cache)
             } else {
                 None
             };
@@ -511,7 +528,7 @@ impl VolumeIndex {
             }
             let path = if resolve_paths {
                 live.unwrap()
-                    .path_for_index_cached(self, entry.name, &mut path_cache)
+                    .path_for_index_cached(self, entry.name, &mut path_cache, &mut needs_live_cache)
             } else {
                 Some(path_for(self, entry.name))
             };
@@ -562,6 +579,9 @@ impl VolumeIndex {
                 match_value.phonetic_match,
                 true,
             )?;
+        }
+        if let Some(live) = live {
+            live.store_query_caches(reachable_cache, path_cache, needs_live_cache);
         }
         Ok(())
     }
@@ -671,6 +691,24 @@ fn contains_dot_exe_ignore_case(text: &str) -> bool {
     text.as_bytes()
         .windows(4)
         .any(|window| window.eq_ignore_ascii_case(b".exe"))
+}
+
+
+// 与 C# VolumeIndexStore.Load 的共享模式对齐：Read + Delete，避免挡住 worker 用 File.Move 替换 .qbi。
+fn open_index_file(path: &Path) -> io::Result<File> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const FILE_SHARE_READ: u32 = 0x00000001;
+        const FILE_SHARE_WRITE: u32 = 0x00000002;
+        const FILE_SHARE_DELETE: u32 = 0x00000004;
+        return OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+            .open(path);
+    }
+    #[cfg(not(windows))]
+    File::open(path)
 }
 
 fn path_for(volume: &VolumeIndex, name_index: i32) -> String {

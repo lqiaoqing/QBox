@@ -313,8 +313,11 @@ pub struct LiveVolume {
     pub cursor: u64,
     base_length: u64,
     base_modified: Option<SystemTime>,
-    reachable: RwLock<HashMap<u64, bool>>,
-    paths: RwLock<HashMap<u64, Option<String>>>,
+    reachable: RwLock<Arc<HashMap<u64, bool>>>,
+    paths: RwLock<Arc<HashMap<u64, Option<String>>>>,
+    // 发生过目录变更的记录号。祖先不在此集合中时，路径和可达性与静态基础索引相同。
+    changed_directory_ids: HashSet<u64>,
+    needs_live: RwLock<Arc<HashMap<u64, bool>>>,
 }
 
 pub struct LiveLoadResult {
@@ -405,18 +408,13 @@ impl LiveVolume {
             cursor,
             base_length,
             base_modified,
-            reachable: RwLock::new(HashMap::new()),
-            paths: RwLock::new(HashMap::new()),
+            reachable: RwLock::new(Arc::new(HashMap::new())),
+            paths: RwLock::new(Arc::new(HashMap::new())),
+            changed_directory_ids: HashSet::new(),
+            needs_live: RwLock::new(Arc::new(HashMap::new())),
         };
-        volume.changed_directories = volume.changes.values().any(|change| {
-            change
-                .value
-                .as_ref()
-                .is_some_and(|value| value.is_directory)
-                || volume
-                    .find_file_raw(change.file)
-                    .is_some_and(|file| file.is_directory)
-        });
+        volume.changed_directory_ids = collect_changed_directory_ids(&volume.base, &volume.changes);
+        volume.changed_directories = !volume.changed_directory_ids.is_empty();
         volume.overlay = volume.build_overlay(checkpoint, cancel)?;
         Ok(Arc::new(volume))
     }
@@ -437,7 +435,7 @@ impl LiveVolume {
         }
         // 删除或复用的父记录不能留下伪路径，其他仍有效的硬链接继续参与搜索。
         let mut removed = Vec::new();
-        let mut reachable = HashMap::new();
+        let mut reachable = SeededMap::empty();
         for (key, file) in files.iter_mut() {
             file.names.retain(|name| {
                 self.directory_reachable(name.parent, &mut HashSet::new(), &mut reachable)
@@ -550,7 +548,7 @@ impl LiveVolume {
         &self,
         id: u64,
         visited: &mut HashSet<u64>,
-        local: &mut HashMap<u64, bool>,
+        local: &mut SeededMap<bool>,
     ) -> bool {
         if id == self.base.root_file() {
             return true;
@@ -590,18 +588,15 @@ impl LiveVolume {
         valid
     }
 
-    fn remember_reachable(&self, id: u64, value: bool) {
-        self.reachable
-            .write()
-            .expect("reachable cache")
-            .insert(id, value);
+    fn remember_reachable(&self, _id: u64, _value: bool) {
+        // 查询过程只写入 SeededMap::fresh，结束时一次性合并到全局表。
     }
 
     fn directory_path(
         &self,
         id: u64,
         visited: &mut HashSet<u64>,
-        local: &mut HashMap<u64, Option<String>>,
+        local: &mut SeededMap<Option<String>>,
     ) -> Option<String> {
         if id == self.base.root_file() {
             return Some(self.base.geometry.root.clone());
@@ -609,13 +604,7 @@ impl LiveVolume {
         if let Some(cached) = local.get(&id).cloned() {
             return cached;
         }
-        if let Some(cached) = self
-            .paths
-            .read()
-            .expect("path cache")
-            .get(&id)
-            .cloned()
-        {
+        if let Some(cached) = self.paths.read().expect("path cache").get(&id).cloned() {
             local.insert(id, cached.clone());
             return cached;
         }
@@ -639,23 +628,49 @@ impl LiveVolume {
         }
         visited.remove(&id);
         local.insert(id, path.clone());
-        let mut cache = self.paths.write().expect("path cache");
-        if cache.len() < 8192 {
-            cache.insert(id, path.clone());
-        }
+        // 全局路径表改在查询结束时一次性合并，避免这里反复写锁。
         path
     }
 
-    pub fn parent_reachable(&self, parent: u64) -> bool {
-        self.parent_reachable_cached(parent, &mut HashMap::new())
+    pub fn new_query_caches(&self) -> (SeededMap<bool>, SeededMap<Option<String>>, SeededMap<bool>) {
+        (
+            SeededMap::new(Arc::clone(&self.reachable.read().expect("reachable cache"))),
+            SeededMap::new(Arc::clone(&self.paths.read().expect("path cache"))),
+            SeededMap::new(Arc::clone(&self.needs_live.read().expect("needs live cache"))),
+        )
     }
 
-    pub fn parent_reachable_cached(&self, parent: u64, cache: &mut HashMap<u64, bool>) -> bool {
+    pub fn store_query_caches(
+        &self,
+        reachable: SeededMap<bool>,
+        paths: SeededMap<Option<String>>,
+        needs_live: SeededMap<bool>,
+    ) {
+        merge_seeded_map(&self.reachable, reachable);
+        merge_seeded_map(&self.paths, paths);
+        merge_seeded_map(&self.needs_live, needs_live);
+    }
+
+    pub fn parent_reachable(&self, parent: u64) -> bool {
+        self.parent_reachable_cached(parent, &mut SeededMap::empty(), &mut SeededMap::empty())
+    }
+
+    pub fn parent_reachable_cached(
+        &self,
+        parent: u64,
+        cache: &mut SeededMap<bool>,
+        needs_live: &mut SeededMap<bool>,
+    ) -> bool {
         if parent == self.base.root_file() {
             return true;
         }
         if let Some(cached) = cache.get(&parent).copied() {
             return cached;
+        }
+        // 父链上没有任何目录变更时，基础索引里的记录仍按建索引时的结构可达。
+        if !self.parent_chain_needs_live(parent, needs_live) {
+            cache.insert(parent, true);
+            return true;
         }
         let value = self.directory_reachable(parent, &mut HashSet::new(), cache);
         cache.insert(parent, value);
@@ -663,7 +678,7 @@ impl LiveVolume {
     }
 
     pub fn path_for_index(&self, volume: &VolumeIndex, name_index: i32) -> Option<String> {
-        self.path_for_index_cached(volume, name_index, &mut HashMap::new())
+        self.path_for_index_cached(volume, name_index, &mut SeededMap::empty(), &mut SeededMap::empty())
     }
 
     // 单次查询传入自己的目录路径缓存，避免每个名称重复解析父链。
@@ -671,10 +686,14 @@ impl LiveVolume {
         &self,
         volume: &VolumeIndex,
         name_index: i32,
-        cache: &mut HashMap<u64, Option<String>>,
+        cache: &mut SeededMap<Option<String>>,
+        needs_live: &mut SeededMap<bool>,
     ) -> Option<String> {
         let name = volume.name(name_index);
         let parent_id = volume.node(name.parent).file;
+        if !self.parent_chain_needs_live(parent_id, needs_live) {
+            return self.preferred_path_from_base(volume, name_index, cache);
+        }
         let parent = if parent_id == self.base.root_file() {
             Some(self.base.geometry.root.clone())
         } else {
@@ -684,6 +703,84 @@ impl LiveVolume {
             &parent,
             &crate::qbi::utf16_to_string(volume.text_units(name.offset, name.length)),
         ))
+    }
+
+    // 目录自身或其任一硬链接的祖先出现在变更集中时，才走 live 可达性 / 路径解析。
+    fn parent_chain_needs_live(&self, parent: u64, cache: &mut SeededMap<bool>) -> bool {
+        if parent == self.base.root_file() || !self.changed_directories {
+            return false;
+        }
+        if let Some(&needed) = cache.get(&parent) {
+            return needed;
+        }
+        if self.changed_directory_ids.contains(&(parent & RECORD_MASK)) {
+            cache.insert(parent, true);
+            return true;
+        }
+        let needed = match self.base.directory_name_links(parent) {
+            Some(links) if !links.is_empty() => links
+                .iter()
+                .any(|(id, _)| self.parent_chain_needs_live(*id, cache)),
+            // 不在基础索引里的父目录来自 overlay，必须按 live 视图解析。
+            _ => true,
+        };
+        cache.insert(parent, needed);
+        needed
+    }
+
+    // 未变父链沿用 live 的“优先非 DOS 名”规则，但只读基础索引，避免全局路径锁。
+    fn preferred_path_from_base(
+        &self,
+        volume: &VolumeIndex,
+        name_index: i32,
+        cache: &mut SeededMap<Option<String>>,
+    ) -> Option<String> {
+        let name = volume.name(name_index);
+        let parent_id = volume.node(name.parent).file;
+        let parent = self.preferred_directory_path_from_base(parent_id, cache)?;
+        Some(combine(
+            &parent,
+            &crate::qbi::utf16_to_string(volume.text_units(name.offset, name.length)),
+        ))
+    }
+
+    fn preferred_directory_path_from_base(
+        &self,
+        id: u64,
+        cache: &mut SeededMap<Option<String>>,
+    ) -> Option<String> {
+        if id == self.base.root_file() {
+            return Some(self.base.geometry.root.clone());
+        }
+        if let Some(cached) = cache.get(&id) {
+            return cached.clone();
+        }
+        let Some(index) = self.base.find_node_index(id) else {
+            cache.insert(id, None);
+            return None;
+        };
+        let node = self.base.node(index);
+        if !node.is_directory() {
+            cache.insert(id, None);
+            return None;
+        }
+        let mut names: Vec<_> = (node.first_name..(node.first_name + node.name_count))
+            .map(|name_index| self.base.name(name_index))
+            .collect();
+        names.sort_by_key(|name| name.namespace == 2);
+        let mut path = None;
+        for name in names {
+            let parent_id = self.base.node(name.parent).file;
+            if let Some(parent) = self.preferred_directory_path_from_base(parent_id, cache) {
+                path = Some(combine(
+                    &parent,
+                    &crate::qbi::utf16_to_string(self.base.text_units(name.offset, name.length)),
+                ));
+                break;
+            }
+        }
+        cache.insert(id, path.clone());
+        path
     }
 
     pub fn has_path(&self, volume: &VolumeIndex, name_index: i32) -> bool {
@@ -740,6 +837,77 @@ impl LiveVolume {
         }
         Ok(())
     }
+}
+
+
+
+/// 查询开始时只克隆 Arc，新结果写入 fresh；没有新增时结束不必拷贝整表。
+pub struct SeededMap<V> {
+    fresh: HashMap<u64, V>,
+    shared: Arc<HashMap<u64, V>>,
+}
+
+impl<V> SeededMap<V> {
+    fn new(shared: Arc<HashMap<u64, V>>) -> Self {
+        Self {
+            fresh: HashMap::new(),
+            shared,
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(Arc::new(HashMap::new()))
+    }
+
+    fn get(&self, key: &u64) -> Option<&V> {
+        // 预热之后 fresh 为空，避免每个候选多一次空表探测。
+        if self.fresh.is_empty() {
+            self.shared.get(key)
+        } else {
+            self.fresh.get(key).or_else(|| self.shared.get(key))
+        }
+    }
+
+    fn insert(&mut self, key: u64, value: V) {
+        self.fresh.insert(key, value);
+    }
+
+}
+
+fn merge_seeded_map<V: Clone>(
+    slot: &RwLock<Arc<HashMap<u64, V>>>,
+    seeded: SeededMap<V>,
+) {
+    if seeded.fresh.is_empty() {
+        return;
+    }
+    let mut next = (*seeded.shared).clone();
+    next.extend(seeded.fresh);
+    *slot.write().expect("query cache") = Arc::new(next);
+}
+
+fn collect_changed_directory_ids(
+    base: &VolumeIndex,
+    changes: &HashMap<u64, IndexChange>,
+) -> HashSet<u64> {
+    let mut ids = HashSet::new();
+    for change in changes.values() {
+        if change
+            .value
+            .as_ref()
+            .is_some_and(|value| value.is_directory)
+        {
+            ids.insert(change.file & RECORD_MASK);
+        }
+        // 与 C# LiveVolumeIndex 一致：看基础索引里改前是不是目录，删除目录也要进入 live 解析。
+        if base
+            .find_file(change.file)
+            .is_some_and(|file| file.is_directory)
+        {
+            ids.insert(change.file & RECORD_MASK);
+        }
+    }
+    ids
 }
 
 fn apply_changes(
@@ -919,5 +1087,99 @@ impl IndexHistoryMap {
             .find(|(value, _)| *value == hash)
             .map(|(_, signals)| *signals)
             .unwrap_or_default()
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::qbi::{build_volume_image, MaterializedName, VolumeGeometry};
+
+    fn file(
+        file: u64,
+        directory: bool,
+        parent: u64,
+        name: &str,
+        namespace: u8,
+    ) -> MaterializedFile {
+        MaterializedFile {
+            file,
+            is_directory: directory,
+            last_usn: None,
+            link_count: 1,
+            names: vec![MaterializedName {
+                parent,
+                name: name.to_string(),
+                namespace,
+                attributes: 0,
+            }],
+        }
+    }
+
+    fn name_index(base: &VolumeIndex, expected: &str) -> i32 {
+        (0..base.name_count)
+            .find(|&i| {
+                crate::qbi::utf16_to_string(base.text_units(base.name(i).offset, base.name(i).length))
+                    == expected
+            })
+            .expect(expected)
+    }
+
+    #[test]
+    fn unchanged_parent_chain_keeps_static_paths() {
+        let geometry = VolumeGeometry {
+            root: "C:\\".to_string(),
+            serial: 1,
+        };
+        let files = vec![
+            file(5, true, 5, ".", 3),
+            file(100, true, 5, "DirA", 1),
+            file(200, true, 5, "DirB", 1),
+            file(300, false, 100, "a.txt", 1),
+            file(400, false, 200, "b.txt", 1),
+        ];
+        let image = build_volume_image(&geometry, 7, 8, 9, &files).expect("image");
+        let mut base = VolumeIndex::from_owned_image("memory.qbi", image).expect("parse");
+        base.prepare_search(CancelToken::NONE).expect("PrepareSearch");
+        let base = Arc::new(base);
+        let name_a = name_index(&base, "a.txt");
+        let name_b = name_index(&base, "b.txt");
+        let mut changes = HashMap::new();
+        changes.insert(
+            100,
+            IndexChange {
+                file: 100,
+                value: Some(file(100, true, 5, "DirA2", 1)),
+            },
+        );
+        let volume = LiveVolume::create(
+            Arc::clone(&base),
+            changes,
+            JournalCheckpoint {
+                journal_id: 7,
+                next_usn: 8,
+            },
+            0,
+            0,
+            None,
+            CancelToken::NONE,
+        )
+        .expect("live volume");
+        assert!(volume.changed_directories);
+        assert!(volume.changed_directory_ids.contains(&100));
+        assert!(!volume.changed_directory_ids.contains(&200));
+        assert!(volume.parent_chain_needs_live(100, &mut SeededMap::empty()));
+        assert!(!volume.parent_chain_needs_live(200, &mut SeededMap::empty()));
+        assert_eq!(
+            volume.path_for_index(&base, name_a).as_deref(),
+            Some("C:\\DirA2\\a.txt")
+        );
+        assert_eq!(
+            volume.path_for_index(&base, name_b).as_deref(),
+            Some("C:\\DirB\\b.txt")
+        );
+        assert!(volume.parent_reachable(100));
+        assert!(volume.parent_reachable(200));
     }
 }
