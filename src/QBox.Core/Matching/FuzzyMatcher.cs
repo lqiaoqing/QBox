@@ -37,6 +37,14 @@ public sealed class PreparedQuery
         cancellationToken.ThrowIfCancellationRequested();
         if (_asciiUpper != null && Ascii.IsValid(candidate))
         {
+            // 单字符 ASCII/数字查询走等价的 IndexOf，避免短查询在全量预筛里反复切切片。
+            if (_asciiUpper.Length == 1)
+            {
+                var letter = _asciiUpper[0];
+                return char.IsAsciiLetterUpper(letter)
+                    ? candidate.IndexOfAny(letter, (char)(letter + 32)) >= 0
+                    : candidate.IndexOf(letter) >= 0;
+            }
             foreach (var letter in _asciiUpper)
             {
                 cancellationToken.ThrowIfCancellationRequested();

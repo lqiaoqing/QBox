@@ -2,10 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace QBox.Desktop;
 
-// 窗口在托盘空闲 30 秒后收缩工作集：索引保持映射，下次搜索或增量再 fault 热页。
+// 窗口在托盘空闲 10 秒后收缩工作集：索引保持映射，下次搜索或增量再 fault 热页。
 internal static class IdleWorkingSetReclaim
 {
-    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(10);
     internal const string IdleFileName = "idle";
     internal const string ReclaimFileName = "reclaim";
     internal const string WarmupFileName = "warmup";

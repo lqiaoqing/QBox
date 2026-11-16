@@ -43,6 +43,8 @@ public partial class MainWindow : Window
     private int _limit = SearchChromeLayout.QuickResultCap, _total;
     private bool _loading, _searching, _silentRefresh, _loaded, _quitting, _opening;
     private bool _dragging;
+    private Point _resultPressPosition;
+    private ListBoxItem? _resultPressItem;
     private bool _monitorRunning;
     private bool _realtime;
     private bool _catalogRefreshing;
@@ -450,7 +452,8 @@ public partial class MainWindow : Window
         }, DispatcherPriority.Background);
     }
 
-    private bool CurrentResults => !_loading && !_searching && _resultVersion == _inputVersion && _resultQuery == QueryBox.Text;
+    private bool CurrentResults => SearchResultActivation.CanActivateDisplayed(
+        _loading, _searching, _silentRefresh, Results.IsEnabled, _resultQuery, QueryBox.Text, _resultVersion, _inputVersion);
     private async Task OpenAsync(int index)
     {
         if (_opening || !CurrentResults || (uint)index >= _rows.Length) return;
@@ -505,6 +508,43 @@ public partial class MainWindow : Window
             e.Handled = true;
         }
     }
+    private void OnResultPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _resultPressItem = null;
+        if (e.ChangedButton != MouseButton.Left || e.ClickCount != 1) return;
+        if (e.OriginalSource is not DependencyObject source || IsScrollChrome(source)) return;
+        if (ItemsControl.ContainerFromElement(Results, source) is ListBoxItem item)
+        {
+            _resultPressItem = item;
+            _resultPressPosition = e.GetPosition(Results);
+        }
+    }
+
+    private async void OnResultPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        var item = _resultPressItem;
+        _resultPressItem = null;
+        if (item == null || e.OriginalSource is not DependencyObject source) return;
+        var delta = e.GetPosition(Results) - _resultPressPosition;
+        var sameItem = ReferenceEquals(ItemsControl.ContainerFromElement(Results, source), item);
+        if (!SearchResultActivation.ShouldOpenOnRelease(
+            e.ChangedButton == MouseButton.Left, e.ClickCount, IsScrollChrome(source), sameItem,
+            delta.X, delta.Y, SystemParameters.MinimumHorizontalDragDistance, SystemParameters.MinimumVerticalDragDistance))
+            return;
+        if (item.DataContext is not ResultRow row) return;
+        e.Handled = true;
+        await OpenAsync(Array.IndexOf(_rows, row));
+    }
+
+    private static bool IsScrollChrome(DependencyObject? item)
+    {
+        for (; item != null; item = item is Visual ? VisualTreeHelper.GetParent(item) : LogicalTreeHelper.GetParent(item))
+        {
+            if (item is ScrollBar or Thumb) return true;
+        }
+        return false;
+    }
+
     private async void OnResultDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement(Results, source) is ListBoxItem)

@@ -3,7 +3,7 @@ namespace QBox.Core.Search;
 public enum SearchChromeKind { Compact, Results, Full }
 
 // 快捷窗口按 Listary 习惯：可视高度固定 8 行，列表最多约 40 条。
-// 完整界面先立即展示一页并显示滚动条，再自动续填到安全上限；短查询可能有数十万命中，不能一次全部物化。
+// 完整界面先立即展示一页并显示滚动条；续填一次拉到命中数或安全上限，避免整库按页反复扫描。短查询可能有数十万命中，不能一次全部物化。
 public static class SearchChromeLayout
 {
     public const int VisibleResultRows = 8;
@@ -31,7 +31,7 @@ public static class SearchChromeLayout
         if (kind != SearchChromeKind.Full) return currentLimit;
         var cap = Math.Min(FullResultCap, totalMatches);
         if (currentLimit >= cap) return currentLimit;
-        return (int)Math.Min((long)currentLimit + FullResultPage, cap);
+        return cap;
     }
 
     public static bool ShouldAutoFill(SearchChromeKind kind, int displayed, int totalMatches, int currentLimit) =>

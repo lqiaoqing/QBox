@@ -132,16 +132,18 @@ internal static class CoreChecks
             True(SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Results));
             True(!SearchChromeLayout.HideOnDeactivation(SearchChromeKind.Full));
         });
-        checks.Run("完整界面按页自动续填，到达命中数或安全上限后停止", () =>
+        checks.Run("完整界面首屏后一次续填到命中数或安全上限", () =>
         {
-            Equal(200, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 0, 1000));
-            Equal(400, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 200, 1000));
+            Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 0, 1000));
+            Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 200, 1000));
             Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 800, 1000));
             Equal(1000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 1000, 1000));
+            Equal(2000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 200, 100_000));
             Equal(2000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 1800, 100_000));
             Equal(2000, SearchChromeLayout.NextLimit(SearchChromeKind.Full, 2000, 100_000));
             Equal(40, SearchChromeLayout.NextLimit(SearchChromeKind.Results, 40, 1000));
             True(SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 200, 1000, 200));
+            True(SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 200, 100_000, 200));
             True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 1000, 1000, 1000));
             True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 2000, 100_000, 2000));
             True(!SearchChromeLayout.ShouldAutoFill(SearchChromeKind.Full, 0, 1000, 200));
@@ -180,6 +182,24 @@ internal static class CoreChecks
             True(!SearchProgress.ShowStartPrompt("1", false));
             True(!SearchProgress.ShowStartPrompt("1", true));
         });
+        checks.Run("当前查询已上屏时可打开，静默续填不拦截，换查询则不可打开旧行", () =>
+        {
+            True(SearchResultActivation.CanActivateDisplayed(false, false, false, true, "1", "1", 1, 1));
+            True(SearchResultActivation.CanActivateDisplayed(false, true, true, true, "1", "1", 1, 2));
+            True(!SearchResultActivation.CanActivateDisplayed(false, true, false, true, "1", "1", 1, 2));
+            True(!SearchResultActivation.CanActivateDisplayed(false, false, false, true, "1", "12", 1, 1));
+            True(!SearchResultActivation.CanActivateDisplayed(false, true, false, false, "1", "12", 1, 2));
+            True(!SearchResultActivation.CanActivateDisplayed(true, false, false, true, "1", "1", 1, 1));
+            True(!SearchResultActivation.CanActivateDisplayed(false, false, false, false, "1", "1", 1, 1));
+            True(!SearchResultActivation.CanActivateDisplayed(false, false, false, true, "", "", 1, 1));
+            True(!SearchResultActivation.CanActivateDisplayed(false, false, false, true, "1", "1", 1, 2));
+            True(SearchResultActivation.ShouldOpenOnRelease(true, 1, false, true, 0, 0, 4, 4));
+            True(!SearchResultActivation.ShouldOpenOnRelease(true, 2, false, true, 0, 0, 4, 4));
+            True(!SearchResultActivation.ShouldOpenOnRelease(true, 1, true, true, 0, 0, 4, 4));
+            True(!SearchResultActivation.ShouldOpenOnRelease(true, 1, false, false, 0, 0, 4, 4));
+            True(!SearchResultActivation.ShouldOpenOnRelease(true, 1, false, true, 10, 0, 4, 4));
+            True(!SearchResultActivation.ShouldOpenOnRelease(false, 1, false, true, 0, 0, 4, 4));
+        });
         checks.Run("空查询和空候选", () =>
         {
             True(matcher.Match("", "").IsMatch);
@@ -202,6 +222,37 @@ internal static class CoreChecks
             Throws<OperationCanceledException>(() => matcher.Match("x", "xyz", new(true))));
         checks.Run("快速打分取消", () =>
             Throws<OperationCanceledException>(() => matcher.Prepare("x").Score("xyz", new(true))));
+        checks.Run("单字符 ASCII 预筛与原子序列预筛结果和分值一致", () =>
+        {
+            static bool ReferenceAsciiCanMatch(string query, ReadOnlySpan<char> candidate)
+            {
+                var remaining = candidate;
+                foreach (var letter in query.ToUpperInvariant())
+                {
+                    var lower = char.IsAsciiLetterUpper(letter) ? (char)(letter + 32) : letter;
+                    var at = remaining.IndexOfAny(letter, lower);
+                    if (at < 0) return false;
+                    remaining = remaining[(at + 1)..];
+                }
+                return true;
+            }
+
+            var queries = new[] { "1", "0", "A", "a", "c", ".", " ", "CODE", "code", "12", "Nd", "x" };
+            var names = new[] { "1", "a1", "1a", "11", "2", "A", "a", "abc", "CODE", "code", "CoDe", ".CODE", "file.txt", "12", "21", " nd", "x", "", "Windows", "python" };
+            foreach (var query in queries)
+            {
+                var prepared = matcher.Prepare(query);
+                foreach (var name in names)
+                {
+                    var expected = ReferenceAsciiCanMatch(query, name);
+                    Equal(expected, prepared.CanMatch(name));
+                    var score = prepared.Score(name);
+                    if (expected) True(score > 0);
+                    else Equal(0, score);
+                    Equal(score, prepared.Match(name).AlignmentScore);
+                }
+            }
+        });
 
         var random = new Random(0x51424f58);
         var alphabet = new[] { "a", "B", "c", "0", " ", ".", "_", "目", "录", "资", "料", "😀", "𠮷" };
