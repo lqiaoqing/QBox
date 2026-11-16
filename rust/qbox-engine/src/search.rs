@@ -377,16 +377,36 @@ struct Row {
 }
 
 fn best_first(left: &Row, right: &Row) -> Ordering {
-    let compare = left.lane.cmp(&right.lane);
-    if compare != Ordering::Equal {
-        return compare;
-    }
-    let compare = compare_lane(
+    best_first_keys(
         left.lane,
         left.kind,
         left.priority,
         left.score,
         left.history,
+        left.ordinal,
+        right,
+    )
+}
+
+fn best_first_keys(
+    left_lane: LauncherLane,
+    left_kind: SearchItemKind,
+    left_priority: u64,
+    left_score: i32,
+    left_history: crate::history::HistorySignals,
+    left_ordinal: i64,
+    right: &Row,
+) -> Ordering {
+    let compare = left_lane.cmp(&right.lane);
+    if compare != Ordering::Equal {
+        return compare;
+    }
+    let compare = compare_lane(
+        left_lane,
+        left_kind,
+        left_priority,
+        left_score,
+        left_history,
         right.kind,
         right.priority,
         right.score,
@@ -395,7 +415,7 @@ fn best_first(left: &Row, right: &Row) -> Ordering {
     if compare != Ordering::Equal {
         compare
     } else {
-        left.ordinal.cmp(&right.ordinal)
+        left_ordinal.cmp(&right.ordinal)
     }
 }
 
@@ -417,6 +437,38 @@ impl Ord for HeapRow {
     fn cmp(&self, other: &Self) -> Ordering {
         // 更差的行更大，使二叉堆的 peek 对应 C# PriorityQueue 中 WorstFirst 的最小值。
         best_first(&self.0, &other.0)
+    }
+}
+
+enum NameRef<'a> {
+    Utf8(&'a str),
+    Utf16(&'a [u16]),
+}
+
+impl NameRef<'_> {
+    fn score_upper_bound(&self, query: &PreparedQuery<'_>) -> i32 {
+        match self {
+            Self::Utf8(name) => query.score_upper_bound(name),
+            Self::Utf16(name) => query.score_upper_bound_utf16(name),
+        }
+    }
+
+    fn score_matched(
+        &self,
+        query: &PreparedQuery<'_>,
+        cancel: crate::cancel::CancelToken,
+    ) -> Result<i32, crate::cancel::Canceled> {
+        match self {
+            Self::Utf8(name) => query.score_matched_with(name, cancel),
+            Self::Utf16(name) => query.score_matched_utf16(name, cancel),
+        }
+    }
+
+    fn to_owned_name(&self) -> String {
+        match self {
+            Self::Utf8(name) => name.to_string(),
+            Self::Utf16(name) => crate::qbi::utf16_to_string(name),
+        }
     }
 }
 
@@ -450,7 +502,7 @@ impl<'a> SearchCollector<'a> {
 
     pub fn add(
         &mut self,
-        source: Arc<dyn UniqueSearchSource>,
+        source: &Arc<dyn UniqueSearchSource>,
         key: u64,
         name: &str,
         kind: SearchItemKind,
@@ -479,9 +531,63 @@ impl<'a> SearchCollector<'a> {
 
     pub fn add_matched(
         &mut self,
-        source: Arc<dyn UniqueSearchSource>,
+        source: &Arc<dyn UniqueSearchSource>,
         key: u64,
         name: &str,
+        kind: SearchItemKind,
+        priority: u64,
+        history: HistorySignals,
+        application_entry: bool,
+        direct_executable: bool,
+        display_match: Option<MatchResult>,
+        supplemental: bool,
+    ) -> Result<(), Canceled> {
+        self.add_matched_name(
+            source,
+            key,
+            NameRef::Utf8(name),
+            kind,
+            priority,
+            history,
+            application_entry,
+            direct_executable,
+            display_match,
+            supplemental,
+        )
+    }
+
+    pub fn add_matched_utf16(
+        &mut self,
+        source: &Arc<dyn UniqueSearchSource>,
+        key: u64,
+        name: &[u16],
+        kind: SearchItemKind,
+        priority: u64,
+        history: HistorySignals,
+        application_entry: bool,
+        direct_executable: bool,
+        display_match: Option<MatchResult>,
+        supplemental: bool,
+    ) -> Result<(), Canceled> {
+        self.add_matched_name(
+            source,
+            key,
+            NameRef::Utf16(name),
+            kind,
+            priority,
+            history,
+            application_entry,
+            direct_executable,
+            display_match,
+            supplemental,
+        )
+    }
+
+    fn add_matched_name(
+        &mut self,
+        source: &Arc<dyn UniqueSearchSource>,
+        key: u64,
+        name: NameRef<'_>,
         kind: SearchItemKind,
         priority: u64,
         history: HistorySignals,
@@ -515,53 +621,40 @@ impl<'a> SearchCollector<'a> {
         let upper = display_match
             .as_ref()
             .map(|value| value.alignment_score)
-            .unwrap_or_else(|| self.query.score_upper_bound(name));
+            .unwrap_or_else(|| name.score_upper_bound(&self.query));
         let upper_lane = lane_of(upper);
-        let can_enter = |collector: &SearchCollector<'_>, lane: LauncherLane, score_bound: i32| {
-            let bucket = &collector.best[lane as usize];
-            let capacity = collector.capacity(lane);
-            if capacity == 0 {
-                return false;
-            }
-            if bucket.len() < capacity as usize {
-                return true;
-            }
-            let probe = Row {
-                source: Arc::clone(&source),
-                key,
-                name: name.to_string(),
-                kind,
-                priority,
-                score: score_bound,
-                lane,
-                history,
-                application_entry,
-                direct_executable,
-                display_match: display_match.clone(),
-                ordinal: collector.total as i64,
-            };
-            best_first(&probe, &bucket.peek().unwrap().0) == Ordering::Less
-        };
-        // 强弱目录分桶前尚不知道实际分数，必须证明两个可能的桶都进不去才能跳过打分。
-        if !can_enter(self, upper_lane, upper)
+        let ordinal = self.total as i64;
+        // 探测是否值得打分时只比较分桶键，不为名字分配 String。
+        if !self.would_enter(upper_lane, kind, priority, upper, history, ordinal)
             && (upper_lane != LauncherLane::StrongDirectory
-                || !can_enter(self, LauncherLane::WeakDirectory, 1))
+                || !self.would_enter(
+                    LauncherLane::WeakDirectory,
+                    kind,
+                    priority,
+                    1,
+                    history,
+                    ordinal,
+                ))
         {
             return Ok(());
         }
         let score = match &display_match {
             Some(display) => display.alignment_score,
-            None => self.query.score_matched_with(name, self.cancel)?,
+            None => name.score_matched(&self.query, self.cancel)?,
         };
         let lane = lane_of(score);
         let capacity = self.capacity(lane);
         if capacity == 0 {
             return Ok(());
         }
+        if !self.would_enter(lane, kind, priority, score, history, ordinal) {
+            return Ok(());
+        }
+        // 只有真正进入前 N 时才物化展示名。
         let row = Row {
-            source,
+            source: Arc::clone(source),
             key,
-            name: name.to_string(),
+            name: name.to_owned_name(),
             kind,
             priority,
             score,
@@ -570,13 +663,10 @@ impl<'a> SearchCollector<'a> {
             application_entry,
             direct_executable,
             display_match,
-            ordinal: self.total as i64,
+            ordinal,
         };
         let best = &mut self.best[lane as usize];
         if best.len() == capacity as usize {
-            if best_first(&row, &best.peek().unwrap().0) != Ordering::Less {
-                return Ok(());
-            }
             best.pop();
         }
         best.push(HeapRow(row));
@@ -588,6 +678,34 @@ impl<'a> SearchCollector<'a> {
             }
         }
         Ok(())
+    }
+
+    fn would_enter(
+        &self,
+        lane: LauncherLane,
+        kind: SearchItemKind,
+        priority: u64,
+        score: i32,
+        history: HistorySignals,
+        ordinal: i64,
+    ) -> bool {
+        let bucket = &self.best[lane as usize];
+        let capacity = self.capacity(lane);
+        if capacity == 0 {
+            return false;
+        }
+        if bucket.len() < capacity as usize {
+            return true;
+        }
+        best_first_keys(
+            lane,
+            kind,
+            priority,
+            score,
+            history,
+            ordinal,
+            &bucket.peek().unwrap().0,
+        ) == Ordering::Less
     }
 
     fn capacity(&self, lane: LauncherLane) -> i32 {

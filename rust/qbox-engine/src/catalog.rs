@@ -128,7 +128,7 @@ impl PackagedApplicationCatalog {
                 .then(left.1.is_phonetic().cmp(&right.1.is_phonetic()))
                 .then(left.0.id.cmp(&right.0.id))
         });
-        let source = Arc::new(SliceSource {
+        let source: Arc<dyn crate::search::UniqueSearchSource> = Arc::new(SliceSource {
             items: matches
                 .iter()
                 .map(|(candidate, _)| candidate.clone())
@@ -136,7 +136,7 @@ impl PackagedApplicationCatalog {
         });
         for (index, (candidate, value)) in matches.iter().enumerate() {
             collector.add_matched(
-                source.clone(),
+                &source,
                 index as u64,
                 &candidate.name,
                 SearchItemKind::Application,
@@ -281,7 +281,7 @@ impl ShortcutCatalog {
                 .then(left.2.is_phonetic().cmp(&right.2.is_phonetic()))
                 .then(left.0.cmp(&right.0))
         });
-        let source = Arc::new(CatalogSource {
+        let source: Arc<dyn crate::search::UniqueSearchSource> = Arc::new(CatalogSource {
             items: self
                 .entries
                 .iter()
@@ -290,7 +290,7 @@ impl ShortcutCatalog {
         });
         for (index, name, value, signals) in matches {
             collector.add_matched(
-                source.clone(),
+                &source,
                 index as u64,
                 &name,
                 SearchItemKind::Application,

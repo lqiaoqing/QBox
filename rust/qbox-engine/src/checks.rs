@@ -306,7 +306,7 @@ pub fn run_pinyin_checks() -> CheckReport {
                 for i in 0..20 {
                     collector
                         .add(
-                            source.clone(),
+                            &source,
                             i,
                             &format!("d{i}b"),
                             SearchItemKind::File,
@@ -582,13 +582,13 @@ pub fn run_launcher_ordering_checks() -> Result<CheckReport, String> {
                     .search("ab", &mixed, limit, CancelToken::NONE)
                     .map_err(|error| error.to_string())?;
                 let mut collector = SearchCollector::new("ab", limit);
-                let source = Arc::new(SliceSource {
+                let source: Arc<dyn crate::search::UniqueSearchSource> = Arc::new(SliceSource {
                     items: mixed.clone(),
                 });
                 for (i, item) in mixed.iter().enumerate() {
                     collector
                         .add(
-                            source.clone(),
+                            &source,
                             i as u64,
                             &item.name,
                             item.kind,
@@ -642,13 +642,13 @@ pub fn run_launcher_ordering_checks() -> Result<CheckReport, String> {
             late.is_application_entry = true;
             entries.push(late);
             let mut collector = SearchCollector::new("ab", 1);
-            let source = Arc::new(SliceSource {
+            let source: Arc<dyn crate::search::UniqueSearchSource> = Arc::new(SliceSource {
                 items: entries.clone(),
             });
             for (index, entry) in entries.iter().enumerate() {
                 collector
                     .add(
-                        source.clone(),
+                        &source,
                         index as u64,
                         &entry.name,
                         SearchItemKind::Application,
@@ -691,13 +691,13 @@ pub fn run_launcher_ordering_checks() -> Result<CheckReport, String> {
             let entries = vec![direct, known];
             let mut history = SelectionHistory::new();
             let mut collector = SearchCollector::new("nd", 1);
-            let source = Arc::new(SliceSource {
+            let source: Arc<dyn crate::search::UniqueSearchSource> = Arc::new(SliceSource {
                 items: entries.clone(),
             });
             for (index, entry) in entries.iter().enumerate() {
                 collector
                     .add(
-                        source.clone(),
+                        &source,
                         index as u64,
                         &entry.name,
                         entry.kind,

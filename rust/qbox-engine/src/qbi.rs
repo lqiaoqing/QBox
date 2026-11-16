@@ -200,9 +200,9 @@ impl VolumeIndex {
         let source: Arc<dyn UniqueSearchSource> = Arc::new(VolumeSource {
             volume: Arc::clone(self),
         });
-        let query_text = collector.query().text().to_string();
-        let query = PreparedQuery::new(&query_text);
-        for i in presence.select(query.text(), self, cancel)? {
+        let query_has_exe = contains_dot_exe_ignore_case(collector.query().text());
+        let selected = presence.select(collector.query().text(), self, cancel)?;
+        for i in selected {
             cancel.check()?;
             let node_index = presence.owner(i);
             if node_index == self.root_node {
@@ -221,24 +221,24 @@ impl VolumeIndex {
             } else {
                 raw
             };
-            let friendly_match = query.can_match_utf16(friendly, cancel)?;
+            let friendly_match = collector.query().can_match_utf16(friendly, cancel)?;
             let display = if friendly_match {
                 friendly
-            } else if (shortcut || executable) && query.can_match_utf16(raw, cancel)? {
+            } else if (shortcut || executable) && collector.query().can_match_utf16(raw, cancel)? {
                 raw
-            } else if let Some(alias) = matching_dos_alias(self, node, name.parent, &query, cancel)?
+            } else if let Some(alias) =
+                matching_dos_alias(self, node, name.parent, collector.query(), cancel)?
             {
                 let alias_name = self.name(alias);
                 self.text_units(alias_name.offset, alias_name.length)
             } else {
                 continue;
             };
-            let display_text = utf16_to_string(display);
             let application = executable
                 && friendly_match
-                && !query.text().to_ascii_lowercase().contains(".exe")
+                && !query_has_exe
                 && !in_package_directory(self, name.parent)
-                && query.score_utf16(display, cancel)? > 1;
+                && collector.query().score_utf16(display, cancel)? > 1;
             let kind = if node.is_directory() {
                 SearchItemKind::Directory
             } else if shortcut {
@@ -249,10 +249,10 @@ impl VolumeIndex {
                 SearchItemKind::File
             };
             let key = ((node_index as u32 as u64) << 32) | (i as u32 as u64);
-            collector.add_matched(
-                source.clone(),
+            collector.add_matched_utf16(
+                &source,
                 key,
-                &display_text,
+                display,
                 kind,
                 0,
                 HistorySignals::default(),
@@ -262,7 +262,8 @@ impl VolumeIndex {
                 false,
             )?;
         }
-        for entry in phonetic.select(query.text()) {
+        let phonetic_hits = phonetic.select(collector.query().text());
+        for entry in phonetic_hits {
             let node = self.node(entry.node);
             let name = self.name(entry.name);
             if entry.node == self.root_node {
@@ -273,13 +274,16 @@ impl VolumeIndex {
             }
             let raw = self.text_units(name.offset, name.length);
             let display = entry.prepared.text();
-            if query.can_match(display)
-                || query.can_match_utf16(raw, cancel)?
-                || matching_dos_alias(self, node, name.parent, &query, cancel)?.is_some()
+            if collector.query().can_match(display)
+                || collector.query().can_match_utf16(raw, cancel)?
+                || matching_dos_alias(self, node, name.parent, collector.query(), cancel)?.is_some()
             {
                 continue;
             }
-            let match_value = entry.prepared.match_phonetic(query.text(), true, cancel)?;
+            let match_value =
+                entry
+                    .prepared
+                    .match_phonetic(collector.query().text(), true, cancel)?;
             if match_value.score == 0 {
                 continue;
             }
@@ -298,7 +302,7 @@ impl VolumeIndex {
             };
             let key = ((entry.node as u32 as u64) << 32) | (entry.name as u32 as u64);
             collector.add_matched(
-                source.clone(),
+                &source,
                 key,
                 display,
                 kind,
@@ -413,6 +417,12 @@ fn in_package_path(volume: &VolumeIndex, path: &str) -> bool {
     let windows_apps = format!("{root}WindowsApps\\");
     let program_files = format!("{root}Program Files\\WindowsApps\\");
     starts_with_ignore_ascii(path, &windows_apps) || starts_with_ignore_ascii(path, &program_files)
+}
+
+fn contains_dot_exe_ignore_case(text: &str) -> bool {
+    text.as_bytes()
+        .windows(4)
+        .any(|window| window.eq_ignore_ascii_case(b".exe"))
 }
 
 fn path_for(volume: &VolumeIndex, name_index: i32) -> String {
