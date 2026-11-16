@@ -234,6 +234,32 @@ live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 
 ## 仍挡住产品 go / no-go 的事项
 
 - 试用中 C 卷基础索引 compact 时出现 `Access to the path is denied.`，worker 进入 30 秒重试并保留旧索引。需要确认这是否由 Rust sidecar 与 GUI 同时映射 `.qbi` 导致，还是既有行为；在隔离前不能宣称 live 基础索引替换在 Rust 启用时可靠。
-- live `.qbd` 路径下 `CODE` / `python` 与 C# 打平，未达到 30% 目标；静态路径达标。若产品要求 live 也保持 ≥30%，需要另行优化路径解析并重新对照。
+- live `.qbd` 路径下 `CODE` / `python` 已不再与 C# 打平（见下方「live 路径解析优化」）；相对 C# 的加速已收回，但仍未稳定达到静态路径那种约 2×。若产品要求 live 也保持 ≥30%，需要看对照方差后决定是否再优化。
 - 产品默认仍是 C#；Rust 仅在启动参数 `--search-engine rust` 下启用。合并回主干、发布新版本、push 均未执行，需用户明确同意。
 - 不在本笔记里做最终产品 go / no-go。
+
+
+## live 路径解析优化（2026-11-16）
+
+本轮只改 Rust 引擎的 live 路径，不改匹配、排序、历史规则，也未做界面重写或新的试用窗口。对照仍使用只读副本 `work/rust-validation/live-indexes`（`C.qbd` 2,513,609 字节，不是 `trial-state` 里已自长的那份），口径与此前相同：1 预热 + 5 次，中位；含 presence / CanMatch / collector / Finish；不含进程启动、mmap/load、PrepareSearch、预热。查询 `1` / `豆包` / `CODE` / `python`。C# 用 `tools/QBox.EngineBench --live --catalogs`，历史来自 `%LOCALAPPDATA%\QBox\history.json` 的只读拷贝 `work/rust-validation/history-readonly-copy.json`（只读源文件，未写回）。Rust 用同一份目录快照与 `--history-set` 的 `index-bench` 进程内引擎路径，不经 FFI。
+
+代码改动：
+
+- 预计算发生过目录变更的记录号。父链上没有任何目录变更时，可达性与路径按基础索引解析（优先非 DOS 名，与 live 规则一致），不再对每个候选做带锁的 live 父链检查。
+- 查询缓存改为 `SeededMap`：开始时只克隆 `Arc`，新结果写入 `fresh`；`fresh` 为空时直接查共享表，避免小查询拷贝整表，也避免大查询在空表上多一次探测。
+- 打开 `.qbi` 时使用 `FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE`，与 C# `FileShare.Read | FileShare.Delete` 对齐，避免挡住 worker 用 `File.Move` 替换基础索引。本轮未再实机验证 compact，不能据此宣称 C 卷 `Access to the path is denied.` 已解决。
+
+正确性：`cargo test --lib` 7 项全过（原 6 项 + 未变父链路径用例）；`engine-harness` 仍是 **685/685、36/36、2058/2058**。未改 C#，故未重跑 `scripts/verify.ps1`。
+
+官方对照是同一时段连续跑完的 C# `csharp-bench-live-opt2.json` 与 Rust `rust-bench-live-final.json`。命中与首屏（id / name / target / kind / score / group / application / direct）四查询完全一致。
+
+| 查询 | 命中 | 首屏 | C# 中位 (ms) | Rust 引擎中位 (ms) | 加速比 |
+| --- | ---: | --- | ---: | ---: | ---: |
+| `1` | 1,407,763 | 一致 | 392.321 | 332.437 | **1.180×** |
+| `豆包` | 6 | 一致 | 1.105 | 0.722 | **1.532×** |
+| `CODE` | 232,738 | 一致 | 241.096 | 158.708 | **1.519×** |
+| `python` | 104,992 | 一致 | 68.605 | 50.446 | **1.360×** |
+
+同一套索引上，优化前 Rust live 为 `1` 1.416×、`豆包` 0.984×、`CODE` 0.993×、`python` 0.931×；`CODE` / `python` 已从打平收回。本轮四查询中位都不慢于同一索引上的 C#。`1` 在这组官方数字里是 1.18×，没有稳定跨过 30% 门槛；更安静的一组（`csharp-bench-live-opt.json` / `rust-bench-live-opt4.json`）是 `1` 396.566 / 271.425（1.461×）、`豆包` 0.712 / 0.605（1.176×）、`CODE` 227.839 / 146.604（1.554×）、`python` 75.614 / 42.817（1.766×），首屏同样完全一致。live 仍明显慢于静态 `.qbi`（静态 `CODE` / `python` 约 2.0×），剩余成本来自确有目录变更的祖先链，以及「1」这类大查询仍要为匹配的 EXE 解析路径。
+
+未改主干 `D:\Work\workspace\QBox`（仍为 `codex/feat-new` / `75b9a92`），未 push、未发布、未动生产索引；`live-indexes` 的 mtime 与大小未变。产品默认仍是 C#。本轮不做 Rust UI。
