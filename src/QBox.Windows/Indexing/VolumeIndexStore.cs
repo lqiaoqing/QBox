@@ -14,6 +14,7 @@ public static class VolumeIndexStore
     {
         var absolute = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
+        RecoverIfReplacedAway(absolute);
         return new FileStream(absolute + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     }
 
@@ -23,6 +24,8 @@ public static class VolumeIndexStore
         using var textLease = index.Text.Pin();
         var absolute = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(absolute)!);
+        RecoverIfReplacedAway(absolute);
+        TryDeleteStaleReplacements(absolute);
         var temporary = absolute + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
@@ -62,14 +65,68 @@ public static class VolumeIndexStore
                 file.Flush(true);
             }
             cancellationToken.ThrowIfCancellationRequested();
-            File.Move(temporary, absolute, overwrite: true);
+            ReplaceExisting(temporary, absolute);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
+    // Windows 上只要目标还被任何文件句柄占着（即使带 FILE_SHARE_DELETE），
+    // File.Move(..., overwrite: true) 就会报“拒绝访问”。C# 映射在关闭 FileStream 后只留 section，可以覆盖；
+    // Rust memmap2 会复制并一直握着文件句柄，必须先把旧文件改名挪走，读端继续用旧映射。
+    private static void ReplaceExisting(string temporary, string absolute)
+    {
+        if (!File.Exists(absolute))
+        {
+            File.Move(temporary, absolute);
+            return;
+        }
+        var backup = absolute + "." + Guid.NewGuid().ToString("N") + ".old";
+        try
+        {
+            File.Move(absolute, backup);
+            File.Move(temporary, absolute);
+        }
+        catch
+        {
+            if (!File.Exists(absolute) && File.Exists(backup))
+            {
+                try { File.Move(backup, absolute); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            }
+            throw;
+        }
+        try { File.Delete(backup); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
+    private static void RecoverIfReplacedAway(string absolute)
+    {
+        if (File.Exists(absolute)) return;
+        var directory = Path.GetDirectoryName(absolute);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return;
+        var backups = Directory.GetFiles(directory, Path.GetFileName(absolute) + ".*.old");
+        if (backups.Length == 0) return;
+        File.Move(backups.OrderByDescending(File.GetLastWriteTimeUtc).First(), absolute);
+    }
+
+    private static void TryDeleteStaleReplacements(string absolute)
+    {
+        var directory = Path.GetDirectoryName(absolute);
+        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return;
+        var name = Path.GetFileName(absolute);
+        foreach (var leftover in Directory.EnumerateFiles(directory, name + ".*.tmp").Concat(Directory.EnumerateFiles(directory, name + ".*.old")))
+        {
+            try { File.Delete(leftover); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+    }
+
     public static VolumeIndex Load(string path, CancellationToken cancellationToken = default)
     {
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536);
+        var absolute = Path.GetFullPath(path);
+        RecoverIfReplacedAway(absolute);
+        using var file = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536);
         if (file.Length < 128) throw new InvalidDataException("索引文件被截断");
         var bodyLength = file.Length - 32;
         var actual = Hash(file, bodyLength, cancellationToken);

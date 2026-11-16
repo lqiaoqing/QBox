@@ -285,6 +285,20 @@ internal static class NtfsIndexChecks
             Equal(@"X:\new资料😀", next.Candidates("new").Single().Target);
             Equal(0, next.Candidates("old").Count());
         }));
+        checks.Run("读端仍握共享删除句柄时也可原子替换基础索引", () => WithDirectory(directory =>
+        {
+            var path = Path.Combine(directory, "volume.qbi");
+            VolumeIndexStore.Save(path, Snapshot(File(20, "old资料😀")));
+            var old = VolumeIndexStore.Load(path);
+            // 模拟 Rust memmap2：除只读映射外再握一个带 FILE_SHARE_DELETE 的文件句柄。
+            using var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536);
+            VolumeIndexStore.Save(path, Snapshot(File(20, "new资料😀")));
+            var next = VolumeIndexStore.Load(path);
+            Equal(@"X:\old资料😀", old.Candidates("old").Single().Target);
+            Equal(@"X:\new资料😀", next.Candidates("new").Single().Target);
+            Equal(0, next.Candidates("old").Count());
+            Equal(0, Directory.EnumerateFiles(directory, "*.tmp").Count());
+        }));
         checks.Run("映射快照再保存保持当前格式字节与孤立代理项", () => WithDirectory(directory =>
         {
             var path = Path.Combine(directory, "volume.qbi");

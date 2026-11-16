@@ -229,11 +229,11 @@ live `.qbd` + 应用 + 快捷方式 + 真实历史（1 预热 + 5 次）：
 
 live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 overlay 路径解析复杂度导致的真实结果，未改变计时口径。FFI 的大结果还包含跨 ABI 序列化/解析开销。
 
-门槛状态：正确性套件全绿；静态 ≥30% 达标；live/FFI 首屏一致；取消、续填 2000、单击/Enter 打开、Esc 隐藏清空、工作集回收均已验证；GUI 未提权、worker 单独提权并 Watching（C 卷 compact 重试待复查）；默认 C#，`rust` 仅由启动参数启用；未改匹配/排序规则，未合并主干、未 push、未发布。
+门槛状态：正确性套件全绿；静态 ≥30% 达标；live/FFI 首屏一致；取消、续填 2000、单击/Enter 打开、Esc 隐藏清空、工作集回收均已验证；GUI 未提权、worker 单独提权并 Watching；C 卷 compact 替换已修复（见「基础索引替换」）；默认 C#，`rust` 仅由启动参数启用；未改匹配/排序规则，未合并主干、未 push、未发布。
 
 ## 仍挡住产品 go / no-go 的事项
 
-- 试用中 C 卷基础索引 compact 时出现 `Access to the path is denied.`，worker 进入 30 秒重试并保留旧索引。需要确认这是否由 Rust sidecar 与 GUI 同时映射 `.qbi` 导致，还是既有行为；在隔离前不能宣称 live 基础索引替换在 Rust 启用时可靠。
+- C 卷 live compact 的 `Access to the path is denied.` 已定位并修复，见下方「基础索引替换」。
 - live `.qbd` 路径下 `CODE` / `python` 已不再与 C# 打平（见下方「live 路径解析优化」）；相对 C# 的加速已收回，但仍未稳定达到静态路径那种约 2×。若产品要求 live 也保持 ≥30%，需要看对照方差后决定是否再优化。
 - 产品默认仍是 C#；Rust 仅在启动参数 `--search-engine rust` 下启用。合并回主干、发布新版本、push 均未执行，需用户明确同意。
 - 不在本笔记里做最终产品 go / no-go。
@@ -247,7 +247,7 @@ live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 
 
 - 预计算发生过目录变更的记录号。父链上没有任何目录变更时，可达性与路径按基础索引解析（优先非 DOS 名，与 live 规则一致），不再对每个候选做带锁的 live 父链检查。
 - 查询缓存改为 `SeededMap`：开始时只克隆 `Arc`，新结果写入 `fresh`；`fresh` 为空时直接查共享表，避免小查询拷贝整表，也避免大查询在空表上多一次探测。
-- 打开 `.qbi` 时使用 `FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE`，与 C# `FileShare.Read | FileShare.Delete` 对齐，避免挡住 worker 用 `File.Move` 替换基础索引。本轮未再实机验证 compact，不能据此宣称 C 卷 `Access to the path is denied.` 已解决。
+- 打开 `.qbi` 时使用 `FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE`，这是读端允许旧文件被改名挪走所必需的；但仅此不够，见下方「基础索引替换」。
 
 正确性：`cargo test --lib` 7 项全过（原 6 项 + 未变父链路径用例）；`engine-harness` 仍是 **685/685、36/36、2058/2058**。未改 C#，故未重跑 `scripts/verify.ps1`。
 
@@ -263,3 +263,11 @@ live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 
 同一套索引上，优化前 Rust live 为 `1` 1.416×、`豆包` 0.984×、`CODE` 0.993×、`python` 0.931×；`CODE` / `python` 已从打平收回。本轮四查询中位都不慢于同一索引上的 C#。`1` 在这组官方数字里是 1.18×，没有稳定跨过 30% 门槛；更安静的一组（`csharp-bench-live-opt.json` / `rust-bench-live-opt4.json`）是 `1` 396.566 / 271.425（1.461×）、`豆包` 0.712 / 0.605（1.176×）、`CODE` 227.839 / 146.604（1.554×）、`python` 75.614 / 42.817（1.766×），首屏同样完全一致。live 仍明显慢于静态 `.qbi`（静态 `CODE` / `python` 约 2.0×），剩余成本来自确有目录变更的祖先链，以及「1」这类大查询仍要为匹配的 EXE 解析路径。
 
 未改主干 `D:\Work\workspace\QBox`（仍为 `codex/feat-new` / `75b9a92`），未 push、未发布、未动生产索引；`live-indexes` 的 mtime 与大小未变。产品默认仍是 C#。本轮不做 Rust UI。
+
+## 基础索引替换（2026-11-16）
+
+根因不是环境或缺少 `FILE_SHARE_DELETE`。C# `MemoryMappedFile` 在 `Load` 结束时已关掉 `FileStream`，只留 section / view，因此官方 `File.Move(tmp, qbi, overwrite: true)` 能覆盖正在映射的 `.qbi`。Rust `memmap2` 会 `DuplicateHandle` 并在 `Mmap` 生命周期内一直握着文件句柄；只要这个句柄还在，同进程或跨进程的 `MoveFileEx(MOVEFILE_REPLACE_EXISTING)` 都会返回 error 5（`Access to the path is denied.`）。Rust 1.100 的 `File::open` 默认已带 `FILE_SHARE_DELETE`，先前补上的共享模式因此不够。
+
+修复改在 `VolumeIndexStore.Save`：先把旧 `.qbi` 改名挪走，再把新文件落到原名，读端继续使用旧映射。失败时尽量把备份改回原名；`Load` / `AcquireWriter` 若只看到 `.old` 会先恢复。官方仅 C# 映射的路径同样走这条替换，行为更稳，不改变搜索结果。新增检查：读端除映射外再握一个带 `FILE_SHARE_DELETE` 的句柄时，`Save` 仍须成功且旧查询完整。`QBox.Checks` 行为检查 2942/2942 通过。
+
+实机：隔离包 `work/live-opt-fix-package`，状态 `work/live-opt-fix-state`（从 `live-opt-state` 复制，含已胀大的 `C.qbd`）。GUI PID 37452（未提权，已加载 `qbox_engine.dll`），worker PID 31296。C 卷在 16:37:04（Asia/Shanghai）完成 compact：`C.qbi` 由 212,915,109 / 12:14:17 / SHA-256 `DF1D6D91FF7807A3EC3FE734C12AC8D9522921CDEBA0FEBB2959F9CB8F43953B` 换成 220,499,105 / SHA-256 `71DE4E6E1BDCC76D961B1DC96A47AE453D7B8924C0D144C3D00F9E1BC139A94E`，`C.qbd` 从约 27 MB 重置后正常续写，状态为「实时更新中」，无拒绝访问。随后 90 秒 `C.qbi` 不再重写，worker 工作集约 23 MB、私有内存约 29 MB，没有每 30 秒再冲到 1 GB。D 卷仍为「实时更新中」，本轮未观察到 D 的 compact。GUI 仍运行时，CLI `--search-engine rust` 对同一索引目录查询 `python` 返回 104,999 命中。
