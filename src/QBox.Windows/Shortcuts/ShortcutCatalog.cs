@@ -20,6 +20,12 @@ public sealed class ShortcutCatalog
     public int ActionCount => _entries.Length;
     public int ShortcutCount => _replaced.Count;
 
+    public sealed record ExportEntry(SearchCandidate Canonical, SearchCandidate[] Aliases, string ActionTarget);
+
+    // Rust 引擎只消费最终归并结果，不重复读取 ShellLink。
+    public ExportEntry[] ExportEntries() => _entries
+        .Select(entry => new ExportEntry(entry.Canonical, entry.Aliases, entry.Action.Target)).ToArray();
+
     public bool HasSameSearchContent(ShortcutCatalog other)
     {
         if (ReferenceEquals(this, other)) return true;

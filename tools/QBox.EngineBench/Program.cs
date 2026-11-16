@@ -3,7 +3,10 @@ using System.Globalization;
 using System.Text.Json;
 using QBox.Core.History;
 using QBox.Core.Search;
+using QBox.Windows.Applications;
 using QBox.Windows.Indexing;
+using QBox.Windows.Search;
+using QBox.Windows.Shortcuts;
 
 var indexDir = "work/rust-validation/indexes";
 var limit = 200;
@@ -11,6 +14,11 @@ var warmup = 1;
 var runs = 5;
 var queries = new[] { "1", "豆包", "CODE", "python" };
 var outputPath = "work/rust-validation/csharp-bench.json";
+var liveMode = false;
+var catalogs = false;
+string? catalogOut = null;
+string? historyPath = null;
+string? historySetOut = null;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -20,34 +28,85 @@ for (var i = 0; i < args.Length; i++)
         case "--warmup": warmup = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--runs": runs = int.Parse(args[++i], CultureInfo.InvariantCulture); break;
         case "--output": outputPath = args[++i]; break;
+        case "--live": liveMode = true; break;
+        case "--catalogs": catalogs = true; break;
+        case "--catalog-out": catalogOut = args[++i]; break;
+        case "--history": historyPath = args[++i]; break;
+        case "--history-set-out": historySetOut = args[++i]; break;
         default: throw new ArgumentException("未知参数：" + args[i]);
     }
 }
 
 indexDir = Path.GetFullPath(indexDir);
-var paths = Directory.GetFiles(indexDir, "*.qbi").Order(StringComparer.OrdinalIgnoreCase).ToArray();
+var paths = Directory.GetFiles(indexDir, "*.qbi").Order(StringComparer.Ordinal).ToArray();
 if (paths.Length == 0) throw new InvalidDataException("索引目录中没有 .qbi");
 
-var volumes = new List<(string Path, VolumeIndex Index, long LoadMs, long PrepareMs)>();
-foreach (var path in paths)
+VolumeIndex[] volumes;
+LiveVolumeIndex[]? lives = null;
+if (liveMode)
 {
-    var load = Stopwatch.StartNew();
-    var index = VolumeIndexStore.Load(path);
-    load.Stop();
-    var prepare = Stopwatch.StartNew();
-    index.PrepareSearch();
-    prepare.Stop();
-    volumes.Add((path, index, load.ElapsedMilliseconds, prepare.ElapsedMilliseconds));
-    Console.Error.WriteLine(
-        $"loaded {path} root={index.Geometry.Root} serial={index.Geometry.Serial:x16} files={index.FileCount} names={index.NameCount} load_ms={load.ElapsedMilliseconds} prepare_ms={prepare.ElapsedMilliseconds}");
+    var loaded = new List<LiveIndexFile>();
+    foreach (var path in paths) loaded.Add(LiveIndexFile.Load(path));
+    lives = loaded.Select(source => source.View).ToArray();
+    volumes = lives.Select(view => view.Base).ToArray();
 }
+else
+{
+    volumes = paths.Select(path => VolumeIndexStore.Load(path)).ToArray();
+    foreach (var index in volumes) index.PrepareSearch();
+}
+if (volumes.Select(index => index.Geometry.Serial).Distinct().Count() != volumes.Length)
+    throw new InvalidDataException("同一个磁盘存在重复索引，请选择正确的索引目录");
+
+var applications = catalogs ? PackagedApplicationCatalog.Load() : PackagedApplicationCatalog.Empty;
+if (applications.Warning != null) Console.Error.WriteLine(applications.Warning);
+ShortcutCatalog shortcuts = !catalogs ? ShortcutCatalog.Empty :
+    liveMode ? ShortcutCatalog.Load(lives!) : ShortcutCatalog.Load(volumes);
+catalogOut ??= catalogs ? "work/rust-validation/catalog-snapshot.json" : null;
+if (catalogOut != null)
+{
+    catalogOut = Path.GetFullPath(catalogOut);
+    var snapshot = EngineCatalogSnapshot.Create(applications, shortcuts);
+    File.WriteAllBytes(catalogOut, snapshot.Serialize());
+    Console.Error.WriteLine($"wrote catalog snapshot {catalogOut} apps={snapshot.Applications.Length} shortcuts={snapshot.Shortcuts.Length}");
+}
+
+SelectionHistory history;
+if (historyPath != null)
+{
+    try { history = new SelectionHistory(new FileHistoryPersistence(Path.GetFullPath(historyPath))); }
+    catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
+    {
+        Console.Error.WriteLine("历史无法读取，使用空历史：" + error.Message);
+        history = new SelectionHistory();
+    }
+}
+else history = new SelectionHistory();
+if (historySetOut != null)
+{
+    historySetOut = Path.GetFullPath(historySetOut);
+    File.WriteAllBytes(historySetOut, EngineHistoryBlob.SerializeSet(history, queries));
+    Console.Error.WriteLine("wrote history snapshot set " + historySetOut);
+}
+var fullPipeline = liveMode || catalogs;
 
 SearchResponse SearchOnce(string query)
 {
     var collector = new SearchCollector(query, limit);
-    var history = new SelectionHistory().ForQuery(query);
-    foreach (var volume in volumes)
-        volume.Index.SearchInto(collector, history);
+    var view = history.ForQuery(query);
+    ISet<string>? replaced = null;
+    IReadOnlySet<string>? represented = null;
+    if (fullPipeline)
+    {
+        applications.SearchInto(collector, view);
+        shortcuts.SearchInto(collector, view);
+        replaced = shortcuts.ReplacedIds(query);
+        represented = shortcuts.MatchedExecutableTargets(query);
+    }
+    if (liveMode)
+        foreach (var live in lives!) live.SearchInto(collector, view, default, replaced, represented);
+    else
+        foreach (var volume in volumes) volume.SearchInto(collector, view, default, replaced, represented);
     return collector.Finish();
 }
 
@@ -94,18 +153,19 @@ foreach (var query in queries)
 var payload = new
 {
     engine = "csharp",
+    mode = liveMode ? "live" : "static",
+    catalogs,
+    history = historyPath,
     indexDir,
     volumes = volumes.Select(volume => new
     {
-        path = volume.Path,
-        root = volume.Index.Geometry.Root,
-        serial = volume.Index.Geometry.Serial.ToString("x16", CultureInfo.InvariantCulture),
-        files = volume.Index.FileCount,
-        names = volume.Index.NameCount,
-        load_ms = volume.LoadMs,
-        prepare_ms = volume.PrepareMs,
+        root = volume.Geometry.Root,
+        serial = volume.Geometry.Serial.ToString("x16", CultureInfo.InvariantCulture),
+        files = volume.FileCount,
+        names = volume.NameCount,
+        changes = lives?.First(source => ReferenceEquals(source.Base, volume)).ChangedRecords,
     }),
-    timing = "SearchInto all volumes + Finish; excludes process start, mmap/load, SHA-256, PrepareSearch, and warmup runs. Each timed run includes presence select, CanMatch/ScoreMatched, collector insert, and Finish materialization. Stopwatch, same process.",
+    timing = "SearchInto apps/shortcuts/all volumes + Finish; excludes process start, mmap/load, SHA-256, PrepareSearch, and warmup runs. Each timed run includes presence select, CanMatch/ScoreMatched, collector insert, and Finish materialization. Stopwatch, same process.",
     warmup,
     runs,
     limit,

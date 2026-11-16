@@ -103,6 +103,9 @@ public sealed class PackagedApplicationCatalog
 
     public SearchCandidate? Find(string id) => _entries.FirstOrDefault(candidate => candidate.Id == id);
 
+    // Rust 引擎只消费最终条目，不重复做 COM 加载。
+    public SearchCandidate[] ExportEntries() => (SearchCandidate[])_entries.Clone();
+
     public void SearchInto(SearchCollector collector, HistoryView history, CancellationToken cancellationToken = default)
     {
         // 同一 AUMID 可以有本地化名称别名；先择最佳匹配名称，再提交唯一动作。
