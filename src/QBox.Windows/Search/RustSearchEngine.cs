@@ -86,7 +86,7 @@ public sealed class RustSearchEngine : IDisposable
             requestId = ++_requestId;
             _activeSearches++;
         }
-        using var registration = cancellationToken.Register(static state =>
+        var registration = cancellationToken.Register(static state =>
         {
             var (handle, request) = ((IntPtr Handle, long Request))state!;
             QboxEngineNative.Cancel(handle, request);
@@ -102,14 +102,21 @@ public sealed class RustSearchEngine : IDisposable
                     status = QboxEngineNative.Search(handle, requestId, queryText, (nuint)query.Length, limit,
                         historyBytes, (nuint)historyBlob.Length, out buffer);
             }
-            if (status == 1 || cancellationToken.IsCancellationRequested)
-                throw new OperationCanceledException(cancellationToken);
-            if (status != 0) throw new InvalidOperationException(LastError());
-            try { return ParseResponse(buffer); }
+            // 原生搜索成功后才到达的取消也会走取消分支，释放缓冲区必须覆盖取消与错误路径。
+            try
+            {
+                if (status == 1 || cancellationToken.IsCancellationRequested)
+                    throw new OperationCanceledException(cancellationToken);
+                if (status != 0) throw new InvalidOperationException(LastError());
+                return ParseResponse(buffer);
+            }
             finally { QboxEngineNative.FreeBuffer(buffer); }
         }
         finally
         {
+            // 先注销回调（并等待已在执行的回调结束）再减少活跃计数：计数归零后 Dispose/Refresh
+            // 会立即释放原生句柄，此时尚未注销的迟到取消回调将访问已释放内存。
+            registration.Dispose();
             lock (_gate)
             {
                 _activeSearches--;
@@ -160,9 +167,10 @@ public sealed class RustSearchEngine : IDisposable
             var id = ReadString(bytes, ref cursor, checked((int)ReadUInt32(bytes, ref cursor)));
             var name = ReadString(bytes, ref cursor, checked((int)ReadUInt32(bytes, ref cursor)));
             var target = ReadString(bytes, ref cursor, checked((int)ReadUInt32(bytes, ref cursor)));
+            // Rust 按「长度→内容」交错写出，必须读完一个字段的内容再读下一个长度。
             var argumentsLength = ReadUInt32(bytes, ref cursor);
-            var aumidLength = ReadUInt32(bytes, ref cursor);
             var arguments = argumentsLength == uint.MaxValue ? null : ReadString(bytes, ref cursor, checked((int)argumentsLength));
+            var aumidLength = ReadUInt32(bytes, ref cursor);
             var aumid = aumidLength == uint.MaxValue ? null : ReadString(bytes, ref cursor, checked((int)aumidLength));
             var exact = (historyFlags & 1) != 0 ? ReadInt64(bytes, ref cursor) : (long?)null;
             var prefix = (historyFlags & 2) != 0 ? ReadInt64(bytes, ref cursor) : (long?)null;

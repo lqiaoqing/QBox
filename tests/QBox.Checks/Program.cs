@@ -40,6 +40,7 @@ LauncherOrderingChecks.Run(checks);
 ShortcutChecks.Run(checks);
 await ApplicationChecks.Run(checks);
 PinyinChecks.Run(checks);
+RustEngineChecks.Run(checks);
 Console.WriteLine($"行为检查：{checks.Total - checks.Failed}/{checks.Total} 通过");
 return failures + checks.Failed == 0 ? 0 : 1;
 
