@@ -161,6 +161,28 @@ live `.qbd` + 应用 + 快捷方式 + 真实历史：
 
 `cargo test --lib` 现为 6 项：原有 3 项（685/685、36/36、2058/2058）加历史 blob、忽略大小写集合、内存卷镜像往返 3 项。
 
+## 阶段 2：FFI sidecar 与 C# 包装（2026-11-16）
+
+`qbox_engine` 现在同时产出 `rlib` 与 `qbox_engine.dll`（cdylib）。C ABI：`qbox_engine_open` / `prepare` / `refresh` / `search` / `cancel` / `last_error` / `free_buffer` / `close`。索引在 `open` 时加载并完成 PrepareSearch；`search` 接收 UTF-16 查询、历史 blob 与请求号，返回紧凑二进制结果（魔数 `QBXRES01`，v1；字段含候选、分值、高亮、分组与历史 ticks）。取消使用只增的请求阈值，旧查询被取消但不会误伤之后的新查询。
+
+- `qbox_engine.dll` 用现有 rust-mingw 自包含链接器构建；`NativeLibrary.Load` 在本机成功，未出现 `0xC0000139`。
+- C# 包装 `src/QBox.Windows/Search/RustSearchEngine.cs`：LibraryImport、DLL 解析（exe 同级 / `QBOX_ENGINE_DLL` / 开发输出目录）、结果解析、取消注册、刷新等待活跃查询结束；失败时抛出可捕获异常，由调用方回退 C# 路径。
+- 应用/快捷方式仍由 C# 加载，`EngineCatalogSnapshot` 快照传给 Rust；历史由 `EngineHistoryBlob` 按查询序列化。
+- `tools/QBox.EngineBench` 增加 `--engine rust`、`--cancel-test`、`--fallback-test`。取消测试通过；无效索引目录打开失败并由调用方捕获（回退路径）。四个查询的 FFI 首屏与 C# 引擎路径完全一致，命中总数相同。
+
+FFI live 路径（1 预热 + 5 次计时，含历史 blob 序列化与结果解析）：
+
+| 查询 | C# median (ms) | Rust FFI median (ms) | 加速比 |
+| --- | ---: | ---: | ---: |
+| `1` | 376.492 | 404.942 | 0.930× |
+| `豆包` | 0.754 | 0.810 | 0.931× |
+| `CODE` | 190.965 | 184.793 | 1.033× |
+| `python` | 54.647 | 56.223 | 0.972× |
+
+FFI 的大结果（`1`）比直接引擎路径慢，主要来自跨 ABI 的结果/历史序列化与解析；首屏正确性已对齐。阶段 3 的 UI 试跑使用该 FFI 路径，并在报告中保留此开销说明。
+
+`scripts/publish-desktop.ps1` 现在先构建 `qbox_engine.dll`，再复制到发布目录与 `QBox.exe` 同级；单文件发布不打包 sidecar。
+
 ## 仍挡住产品 go / no-go 的事项
 
 - 本轮证明静态 `.qbi` 首屏可以对齐，并且去掉热路径字符串拷贝后，Rust 引擎路径在 `1` / `CODE` / `python` 上中位快于 C# 引擎路径至少 30%。尚未接入 UI / FFI，也未覆盖应用、快捷方式和 live `.qbd` 覆盖层。

@@ -19,5 +19,14 @@ try {
         -p:EnableSingleFileAnalyzer=false -p:DebugType=embedded `
         -m:1 -nodeReuse:false -p:UseSharedCompilation=false --nologo @modeArguments
     if ($LASTEXITCODE -ne 0) { throw '窗口版发布失败' }
+    Push-Location (Join-Path $workspace 'rust\qbox-engine')
+    try {
+        cargo build --release --lib
+        if ($LASTEXITCODE -ne 0) { throw 'Rust 搜索引擎构建失败' }
+    } finally { Pop-Location }
+    $engineDll = Join-Path $workspace 'work\rust-target\release\qbox_engine.dll'
+    if (-not (Test-Path -LiteralPath $engineDll)) { throw 'Rust 搜索引擎 DLL 不存在' }
+    # 单文件发布只打包托管程序，sidecar 必须与 QBox.exe 同级供 LibraryImport 加载。
+    Copy-Item -LiteralPath $engineDll -Destination (Join-Path $OutputDirectory 'qbox_engine.dll') -Force
     & (Join-Path $PSScriptRoot 'copy-notices.ps1') -OutputDirectory $OutputDirectory
 } finally { Pop-Location }

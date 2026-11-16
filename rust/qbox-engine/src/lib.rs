@@ -3,6 +3,7 @@
 pub mod cancel;
 pub mod catalog;
 pub mod checks;
+pub mod ffi;
 pub mod fuzzy;
 pub mod history;
 pub mod live;

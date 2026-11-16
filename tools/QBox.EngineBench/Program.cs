@@ -16,6 +16,9 @@ var queries = new[] { "1", "豆包", "CODE", "python" };
 var outputPath = "work/rust-validation/csharp-bench.json";
 var liveMode = false;
 var catalogs = false;
+var engine = "csharp";
+var cancelTest = false;
+var fallbackTest = false;
 string? catalogOut = null;
 string? historyPath = null;
 string? historySetOut = null;
@@ -30,12 +33,16 @@ for (var i = 0; i < args.Length; i++)
         case "--output": outputPath = args[++i]; break;
         case "--live": liveMode = true; break;
         case "--catalogs": catalogs = true; break;
+        case "--engine": engine = args[++i]; break;
+        case "--cancel-test": cancelTest = true; break;
+        case "--fallback-test": fallbackTest = true; break;
         case "--catalog-out": catalogOut = args[++i]; break;
         case "--history": historyPath = args[++i]; break;
         case "--history-set-out": historySetOut = args[++i]; break;
         default: throw new ArgumentException("未知参数：" + args[i]);
     }
 }
+if (engine is not ("csharp" or "rust")) throw new ArgumentException("--engine 只能是 csharp 或 rust");
 
 indexDir = Path.GetFullPath(indexDir);
 var paths = Directory.GetFiles(indexDir, "*.qbi").Order(StringComparer.Ordinal).ToArray();
@@ -62,13 +69,21 @@ var applications = catalogs ? PackagedApplicationCatalog.Load() : PackagedApplic
 if (applications.Warning != null) Console.Error.WriteLine(applications.Warning);
 ShortcutCatalog shortcuts = !catalogs ? ShortcutCatalog.Empty :
     liveMode ? ShortcutCatalog.Load(lives!) : ShortcutCatalog.Load(volumes);
+var snapshot = catalogs ? EngineCatalogSnapshot.Create(applications, shortcuts) : null;
 catalogOut ??= catalogs ? "work/rust-validation/catalog-snapshot.json" : null;
-if (catalogOut != null)
+if (catalogOut != null && snapshot != null)
 {
     catalogOut = Path.GetFullPath(catalogOut);
-    var snapshot = EngineCatalogSnapshot.Create(applications, shortcuts);
     File.WriteAllBytes(catalogOut, snapshot.Serialize());
     Console.Error.WriteLine($"wrote catalog snapshot {catalogOut} apps={snapshot.Applications.Length} shortcuts={snapshot.Shortcuts.Length}");
+}
+
+using var rustEngine = engine == "rust" ? RustSearchEngine.Open(indexDir) : null;
+if (rustEngine != null)
+{
+    var refresh = rustEngine.Refresh(snapshot);
+    if (refresh == RustRefreshResult.BaseChanged) throw new InvalidDataException("Rust 引擎基础索引已变化");
+    Console.Error.WriteLine("rust ffi engine ready, refresh=" + refresh);
 }
 
 SelectionHistory history;
@@ -92,6 +107,7 @@ var fullPipeline = liveMode || catalogs;
 
 SearchResponse SearchOnce(string query)
 {
+    if (rustEngine != null) return rustEngine.Search(query, limit, history.ForQuery(query));
     var collector = new SearchCollector(query, limit);
     var view = history.ForQuery(query);
     ISet<string>? replaced = null;
@@ -108,6 +124,38 @@ SearchResponse SearchOnce(string query)
     else
         foreach (var volume in volumes) volume.SearchInto(collector, view, default, replaced, represented);
     return collector.Finish();
+}
+
+if (cancelTest)
+{
+    if (rustEngine == null) throw new InvalidOperationException("取消测试需要 --engine rust");
+    using var cancellation = new CancellationTokenSource();
+    var task = Task.Run(() => rustEngine.Search("1", 200, history.ForQuery("1"), cancellation.Token));
+    cancellation.Cancel();
+    try
+    {
+        await task;
+        Console.Error.WriteLine("cancel test FAILED: search completed");
+        Environment.ExitCode = 1;
+    }
+    catch (OperationCanceledException)
+    {
+        Console.Error.WriteLine("cancel test OK");
+    }
+}
+
+if (fallbackTest)
+{
+    try
+    {
+        using var bad = RustSearchEngine.Open(Path.Combine(indexDir, "missing"));
+        Console.Error.WriteLine("fallback test FAILED: invalid index opened");
+        Environment.ExitCode = 1;
+    }
+    catch (Exception error) when (error is InvalidOperationException or IOException or UnauthorizedAccessException)
+    {
+        Console.Error.WriteLine("fallback test OK: " + error.Message);
+    }
 }
 
 var results = new List<object>();
@@ -152,7 +200,7 @@ foreach (var query in queries)
 
 var payload = new
 {
-    engine = "csharp",
+    engine = rustEngine == null ? "csharp" : "rust-ffi",
     mode = liveMode ? "live" : "static",
     catalogs,
     history = historyPath,
