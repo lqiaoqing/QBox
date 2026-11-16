@@ -70,35 +70,17 @@ public static class VolumeIndexStore
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
-    // Windows 上只要目标还被任何文件句柄占着（即使带 FILE_SHARE_DELETE），
-    // File.Move(..., overwrite: true) 就会报“拒绝访问”。C# 映射在关闭 FileStream 后只留 section，可以覆盖；
-    // Rust memmap2 会复制并一直握着文件句柄，必须先把旧文件改名挪走，读端继续用旧映射。
+    // File.Move 覆盖不了仍被句柄占用的目标：Rust memmap2 会复制并一直握着文件句柄。
+    // 「先改名挪走、再放入新文件」会让读端的备份恢复抢先把旧文件搬回原位，写端第二次 Move 报“文件已存在”。
+    // ReplaceFile 一次换入新文件，已打开的旧句柄继续指向旧快照，写端不再被读端干扰；
+    // 但替换瞬间的新打开仍可能瞬时失败，读端按 IOException 保留上次可用索引。
     private static void ReplaceExisting(string temporary, string absolute)
     {
-        if (!File.Exists(absolute))
-        {
-            File.Move(temporary, absolute);
-            return;
-        }
-        var backup = absolute + "." + Guid.NewGuid().ToString("N") + ".old";
-        try
-        {
-            File.Move(absolute, backup);
-            File.Move(temporary, absolute);
-        }
-        catch
-        {
-            if (!File.Exists(absolute) && File.Exists(backup))
-            {
-                try { File.Move(backup, absolute); } catch (IOException) { } catch (UnauthorizedAccessException) { }
-            }
-            throw;
-        }
-        try { File.Delete(backup); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        if (File.Exists(absolute)) File.Replace(temporary, absolute, null);
+        else File.Move(temporary, absolute);
     }
 
+    // 原子替换后正常路径不会缺失基础文件；这里只兜底历史遗留或崩溃留下的 .old 备份。
     private static void RecoverIfReplacedAway(string absolute)
     {
         if (File.Exists(absolute)) return;
