@@ -183,7 +183,57 @@ FFI 的大结果（`1`）比直接引擎路径慢，主要来自跨 ABI 的结�
 
 `scripts/publish-desktop.ps1` 现在先构建 `qbox_engine.dll`，再复制到发布目录与 `QBox.exe` 同级；单文件发布不打包 sidecar。
 
+## 阶段 3：Desktop/CLI 接入与独立包试跑（2026-11-16）
+
+- `DesktopOptions` 新增 `--search-engine csharp|rust`，默认 `csharp`。`MainWindow` 在 `ReloadAsync` 中打开/刷新 sidecar，搜索走 Rust；加载或运行失败会记录日志并回退 C#。`MonitorIndexesAsync` 与 `RefreshCatalogsAsync` 会刷新 Rust 的 `.qbd`/目录快照；`Quit` 释放句柄。
+- CLI `search`/`open` 支持 `--search-engine rust`（需要 `--index-directory`，或目录中只有一个 `.qbi`），失败时回退 C#。
+- `publish-desktop.ps1` 构建 `qbox_engine.dll` 并复制到 `QBox.exe` 同级；独立包位于 `work/trial-package`。
+- 试用 state：`work/trial-state`，索引为 `work/trial-state/indexes` 的副本；`settings.json` 关闭自动更新。未写 `D:\Work\workspace\QBox\work\indexes`、`%LOCALAPPDATA%\QBox` 或 first-paint state。
+
+实机结果：
+
+- GUI 进程 TokenElevation=0（未提权），进程中已加载 `qbox_engine.dll`。
+- 触发“更新索引”后 worker 进程 TokenElevation=1，状态 `Watching`；D 卷正常“实时更新中”。C 卷报告 `稍后重试，保留旧索引：Access to the path is denied.`，发生在基础索引 compact/替换期间；尚未隔离是否由 Rust mmap 与 GUI 同时映射导致，也可能是既有行为，合并前需复查。
+- UI 查询 `1`、`豆包`、`CODE`、`python` 均有结果。Rust 与强制 C# 两个试用实例的 `CODE`、`1`、`豆包` 首屏在 UIA 树中逐字一致。
+- 单击结果打开 `豆包示例.txt` 并隐藏 QBox；重新唤出后按 Enter 打开同一结果；Esc 隐藏并清空查询，重新唤出为空查询。
+- 隐藏后工作集从 233,562,112 降到 13,193,216 字节（空闲回收生效；第二次从约 396 MB 降到约 52 MB）。
+- 完整界面查询 `1` 状态为 `1,435,839 项 · 显示 2000`，续填到 2000 生效。
+- 无 DLL 回退：复制包但删除 `qbox_engine.dll`，仍以 `--search-engine rust` 启动，查询正常返回 C# 结果，进程未加载 sidecar，失败已记录。
+
+## 阶段 4：验收汇总（2026-11-16）
+
+正确性：
+
+- C# `scripts/verify.ps1`：构建 0 警告/0 错误；匹配 685/685、行为 2941/2941。
+- Rust `cargo test --lib`：6 项全过；`engine-harness`：685/685、36/36、2058/2058。
+
+静态 `.qbi`（复制索引，1 预热 + 5 次，空历史）：
+
+| 查询 | C# median (ms) | Rust median (ms) | 加速比 |
+| --- | ---: | ---: | ---: |
+| `1` | 132.208 | 85.047 | 1.555× |
+| `豆包` | 0.289 | 0.099 | 2.919× |
+| `CODE` | 181.605 | 88.664 | 2.048× |
+| `python` | 47.644 | 22.783 | 2.091× |
+
+四查询首屏与总数一致；`1` 对照更严的 135.401 ms C# 基线仍约 1.59×，达到 ≥30% 门槛。
+
+live `.qbd` + 应用 + 快捷方式 + 真实历史（1 预热 + 5 次）：
+
+| 查询 | C# median (ms) | Rust 引擎 median (ms) | 加速比 | FFI median (ms) | 首屏 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `1` | 376.492 | 265.896 | 1.416× | 404.942 | 一致 |
+| `豆包` | 0.754 | 0.767 | 0.984× | 0.810 | 一致 |
+| `CODE` | 190.965 | 192.240 | 0.993× | 184.793 | 一致 |
+| `python` | 54.647 | 58.718 | 0.931× | 56.223 | 一致 |
+
+live 路径下 `CODE`/`python` 只与 C# 打平，未达到 30% 目标；这是 overlay 路径解析复杂度导致的真实结果，未改变计时口径。FFI 的大结果还包含跨 ABI 序列化/解析开销。
+
+门槛状态：正确性套件全绿；静态 ≥30% 达标；live/FFI 首屏一致；取消、续填 2000、单击/Enter 打开、Esc 隐藏清空、工作集回收均已验证；GUI 未提权、worker 单独提权并 Watching（C 卷 compact 重试待复查）；默认 C#，`rust` 仅由启动参数启用；未改匹配/排序规则，未合并主干、未 push、未发布。
+
 ## 仍挡住产品 go / no-go 的事项
 
-- 本轮证明静态 `.qbi` 首屏可以对齐，并且去掉热路径字符串拷贝后，Rust 引擎路径在 `1` / `CODE` / `python` 上中位快于 C# 引擎路径至少 30%。尚未接入 UI / FFI，也未覆盖应用、快捷方式和 live `.qbd` 覆盖层。
+- 试用中 C 卷基础索引 compact 时出现 `Access to the path is denied.`，worker 进入 30 秒重试并保留旧索引。需要确认这是否由 Rust sidecar 与 GUI 同时映射 `.qbi` 导致，还是既有行为；在隔离前不能宣称 live 基础索引替换在 Rust 启用时可靠。
+- live `.qbd` 路径下 `CODE` / `python` 与 C# 打平，未达到 30% 目标；静态路径达标。若产品要求 live 也保持 ≥30%，需要另行优化路径解析并重新对照。
+- 产品默认仍是 C#；Rust 仅在启动参数 `--search-engine rust` 下启用。合并回主干、发布新版本、push 均未执行，需用户明确同意。
 - 不在本笔记里做最终产品 go / no-go。
