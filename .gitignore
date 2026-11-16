@@ -11,3 +11,7 @@ artifacts/
 .env
 .env.*
 !.env.example
+
+# 保留 Rust 的 src/bin 源码；**/bin/ 仍忽略 C# 构建输出。
+!**/src/bin/
+!**/src/bin/**
