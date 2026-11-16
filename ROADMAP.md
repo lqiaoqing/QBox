@@ -1,6 +1,6 @@
 # 当前状态与接续目标
 
-当前产品构建版为 **0.2.4**。本页是接续入口；版本变化看 [CHANGELOG](CHANGELOG.md)，开发方法看 [DEVELOPING](DEVELOPING.md)。旧设计和研究报告作为历史证据，不是待办清单。
+当前产品构建版为 **0.2.5**。本页是接续入口；版本变化看 [CHANGELOG](CHANGELOG.md)，开发方法看 [DEVELOPING](DEVELOPING.md)。旧设计和研究报告作为历史证据，不是待办清单。
 
 ## 已完成
 
