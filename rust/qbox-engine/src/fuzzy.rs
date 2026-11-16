@@ -386,6 +386,59 @@ impl<'a> PreparedQuery<'a> {
             highlights: ranges(&tokens, result.positions.as_deref()),
         })
     }
+
+    pub fn can_match_utf16(
+        &self,
+        candidate: &[u16],
+        cancel: CancelToken,
+    ) -> Result<bool, Canceled> {
+        cancel.check()?;
+        if candidate.iter().all(|&unit| unit <= 127) {
+            if let Some(ascii_upper) = self.ascii_upper.as_deref() {
+                let needles = ascii_upper.as_bytes();
+                if needles.len() == 1 {
+                    let letter = needles[0] as u16;
+                    return Ok(if needles[0].is_ascii_uppercase() {
+                        candidate
+                            .iter()
+                            .any(|&unit| unit == letter || unit == letter + 32)
+                    } else {
+                        candidate.iter().any(|&unit| unit == letter)
+                    });
+                }
+                let mut start = 0usize;
+                for &letter in needles {
+                    let lower = if letter.is_ascii_uppercase() {
+                        letter + 32
+                    } else {
+                        letter
+                    };
+                    let want = letter as u16;
+                    let lower = lower as u16;
+                    match candidate[start..]
+                        .iter()
+                        .position(|&unit| unit == want || unit == lower)
+                    {
+                        Some(at) => start += at + 1,
+                        None => return Ok(false),
+                    }
+                }
+                return Ok(true);
+            }
+        }
+        self.can_match_with(&crate::qbi::utf16_to_string(candidate), cancel)
+    }
+
+    pub fn score_utf16(&self, candidate: &[u16], cancel: CancelToken) -> Result<i32, Canceled> {
+        Ok(if !self.can_match_utf16(candidate, cancel)? {
+            0
+        } else if candidate.iter().all(|&unit| unit <= 127) {
+            let bytes: Vec<u8> = candidate.iter().map(|&unit| unit as u8).collect();
+            self.score_matched_with(std::str::from_utf8(&bytes).unwrap(), cancel)?
+        } else {
+            self.score_matched_with(&crate::qbi::utf16_to_string(candidate), cancel)?
+        })
+    }
 }
 
 fn checked_i32(value: i32) -> i32 {

@@ -27,15 +27,60 @@
 
 拼音读音表直接读取工作树中的 `src/QBox.Core/Matching/Data/pinyin.tsv`，未改写。扩展首字母/半拼、完整音节边界、多音字（重庆）、`吕`/`𠀀`、未收录字符 `𠮷`、已取消 token、字面分优先、补充缩写不挤占字面首屏，以及快捷方式归并高亮均与 C# 一致。收集器未并行化扫描；序号与分桶次序与 C# 行为检查一致。
 
-这些仍不是实盘 `.qbi` 遍历，也不是与 C# 引擎路径在同一份复制索引上的公平首屏对比。本次未做 go / no-go。
+上表仍是匹配器 / 收集器对照，不是实盘结论。下面是同一份复制索引上的只读 `.qbi` 公平首屏对比；本次仍不做产品 go / no-go。
 
-## 本轮未做的下一步
+## 复制的只读索引
 
-只读 `.qbi`（魔数 `QBXNTFS1`，格式在 `VolumeIndexStore.cs`）尚未移植。本机已有可复制的只读来源（本次只查看存在性，未复制、未写入）：
+- 目的目录：`D:\Work\workspace\QBox-rust-engine\work\rust-validation\indexes`（工作树自己的 state，`work/` 已被 gitignore）
+- 来源：正式版正在使用的 `D:\Work\workspace\QBox\work\indexes\{C,D}.qbi`。复制时以共享读打开（`FileShare.ReadWrite|Delete`），未写入、未抢锁、未打开源文件的写句柄。未复制 `.qbd` / `.lock`：本轮公平对比只用静态 `.qbi`。
+- 试用目录里的 `{C,D}.qbi` 大小与时间戳和正式版相同，未再拷一份。正式版与试用目录的 `.qbd` 不同，也未使用。
+- `C.qbi`：212,915,109 字节，SHA-256 `DF1D6D91FF7807A3EC3FE734C12AC8D9522921CDEBA0FEBB2959F9CB8F43953B`
+- `D.qbi`：77,979,759 字节，SHA-256 `BE37E4900DF29186BBDAAEE1DD1C03FE75AD015A4F79411150BEEFADDA4421C7`
 
-- `D:\Work\workspace\QBox\work\indexes\{C,D}.qbi`
-- `D:\Work\workspace\QBox-first-paint\work\first-paint-state\indexes\{C,D}.qbi`
+禁止写入的路径均未改动：`D:\Work\workspace\QBox\work\indexes`、`%LOCALAPPDATA%\QBox`、`D:\Work\workspace\QBox-first-paint\work\first-paint-state`。
 
-下一步应把索引复制到本工作树自己的 state 目录后再做只读 mmap 遍历，并用同一份副本跑 Rust 与 C# 引擎路径的公平首屏对比：`1` / `豆包` / `CODE` / `python`（命中集合、排序、首屏耗时）。C# 试用包上次 UI 实测仅作参考，不能单独作为公平对照：`1` 2336.7 ms / 1,406,752 hits shown 200；`豆包` 324.8 ms / 6；`CODE` 1007.1 ms / 232,713 shown 200；`python` 289.1 ms / 104,992 shown 200。
+## 只读 walker
 
-禁止写入 `D:\Work\workspace\QBox\work\indexes`、`%LOCALAPPDATA%\QBox` 或试用包状态目录。未启动正式版 0.2.4 / 0.2.5，未触碰 `QBox-first-paint` 试用进程，未 push。
+Rust 实现在 `src/qbi.rs`，布局按 `VolumeIndexStore.cs` / `MappedIndexStorage.cs` / `VolumeIndex.cs` / `NamePresenceIndex.cs` / `PhoneticNameIndex.cs` 移植，只做 mmap 读取，不写回文件。
+
+- 魔数 `QBXNTFS1`，格式版本 2，正文 SHA-256 与文件尾 32 字节一致。
+- 卷覆盖与 C# `VolumeIndexStore.Load` 一致：
+  - `C:\` serial `20c4668ac4666250`，files/nodes=1,994,298，names=3,442,511
+  - `D:\` serial `182aac012aabda50`，files/nodes=1,016,618，names=1,066,239
+- 按卷依次 `SearchInto`（先 C 后 D，路径序 `OrdinalIgnoreCase`），未并行化卷扫描，收集器序号与平局规则不变。
+- 本轮不计应用、快捷方式和 `.qbd` 实时覆盖，只走静态索引路径。
+
+## 公平首屏对比
+
+同一台机器、同一份复制索引。C# 用工作树内薄宿主 `tools/QBox.EngineBench`（`VolumeIndexStore.Load` + `PrepareSearch` + `SearchInto` + `Finish`，空 `SelectionHistory`，limit 200），不经过 WPF UI，也未改产品匹配 / 排序代码。Rust 用 `cargo build --release --bin index-bench`，同一协议。
+
+计时口径：每个查询 1 次预热 + 5 次计时；每次计时包含全部卷的 presence 筛选、CanMatch / ScoreMatched、收集器插入和 `Finish` 物化。不含进程启动、mmap/加载、SHA-256、`PrepareSearch` 和预热。C# 用 `Stopwatch`，Rust 用 `std::time::Instant`。旧 UI 墙钟仅作参考，不能当 C# 基线：`1` 2336.7 ms / 1,406,752 shown 200；`豆包` 324.8 ms / 6；`CODE` 1007.1 ms / 232,713 shown 200；`python` 289.1 ms / 104,992 shown 200。引擎路径总数与 UI 略有差别是因为 UI 还计入应用、快捷方式和 live `.qbd`。
+
+加载 / 准备（不计入查询计时）：
+
+| 卷 | C# load_ms | C# prepare_ms | Rust load_ms | Rust prepare_ms |
+| --- | ---: | ---: | ---: | ---: |
+| C.qbi | 498 | 937 | 173 | 1131 |
+| D.qbi | 200 | 220 | 66 | 341 |
+
+查询结果（加速比 = C# / Rust，大于 1 表示 Rust 更快）：
+
+| 查询 | 命中 C# | 命中 Rust | 首屏集合与次序 | C# min / median (ms) | Rust min / median (ms) | 加速比 min / median |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| `1` | 1,406,557 shown 200 | 1,406,557 shown 200 | 一致（200 条 id/name/target/kind/score/group/application/direct 全同） | 130.894 / 135.401 | 294.041 / 301.754 | 0.445× / 0.449× |
+| `豆包` | 6 shown 6 | 6 shown 6 | 一致（6 条全同） | 0.273 / 0.292 | 0.099 / 0.105 | 2.745× / 2.785× |
+| `CODE` | 232,676 shown 200 | 232,676 shown 200 | 一致（200 条全同） | 166.906 / 174.355 | 146.326 / 233.650 | 1.141× / 0.746× |
+| `python` | 104,992 shown 200 | 104,992 shown 200 | 一致（200 条全同） | 46.320 / 47.015 | 64.513 / 71.677 | 0.718× / 0.656× |
+
+C# 五次：`1` [143.206, 133.292, 135.401, 130.894, 215.964]；`豆包` [0.406, 0.292, 0.283, 0.303, 0.273]；`CODE` [174.355, 166.906, 206.979, 180.783, 171.779]；`python` [46.815, 46.320, 47.987, 50.428, 47.015]。
+Rust 五次：`1` [306.161, 294.041, 295.239, 301.754, 302.567]；`豆包` [0.101, 0.105, 0.099, 0.105, 0.109]；`CODE` [146.326, 236.526, 230.938, 243.884, 233.650]；`python` [64.513, 71.677, 72.170, 104.564, 65.722]。
+
+首屏正确性：四个查询的命中总数与首屏次序均与 C# 引擎路径一致，没有错位。耗时方面，两端在 `1` 上都低于 1 秒，但 Rust 中位时约为 C# 的 2.2 倍，未达到「明确快 30%」的对照标准。`豆包` 的 Rust 更快，但只有约 0.2 ms，样本太小。`CODE` 的最好一次略快、中位更慢；`python` 整体更慢。这份对照还不能说明产品层替换会更快。
+
+原始仓库 `D:\Work\workspace\QBox` 仍在 `codex/feat-new`（`75b9a9275daf2d3d900d64c3308fb06d015f67c3`），工作区干净。未启动或停止正式版 0.2.4 / 0.2.5，未结束 first-paint 试用进程，未 push。
+
+## 仍挡住产品 go / no-go 的事项
+
+- 本轮只证明静态 `.qbi` 首屏结果可对齐，以及当前未优化 Rust 实现的引擎路径耗时。尚未接入 UI / FFI，也未覆盖应用、快捷方式和 live `.qbd` 覆盖层。
+- 大查询上 Rust 还慢于现有 C# 引擎路径；若要把「值得换引擎」说成性能结论，还需要后续优化后再比一次。
+- 不在本笔记里做最终产品 go / no-go。

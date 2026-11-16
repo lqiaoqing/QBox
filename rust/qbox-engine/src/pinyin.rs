@@ -37,6 +37,7 @@ struct Token {
     is_han: bool,
 }
 
+#[derive(Clone)]
 pub struct PreparedApplicationName {
     text: String,
     tokens: Vec<Token>,

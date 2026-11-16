@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>QBox.EngineBench</RootNamespace>
+    <AssemblyName>QBox.EngineBench</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\QBox.Core\QBox.Core.csproj" />
+    <ProjectReference Include="..\..\src\QBox.Windows\QBox.Windows.csproj" />
+  </ItemGroup>
+</Project>

@@ -9,6 +9,7 @@ publish = false
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+memmap2 = "0.9"
 
 [[bin]]
 name = "match-harness"
@@ -17,3 +18,7 @@ path = "src/bin/match_harness.rs"
 [[bin]]
 name = "engine-harness"
 path = "src/bin/engine_harness.rs"
+
+[[bin]]
+name = "index-bench"
+path = "src/bin/index_bench.rs"

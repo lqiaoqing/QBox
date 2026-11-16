@@ -1,4 +1,4 @@
-//! QBox 搜索引擎 Rust 校验端口：FuzzyMatcher、拼音应用名、收集器与排序。
+//! QBox 搜索引擎 Rust 校验端口：FuzzyMatcher、拼音应用名、收集器与排序、只读 .qbi 遍历。
 
 pub mod cancel;
 pub mod catalog;
@@ -7,6 +7,7 @@ pub mod fuzzy;
 pub mod history;
 pub mod oracle;
 pub mod pinyin;
+pub mod qbi;
 pub mod search;
 
 pub use fuzzy::{FuzzyMatcher, MatchResult, PreparedQuery, TextRange};
