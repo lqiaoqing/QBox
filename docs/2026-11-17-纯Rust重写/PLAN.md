@@ -305,3 +305,13 @@ pwsh -File scripts/publish-rust.ps1 -OutputRoot work/rust-package
 - [Apple FSEvents 编程说明](https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/FSEvents_ProgGuide/UsingtheFSEventsFramework/UsingtheFSEventsFramework.html)
 
 外部资料查阅日期为 2026-11-17；实际依赖及系统行为仍须按锁定版本验证。
+
+## 详细执行材料（2026-11-17 补充）
+
+以上总纲原文保留。本次增加的接口、协议、任务和统计方法在独立材料中给出，不将其冒充原文已有内容。执行入口见 [README.md](README.md)，设计选择和补充差异见 [DECISIONS.md](DECISIONS.md)。
+
+- [核心类型、查询/UI 状态与平台设计](DESIGN.md)
+- [索引格式、发布、锁与恢复协议](STORAGE.md)
+- [管理员工作进程协议](WORKER-PROTOCOL.md)
+- [文件迁移与 T00–T18 实施任务](MIGRATION.md)
+- [可执行验收与统计判定](VALIDATION.md)
