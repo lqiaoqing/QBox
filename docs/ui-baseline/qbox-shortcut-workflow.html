@@ -1,0 +1,353 @@
+<style>
+#qbox-workflow { color-scheme:light dark; --w-bg:light-dark(#f3f5f8,#191f28); --w-paper:light-dark(#ffffff,#242c38); --w-soft:light-dark(#f7f9fc,#202733); --w-ink:light-dark(#243348,#e9eff8); --w-muted:light-dark(#68788c,#a8b6c9); --w-line:light-dark(#e2e8f0,#3a4555); --w-blue:light-dark(#2366c9,#99beff); --w-tint:light-dark(#eaf2ff,#2b4163); --w-on:light-dark(#ffffff,#162a46); --w-shadow:light-dark(#293c5524,#00000055); --w-radius:17px; --w-row:62px; width:100%; color:var(--w-ink); font:14px/1.5 'Segoe UI Variable Text','Segoe UI','Microsoft YaHei UI',sans-serif; }
+#qbox-workflow * { box-sizing:border-box; }
+#qbox-workflow [hidden] { display:none!important; }
+#qbox-workflow button,#qbox-workflow input,#qbox-workflow textarea,#qbox-workflow select { font:inherit; color:inherit; }
+#qbox-workflow button { border:0; background:none; }
+#qbox-workflow button:focus-visible,#qbox-workflow input:focus-visible,#qbox-workflow textarea:focus-visible,#qbox-workflow select:focus-visible { outline:2px solid var(--w-blue); outline-offset:2px; }
+#qbox-workflow svg { width:17px; height:17px; stroke-width:1.7; flex-shrink:0; }
+#qbox-workflow p,#qbox-workflow h2,#qbox-workflow h3 { margin:0; }
+#qbox-workflow .qw-demo { display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:0 0 15px; }
+#qbox-workflow .qw-demo-label { font-size:12px; color:var(--w-muted); margin-right:5px; }
+#qbox-workflow .qw-demo button { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--w-paper); border:1px solid var(--w-line); border-radius:7px; font-size:12px; }
+#qbox-workflow .qw-demo button[aria-pressed=true] { background:var(--w-tint); color:var(--w-blue); border-color:var(--w-blue); }
+#qbox-workflow kbd { font:11px/1.6 'Cascadia Code','Consolas',monospace; color:var(--w-muted); white-space:nowrap; }
+#qbox-workflow .qw-demo button:last-child { margin-left:auto; }
+#qbox-workflow .qw-stage { min-height:690px; position:relative; display:grid; grid-template-columns:minmax(0,1fr); align-items:center; padding:24px; background:var(--w-bg); border-radius:12px; overflow:hidden; }
+#qbox-workflow #qw-screen { min-width:0; width:100%; }
+#qbox-workflow .qw-editor { position:absolute; inset:53px 7% 65px; background:var(--w-paper); border:1px solid var(--w-line); border-radius:9px; overflow:hidden; color:var(--w-muted); }
+#qbox-workflow .qw-editor-bar { padding:12px 18px; border-bottom:1px solid var(--w-line); display:flex; justify-content:space-between; gap:10px; font-size:12px; }
+#qbox-workflow .qw-editor-page { padding:32px 7%; }
+#qbox-workflow .qw-editor h2 { font-size:23px; font-weight:600; color:var(--w-ink); margin-bottom:24px; }
+#qbox-workflow .qw-editor p { max-width:650px; margin:0 0 15px; line-height:1.9; }
+#qbox-workflow .qw-editor h3 { font-size:15px; color:var(--w-ink); margin:28px 0 13px; }
+#qbox-workflow .qw-editor hr { border:0; border-top:1px solid var(--w-line); margin:22px 0; }
+#qbox-workflow .qw-editor-ghost { height:7px; max-width:90%; background:var(--w-line); margin:17px 0; border-radius:3px; }
+#qbox-workflow .qw-editor-ghost.short { width:54%; }
+#qbox-workflow .qw-soften { position:absolute; inset:0; background:color-mix(in srgb,var(--w-bg) 67%,transparent); }
+#qbox-workflow .qw-surface { position:relative; background:var(--w-paper); border:1px solid var(--w-line); border-radius:var(--w-radius); box-shadow:0 20px 65px var(--w-shadow),0 3px 12px var(--w-shadow); width:100%; min-width:0; overflow:hidden; }
+#qbox-workflow .qw-quick { max-width:516px; margin:auto; }
+#qbox-workflow .qw-search-quick { max-width:650px; }
+#qbox-workflow .qw-titlebar { display:flex; align-items:center; gap:9px; padding:13px 17px 10px; min-height:52px; }
+#qbox-workflow .qw-logo { display:grid; place-items:center; background:var(--w-blue); color:var(--w-on); width:25px; height:25px; border-radius:7px; font:600 18px/1 'Bahnschrift',sans-serif; flex-shrink:0; }
+#qbox-workflow .qw-titlebar strong { font-size:14px; font-weight:600; }
+#qbox-workflow .qw-titlebar .qw-title-sub { font-size:11px; color:var(--w-muted); margin-left:3px; }
+#qbox-workflow .qw-spacer { flex:1; }
+#qbox-workflow .qw-icon { width:29px; height:29px; display:inline-grid; place-items:center; color:var(--w-muted); border-radius:6px; flex-shrink:0; }
+#qbox-workflow .qw-icon:hover { background:var(--w-soft); color:var(--w-blue); }
+#qbox-workflow .qw-icon.active { color:var(--w-blue); background:var(--w-tint); }
+#qbox-workflow .qw-input-wrap { display:flex; align-items:center; gap:10px; background:var(--w-soft); border:1px solid var(--w-line); border-radius:8px; padding:9px 12px; }
+#qbox-workflow .qw-input-wrap svg { color:var(--w-muted); }
+#qbox-workflow .qw-input-wrap input { padding:0; border:0; background:transparent; min-width:0; width:100%; outline-offset:4px; }
+#qbox-workflow .qw-quick-search { padding:3px 17px 0; }
+#qbox-workflow .qw-filters { display:flex; gap:3px; padding:10px 17px 7px; flex-wrap:wrap; }
+#qbox-workflow .qw-filters button { font-size:12px; color:var(--w-muted); border-radius:5px; padding:4px 10px; }
+#qbox-workflow .qw-filters button[aria-pressed=true] { color:var(--w-blue); background:var(--w-tint); font-weight:600; }
+#qbox-workflow .qw-list { padding:0 9px 10px; }
+#qbox-workflow .qw-group { color:var(--w-muted); font-size:11px; padding:8px 11px 5px; display:flex; align-items:center; gap:6px; }
+#qbox-workflow .qw-group svg { width:12px; height:12px; }
+#qbox-workflow .qw-row { min-height:var(--w-row); display:flex; align-items:center; border-radius:8px; position:relative; margin:2px 0; }
+#qbox-workflow .qw-row.selected { background:var(--w-tint); }
+#qbox-workflow .qw-row.selected:before { position:absolute; content:''; left:0; top:17px; bottom:17px; width:3px; background:var(--w-blue); border-radius:3px; }
+#qbox-workflow .qw-row:hover { background:var(--w-soft); }
+#qbox-workflow .qw-row.selected:hover { background:var(--w-tint); }
+#qbox-workflow .qw-record { min-width:0; flex:1; display:flex; gap:11px; align-items:center; text-align:left; padding:8px 7px 8px 11px; }
+#qbox-workflow .qw-type { width:35px; height:36px; display:grid; place-items:center; border-radius:7px; border:1px solid var(--w-line); background:var(--w-paper); color:var(--w-muted); flex-shrink:0; overflow:hidden; }
+#qbox-workflow .qw-record-body { min-width:0; flex:1; }
+#qbox-workflow .qw-record-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+#qbox-workflow .qw-meta { display:flex; gap:7px; color:var(--w-muted); font-size:11px; margin-top:2px; }
+#qbox-workflow .qw-number { color:var(--w-muted); font:11px 'Cascadia Code',monospace; margin-right:5px; }
+#qbox-workflow .qw-pin { margin-right:7px; width:26px; }
+#qbox-workflow .qw-pin svg { width:14px; height:14px; }
+#qbox-workflow .qw-thumb { background:var(--w-paper); width:100%; height:100%; padding:5px 4px; display:flex; flex-direction:column; gap:3px; }
+#qbox-workflow .qw-thumb:before { content:''; width:60%; height:4px; background:var(--w-blue); border-radius:1px; }
+#qbox-workflow .qw-thumb:after { content:''; height:13px; background:var(--w-tint); border:1px solid var(--w-line); border-radius:1px; }
+#qbox-workflow .qw-quick-foot { border-top:1px solid var(--w-line); background:var(--w-soft); padding:11px 16px; display:flex; align-items:center; justify-content:space-between; gap:7px; font-size:11px; color:var(--w-muted); flex-wrap:wrap; }
+#qbox-workflow .qw-foot-keys { display:flex; gap:10px; flex-wrap:wrap; }
+#qbox-workflow .qw-target { display:flex; align-items:center; gap:5px; color:var(--w-blue); }
+#qbox-workflow .qw-target svg { width:12px; height:12px; }
+#qbox-workflow .qw-toast { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); max-width:90%; padding:10px 16px; border:1px solid var(--w-line); border-radius:9px; background:var(--w-paper); color:var(--w-ink); box-shadow:0 5px 20px var(--w-shadow); font-size:12px; text-align:center; z-index:8; }
+#qbox-workflow .qw-demo-foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--w-muted); padding:11px 2px 0; }
+#qbox-workflow .qw-demo-foot button { color:var(--w-blue); padding:0; font-size:11px; }
+#qbox-workflow .qw-main { box-shadow:0 12px 42px var(--w-shadow); }
+#qbox-workflow .qw-main > .qw-titlebar { border-bottom:1px solid var(--w-line); padding:10px 16px; min-height:44px; }
+#qbox-workflow .qw-main-grid { display:grid; grid-template-columns:153px minmax(0,1fr); min-height:554px; }
+#qbox-workflow .qw-sidebar { background:var(--w-soft); border-right:1px solid var(--w-line); display:flex; flex-direction:column; padding:20px 9px 12px; gap:5px; }
+#qbox-workflow .qw-side-caption { color:var(--w-muted); font-size:11px; padding:0 11px 9px; }
+#qbox-workflow .qw-nav { display:flex; align-items:center; text-align:left; gap:10px; padding:11px; border-radius:7px; font-size:13px; }
+#qbox-workflow .qw-nav[aria-pressed=true] { color:var(--w-blue); background:var(--w-tint); font-weight:600; }
+#qbox-workflow .qw-sidebar .qw-nav:last-child { margin-top:auto; }
+#qbox-workflow .qw-content { padding:23px 23px 18px; min-width:0; }
+#qbox-workflow .qw-page-title { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:19px; flex-wrap:wrap; }
+#qbox-workflow .qw-page-title h2 { font-size:24px; font-weight:600; letter-spacing:-.5px; }
+#qbox-workflow .qw-page-title p { color:var(--w-muted); font-size:12px; margin-top:5px; }
+#qbox-workflow .qw-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--w-line); background:var(--w-paper); border-radius:7px; padding:8px 12px; font-size:12px; white-space:nowrap; }
+#qbox-workflow .qw-btn:hover { background:var(--w-soft); }
+#qbox-workflow .qw-primary { background:var(--w-blue); border-color:var(--w-blue); color:var(--w-on); }
+#qbox-workflow .qw-primary:hover { background:var(--w-blue); filter:brightness(.97); }
+#qbox-workflow .qw-library { border:1px solid var(--w-line); border-radius:9px; display:grid; grid-template-columns:minmax(0,1fr) 226px; overflow:hidden; }
+#qbox-workflow .qw-library .qw-list { padding:0 7px 8px; }
+#qbox-workflow .qw-library .qw-quick-search { padding:12px 12px 0; }
+#qbox-workflow .qw-library .qw-filters { padding:9px 10px 4px; }
+#qbox-workflow .qw-library .qw-row { min-height:56px; }
+#qbox-workflow .qw-library .qw-type { width:29px; height:31px; }
+#qbox-workflow .qw-library .qw-record { gap:8px; padding-left:8px; }
+#qbox-workflow .qw-library .qw-number { display:none; }
+#qbox-workflow .qw-detail { border-left:1px solid var(--w-line); padding:17px; background:var(--w-soft); display:flex; flex-direction:column; gap:15px; min-width:0; }
+#qbox-workflow .qw-detail h3 { font-size:13px; font-weight:600; }
+#qbox-workflow .qw-detail-label { color:var(--w-muted); font-size:11px; }
+#qbox-workflow .qw-detail-text { font-size:13px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-wrap; }
+#qbox-workflow .qw-detail pre { font:12px/1.8 'Cascadia Code','Consolas',monospace; background:var(--w-paper); border:1px solid var(--w-line); border-radius:7px; padding:12px; white-space:pre-wrap; overflow-wrap:anywhere; margin:0; }
+#qbox-workflow .qw-detail .qw-btn { width:100%; margin-top:auto; }
+#qbox-workflow .qw-search-box { padding:18px 21px; display:flex; gap:13px; align-items:center; }
+#qbox-workflow .qw-search-box > svg { color:var(--w-blue); width:22px; height:22px; }
+#qbox-workflow .qw-search-box input { min-width:0; width:100%; background:transparent; border:0; font-size:21px; }
+#qbox-workflow .qw-result-list { border-top:1px solid var(--w-line); padding:8px 10px 12px; }
+#qbox-workflow .qw-result { display:flex; width:100%; text-align:left; gap:12px; align-items:center; padding:12px; border-radius:8px; }
+#qbox-workflow .qw-result:first-child { background:var(--w-tint); }
+#qbox-workflow .qw-result > div { min-width:0; flex:1; }
+#qbox-workflow .qw-result small { display:block; color:var(--w-muted); font-size:11px; margin-top:3px; }
+#qbox-workflow .qw-empty { padding:35px 15px; text-align:center; color:var(--w-muted); font-size:12px; }
+#qbox-workflow .qw-translation { padding:4px 18px 18px; }
+#qbox-workflow .qw-languages { display:flex; gap:9px; align-items:center; color:var(--w-muted); font-size:12px; margin:5px 0 12px; }
+#qbox-workflow select { background:var(--w-soft); border:1px solid var(--w-line); border-radius:5px; padding:6px 9px; max-width:100%; }
+#qbox-workflow textarea { width:100%; border:1px solid var(--w-line); border-radius:8px; padding:12px; min-height:106px; background:var(--w-soft); resize:vertical; font-size:14px; }
+#qbox-workflow .qw-translate-output { padding:16px 0; font-size:17px; line-height:1.8; min-height:105px; }
+#qbox-workflow .qw-translate-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+#qbox-workflow .qw-note { font-size:11px; color:var(--w-muted); }
+#qbox-workflow .qw-setting-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:13px; padding:19px 0; border-bottom:1px solid var(--w-line); }
+#qbox-workflow .qw-setting-title { display:flex; align-items:center; gap:10px; font-size:13px; }
+#qbox-workflow .qw-setting-title svg { color:var(--w-muted); }
+#qbox-workflow .qw-setting-title small { display:block; color:var(--w-muted); font-size:11px; padding-top:4px; }
+#qbox-workflow .qw-shortcut { border:1px solid var(--w-line); border-radius:6px; background:var(--w-soft); padding:7px 11px; font:12px 'Cascadia Code',monospace; }
+#qbox-workflow .qw-recorder { margin-top:18px; padding:15px; border:1px solid var(--w-line); border-radius:8px; }
+#qbox-workflow .qw-recorder input { width:100%; border:1px solid var(--w-line); border-radius:6px; padding:10px; background:var(--w-soft); margin:10px 0; }
+#qbox-workflow .qw-error { color:light-dark(#b42332,#ffabb3); font-size:12px; }
+#qbox-workflow .qw-capture { position:absolute; inset:0; z-index:3; touch-action:none; }
+#qbox-workflow .qw-selection { position:absolute; left:13%; top:23%; width:74%; height:43%; border:2px solid var(--w-blue); border-radius:2px; box-shadow:0 0 0 1500px light-dark(#0c172c70,#05090f88); pointer-events:none; }
+#qbox-workflow .qw-selection:before,#qbox-workflow .qw-selection:after { content:''; width:8px; height:8px; background:var(--w-paper); border:1px solid var(--w-blue); position:absolute; }
+#qbox-workflow .qw-selection:before { top:-5px; left:-5px; }
+#qbox-workflow .qw-selection:after { bottom:-5px; right:-5px; }
+#qbox-workflow .qw-capture-hint { position:absolute; z-index:2; top:15px; left:18px; background:var(--w-paper); color:var(--w-ink); border:1px solid var(--w-line); border-radius:7px; padding:8px 12px; font-size:12px; display:flex; gap:15px; flex-wrap:wrap; }
+#qbox-workflow .qw-dimensions { position:absolute; top:-30px; left:-2px; white-space:nowrap; background:var(--w-blue); color:var(--w-on); border-radius:4px; padding:3px 7px; font-size:11px; }
+#qbox-workflow .qw-capture-actions { position:absolute; left:50%; bottom:70px; transform:translateX(-50%); max-width:94%; display:flex; flex-wrap:wrap; gap:3px; padding:7px; background:var(--w-paper); color:var(--w-ink); border:1px solid var(--w-line); border-radius:9px; box-shadow:0 8px 30px var(--w-shadow); }
+#qbox-workflow .qw-capture-actions button { display:flex; flex-direction:column; gap:4px; align-items:center; min-width:48px; padding:6px; font-size:11px; border-radius:5px; }
+#qbox-workflow .qw-capture-actions button:hover { background:var(--w-tint); color:var(--w-blue); }
+#qbox-workflow .qw-annotation { position:absolute; top:40%; left:27%; width:35%; border-top:3px solid var(--w-blue); transform:rotate(-6deg); }
+#qbox-workflow .qw-placeholder { border:1px solid var(--w-line); background:var(--w-soft); border-radius:9px; padding:30px; display:flex; flex-direction:column; gap:18px; align-items:flex-start; }
+#qbox-workflow .qw-mini-capture { padding:20px; background:var(--w-paper); border:1px solid var(--w-line); border-radius:6px; width:100%; }
+#qbox-workflow .qw-file-line { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--w-line); padding:13px 0; font-size:13px; width:100%; }
+@media(max-width:760px) { #qbox-workflow .qw-stage { padding:15px; } #qbox-workflow .qw-main-grid { grid-template-columns:118px minmax(0,1fr); } #qbox-workflow .qw-sidebar { padding-left:6px; padding-right:6px; } #qbox-workflow .qw-nav { padding:11px 7px; gap:7px; font-size:12px; } #qbox-workflow .qw-content { padding:19px 15px; } #qbox-workflow .qw-library { grid-template-columns:minmax(0,1fr); } #qbox-workflow .qw-detail { border-left:0; border-top:1px solid var(--w-line); min-height:180px; } #qbox-workflow .qw-main-grid { min-height:600px; } }
+@media(max-width:480px) { #qbox-workflow .qw-stage { padding:9px; min-height:690px; } #qbox-workflow .qw-demo { gap:5px; } #qbox-workflow .qw-demo-label { width:100%; } #qbox-workflow .qw-demo button:last-child { margin-left:0; } #qbox-workflow .qw-demo button { gap:5px; padding:7px 9px; } #qbox-workflow .qw-main-grid { grid-template-columns:minmax(0,1fr); } #qbox-workflow .qw-sidebar { flex-direction:row; flex-wrap:wrap; padding:6px; border-right:0; border-bottom:1px solid var(--w-line); gap:1px; } #qbox-workflow .qw-side-caption { display:none; } #qbox-workflow .qw-nav { padding:8px 7px; font-size:11px; gap:5px; } #qbox-workflow .qw-sidebar .qw-nav:last-child { margin-top:0; } #qbox-workflow .qw-nav svg { width:14px; height:14px; } #qbox-workflow .qw-content { padding:17px 12px; } #qbox-workflow .qw-titlebar { padding:11px 12px 8px; gap:7px; } #qbox-workflow .qw-title-sub { display:none; } #qbox-workflow .qw-quick-search { padding:3px 12px 0; } #qbox-workflow .qw-filters { padding:9px 10px 5px; gap:0; } #qbox-workflow .qw-filters button { padding:4px 9px; } #qbox-workflow .qw-record { gap:8px; padding-left:8px; } #qbox-workflow .qw-type { width:29px; height:32px; } #qbox-workflow .qw-record-title { font-size:12px; } #qbox-workflow .qw-number { display:none; } #qbox-workflow .qw-meta { gap:5px; font-size:11px; } #qbox-workflow .qw-quick-foot { padding:10px 12px; } #qbox-workflow .qw-editor { inset:55px 4% 55px; } #qbox-workflow .qw-editor-page { padding:25px 8%; } #qbox-workflow .qw-editor p { font-size:12px; } #qbox-workflow .qw-setting-row { grid-template-columns:minmax(0,1fr) auto; gap:9px; padding:15px 0; } #qbox-workflow .qw-setting-row > .qw-btn,#qbox-workflow .qw-setting-row > .qw-note { grid-column:2; } #qbox-workflow .qw-setting-title { grid-row:span 2; gap:7px; } #qbox-workflow .qw-setting-title small { max-width:135px; } #qbox-workflow .qw-shortcut { padding:6px 8px; font-size:11px; } #qbox-workflow .qw-capture-actions { bottom:55px; width:93%; justify-content:center; } #qbox-workflow .qw-capture-actions button { min-width:43px; } #qbox-workflow .qw-capture-hint { left:10px; right:10px; gap:5px; font-size:11px; } }
+@media(pointer:coarse) { #qbox-workflow .qw-demo button,#qbox-workflow .qw-btn,#qbox-workflow .qw-icon,#qbox-workflow .qw-filters button,#qbox-workflow .qw-nav { min-height:44px; } #qbox-workflow .qw-pin { width:36px; } #qbox-workflow input,#qbox-workflow textarea,#qbox-workflow select { font-size:16px; } }
+</style>
+<div id="qbox-workflow">
+  <div class="qw-demo" aria-label="模拟快捷唤起">
+    <span class="qw-demo-label">唤起演示</span>
+    <button class="cursor-interaction" type="button" data-trigger="search">搜索 <kbd>双击 Ctrl</kbd></button>
+    <button class="cursor-interaction" type="button" data-trigger="clipboard" aria-pressed="true">剪贴板 <kbd>Ctrl + `</kbd></button>
+    <button class="cursor-interaction" type="button" data-trigger="capture">截图 <kbd>Ctrl + 1</kbd></button>
+    <button class="cursor-interaction" type="button" data-trigger="translate">翻译 <kbd>Ctrl + 2</kbd></button>
+    <button class="cursor-interaction" type="button" data-action="main"><i data-lucide="panels-top-left" aria-hidden="true"></i>打开主界面</button>
+  </div>
+  <div class="qw-stage">
+    <div class="qw-editor" aria-hidden="true">
+      <div class="qw-editor-bar"><span>工作笔记.md — 文本编辑器</span><span>示例桌面</span></div>
+      <div class="qw-editor-page">
+        <h2>让工具随手可用</h2>
+        <p>Keep your tools close, and stay in the flow.</p>
+        <p>把常用工具放在触手可及的位置，让每一次复制、截图和查找，都能自然接着当前的工作。</p>
+        <hr><h3>今天的工作</h3>
+        <p>整理界面方案，确认快捷键与交互细节。</p>
+        <div class="qw-editor-ghost"></div><div class="qw-editor-ghost short"></div>
+      </div>
+    </div>
+    <div class="qw-soften"></div>
+    <div id="qw-screen"></div>
+    <div class="qw-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <div class="qw-demo-foot"><span>交互预览 · 全部为示例数据，不操作系统剪贴板与文件</span><button class="cursor-interaction" type="button" data-action="settings">快捷键设置</button></div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('qbox-workflow');
+  const screen = root.querySelector('#qw-screen');
+  const stage = root.querySelector('.qw-stage');
+  const message = root.querySelector('.qw-toast');
+  const tools = [ ['search','搜索','search'], ['clipboard','剪贴板','clipboard-list'], ['capture','截图与贴图','scan-line'], ['desktop','桌面整理','layout-grid'], ['translate','快捷翻译','languages'] ];
+  const shortcuts = {search:'双击 Ctrl',clipboard:'Ctrl + `',capture:'Ctrl + 1',translate:'Ctrl + 2',desktop:'未设置'};
+  const defaults = {...shortcuts};
+  const clips = [
+    {id:'address',type:'text',title:'常用收件信息',body:'示例科技 · 产品设计组\n联系人：项目负责人\n地址：示例园区 A 座 3 层',source:'工作笔记',time:'常用内容',pin:true},
+    {id:'build',type:'code',title:'cargo build --release',body:'cargo build --release',source:'终端',time:'常用命令',pin:true},
+    {id:'note',type:'text',title:'让每一次复制、截图和查找，都能接着当前的工作。',body:'把常用工具放在触手可及的位置，让每一次复制、截图和查找，都能自然接着当前的工作。',source:'工作笔记',time:'刚刚',pin:false},
+    {id:'image',type:'image',title:'界面方案 · 局部截图',body:'图片预览',source:'截图',time:'2 分钟前',pin:false},
+    {id:'english',type:'text',title:'Keep your tools close, and stay in the flow.',body:'Keep your tools close, and stay in the flow.',source:'浏览器',time:'5 分钟前',pin:false},
+    {id:'file',type:'file',title:'QBox 界面方案.fig',body:'QBox 界面方案.fig\n设计文档 · 2.4 MB\nD:\\Design\\QBox 界面方案.fig',source:'文件资源管理器',time:'8 分钟前',pin:false}
+  ];
+  const saved = window.openai?.widgetState?.privateContent || {};
+  const state = {surface:['main','quick','closed'].includes(saved.surface)?saved.surface:'quick',tool:tools.some(t=>t[0]===saved.tool)?saved.tool:'clipboard',filter:'all',query:'',selected:'note',keep:false,source:'Keep your tools close, and stay in the flow.',translated:true,capturing:saved.tool==='capture'&&saved.surface==='quick',captureDone:false,captureStyle:'',annotation:false,recorder:null};
+  let toastTimer;
+  const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+  const button = (text,action,primary=false) => `<button class="qw-btn cursor-interaction ${primary?'qw-primary':''}" type="button" data-action="${action}">${text}</button>`;
+  function save() {
+    window.openai?.setWidgetState?.({modelContent:{direction:'Windows 原生主界面与独立快捷面板',tool:state.tool,surface:state.surface},privateContent:{tool:state.tool,surface:state.surface}})?.catch(()=>{});
+  }
+  function toast(text) { clearTimeout(toastTimer); message.textContent=text; message.hidden=false; toastTimer=setTimeout(()=>message.hidden=true,3200); }
+  function titlebar(title,quick=true) {
+    return `<div class="qw-titlebar"><span class="qw-logo">Q</span><strong>${title}</strong><span class="qw-title-sub">${quick?'快捷面板':'工具随手可用'}</span><span class="qw-spacer"></span>${quick?`<button class="qw-icon cursor-interaction ${state.keep?'active':''}" type="button" aria-label="${state.keep?'取消保持打开':'保持面板打开'}" data-action="keep">${icon('pin')}</button><button class="qw-icon cursor-interaction" type="button" aria-label="在主界面打开" data-action="main">${icon('expand')}</button>`:''}<button class="qw-icon cursor-interaction" type="button" aria-label="收起窗口" data-action="close">${icon('x')}</button></div>`;
+  }
+  function visibleClips() {
+    return clips.filter(c=>(state.filter==='all'||state.filter==='pin'&&c.pin||state.filter==='text'&&['text','code'].includes(c.type)||state.filter===c.type)&&(!state.query||(c.title+' '+c.body+' '+c.source).toLowerCase().includes(state.query.toLowerCase())));
+  }
+  function syncSelection() { const list=visibleClips();if(!list.some(c=>c.id===state.selected))state.selected=list[0]?.id||null; }
+  function clipControls() {
+    return `<div class="qw-quick-search"><label class="qw-input-wrap">${icon('search')}<input aria-label="搜索剪贴板记录" placeholder="搜索最近复制的内容" value="${escape(state.query)}"><kbd>Ctrl + F</kbd></label></div><div class="qw-filters" aria-label="剪贴板类型">${[['all','全部'],['text','文本'],['image','图片'],['file','文件'],['pin','置顶']].map(([id,label])=>`<button class="cursor-interaction" type="button" data-filter="${id}" aria-pressed="${state.filter===id}">${label}</button>`).join('')}</div>`;
+  }
+  function clipRows() {
+    const visible=visibleClips();
+    if (!visible.length) return '<div class="qw-empty">没有找到这条记录</div>';
+    return [true,false].map(pinned=>{
+      const group=visible.filter(c=>c.pin===pinned);
+      return group.length?`<div class="qw-group">${pinned?icon('pin'):''}${pinned?'置顶':'最近复制'} <span>· ${group.length}</span></div>${group.map(c=>`<div class="qw-row ${state.selected===c.id?'selected':''}" data-row="${c.id}"><button class="qw-record cursor-interaction" type="button" data-select="${c.id}" aria-pressed="${state.selected===c.id}"><span class="qw-type">${c.type==='image'?'<span class="qw-thumb"></span>':icon({text:'text',code:'terminal',file:'file'}[c.type])}</span><span class="qw-record-body"><span class="qw-record-title" style="display:block" data-tooltip="${escape(c.title)}">${escape(c.title)}</span><span class="qw-meta"><span>${c.type==='image'?'1280 × 720':escape(c.source)}</span><span>·</span><span>${escape(c.time)}</span></span></span><span class="qw-number">${visible.indexOf(c)+1}</span></button><button class="qw-icon qw-pin cursor-interaction ${c.pin?'active':''}" type="button" data-pin="${c.id}" aria-label="${c.pin?'取消置顶':'置顶'} ${escape(c.title)}">${icon('pin')}</button></div>`).join('')}`:'';
+    }).join('');
+  }
+  function clipDetail() {
+    const c=clips.find(c=>c.id===state.selected)||clips[0];
+    return `<div class="qw-detail"><div class="qw-detail-label">内容预览</div><h3>${escape(c.title)}</h3>${c.type==='image'?'<div class="qw-mini-capture"><strong>让工具随手可用</strong><p style="margin-top:12px;font-size:11px">Keep your tools close.</p></div>':c.type==='code'?`<pre>${escape(c.body)}</pre>`:`<div class="qw-detail-text">${escape(c.body)}</div>`}<span class="qw-detail-label">${escape(c.source)} · ${escape(c.time)}</span>${button(icon('copy')+'复制内容','copy',true)}</div>`;
+  }
+  function clipboard(quick) {
+    if(quick) return `<section class="qw-surface qw-quick" aria-label="剪贴板快捷面板">${titlebar('剪贴板')}${clipControls()}<div class="qw-list">${clipRows()}</div><div class="qw-quick-foot"><span class="qw-foot-keys"><span>↑↓ 选择</span><span>Enter 粘贴</span><span>Shift + Enter 纯文本</span></span><span class="qw-target">${icon('corner-down-left')}返回工作笔记</span></div></section>`;
+    return `<div class="qw-library"><div>${clipControls()}<div class="qw-list">${clipRows()}</div></div>${clipDetail()}</div>`;
+  }
+  function searchResults() {
+    return `<div class="qw-result-list">${[['folder','产品资料','D:\\Documents\\产品资料'],['file-text','QBox 界面方案.md','D:\\Documents\\QBox 界面方案.md'],['file-text','快捷键设计说明.md','D:\\Documents\\快捷键设计说明.md']].filter(v=>!state.query||v[1].includes(state.query)).map(v=>`<button class="qw-result cursor-interaction" type="button" data-action="open-result">${icon(v[0])}<div>${escape(v[1])}<small>${escape(v[2])}</small></div>${icon('corner-down-left')}</button>`).join('')||'<div class="qw-empty">没有匹配的示例结果</div>'}</div>`;
+  }
+  function search(quick) {
+    const content=`<label class="qw-search-box">${icon('search')}<input aria-label="搜索文件和应用" placeholder="搜索文件和应用" value="${escape(state.query)}">${quick?'<kbd>双击 Ctrl</kbd>':''}</label>${searchResults()}`;
+    return quick?`<section class="qw-surface qw-quick qw-search-quick" aria-label="快捷搜索栏">${content}<div class="qw-quick-foot"><span>Enter 打开 · Esc 收起</span><span class="qw-target">再次双击 Ctrl → 完整搜索界面</span></div></section>`:`<div class="qw-placeholder" style="padding:0;display:block">${content}</div><p class="qw-note" style="margin-top:14px">在此预览文件、调整搜索范围与筛选条件。</p>`;
+  }
+  function translate(quick) {
+    const content=`<div class="qw-translation"><div class="qw-languages"><label><span class="qw-note">原文 </span><select aria-label="原文语言"><option>自动检测</option><option>英语</option><option>中文</option></select></label>${icon('arrow-right')}<label><span class="qw-note">译文 </span><select aria-label="译文语言"><option>简体中文</option><option>English</option></select></label></div><textarea aria-label="待翻译文字" placeholder="输入或粘贴要翻译的文字">${escape(state.source)}</textarea><div class="qw-translate-output" aria-live="polite">${state.translated?'让工具触手可及，让工作行云流水。':'译文将在这里显示'}</div><div class="qw-translate-actions"><span class="qw-note">${state.translated?'示例译文':'支持输入与粘贴'}</span><div style="display:flex;gap:7px">${button(icon('copy')+'复制译文','copy-translation')}${button('翻译','translate-now',true)}</div></div></div>`;
+    return quick?`<section class="qw-surface qw-quick" aria-label="翻译快捷面板">${titlebar('快捷翻译')}${content}<div class="qw-quick-foot"><span>Ctrl + Enter 翻译</span><span>Esc 收起 · 展开到主界面继续编辑</span></div></section>`:content;
+  }
+  function settings() {
+    return `<div>${tools.map(([id,label,name])=>`<div class="qw-setting-row"><div class="qw-setting-title">${icon(name)}<div>${label}<small>${id==='search'?'快捷搜索栏 → 再次唤起进入主界面':id==='capture'?'直接开始屏幕选区':id==='desktop'?'可按需设置快捷键':'打开独立快捷面板'}</small></div></div><span class="qw-shortcut">${escape(shortcuts[id])}</span>${id==='search'?'<span class="qw-note">当前保持</span>':`<button class="qw-btn cursor-interaction" type="button" data-edit="${id}">修改</button>`}</div>`).join('')}<p class="qw-note" style="margin-top:17px">此处可演示自定义与内部重复检测；正式软件应同时显示系统注册结果。</p>${state.recorder?`<div class="qw-recorder"><label for="qw-hotkey">为${tools.find(t=>t[0]===state.recorder)[1]}按下新快捷键</label><input id="qw-hotkey" aria-label="录制快捷键" readonly placeholder="例如 Ctrl + Shift + V"><p class="qw-error" role="alert" hidden></p>${button('取消','cancel-record')}</div>`:''}<div style="margin-top:19px">${button('恢复默认快捷键','reset-keys')}</div></div>`;
+  }
+  function mainContent() {
+    if(state.tool==='clipboard')return clipboard(false);
+    if(state.tool==='search')return search(false);
+    if(state.tool==='translate')return translate(false);
+    if(state.tool==='settings')return settings();
+    if(state.tool==='capture')return `<div class="qw-placeholder"><div class="qw-mini-capture"><strong>最近截图</strong><p class="qw-note" style="margin-top:14px">让工具触手可及，让工作行云流水。</p></div>${button(icon('scan-line')+'开始截图','capture-start',true)}<p class="qw-note">快捷键直接进入选区，完整界面管理历史截图与截图设置。</p></div>`;
+    return `<div class="qw-placeholder"><h3 style="font-size:15px">桌面文件</h3>${[['folder','文档'],['image','图片'],['archive','压缩包']].map(([i,t])=>`<div class="qw-file-line">${icon(i)}${t}<span class="qw-spacer"></span><span class="qw-note">示例分组</span></div>`).join('')}${button('查看整理规则','desktop-rules')}<p class="qw-note">桌面整理的快捷键可按需设置。</p></div>`;
+  }
+  function main() {
+    const tool=tools.find(t=>t[0]===state.tool);
+    const label=tool?tool[1]:'快捷键';
+    return `<section class="qw-surface qw-main" aria-label="QBox 主界面">${titlebar('QBox',false)}<div class="qw-main-grid"><nav class="qw-sidebar" aria-label="工具导航"><span class="qw-side-caption">工作空间</span>${tools.map(([id,label,i])=>`<button class="qw-nav cursor-interaction" type="button" data-nav="${id}" aria-pressed="${state.tool===id}">${icon(i)}${label}</button>`).join('')}<button class="qw-nav cursor-interaction" type="button" data-nav="settings" aria-pressed="${state.tool==='settings'}">${icon('settings-2')}快捷键设置</button></nav><main class="qw-content"><div class="qw-page-title"><div><h2>${label}</h2><p>${({clipboard:'最近复制的内容，随时接着用',search:'查找、预览和管理文件',translate:'阅读与表达，不打断思路',capture:'截图、标注与贴图',desktop:'让常用文件井然有序',settings:'为每个工具设置顺手的唤起方式'})[state.tool]}</p></div>${tool&&state.tool!=='desktop'?button((state.tool==='capture'?'开始截图':'快捷面板')+' <kbd>'+escape(shortcuts[state.tool])+'</kbd>','quick'):''}</div>${mainContent()}</main></div></section>`;
+  }
+  function capture() {
+    return `<div class="qw-capture" aria-label="截图选区演示"><div class="qw-capture-hint"><span>${state.captureDone?'已选中区域':'自动识别：文本区域'}</span><span>${state.captureDone?'可标注、复制、贴图或翻译':'点击确认 · 拖动重新框选'}</span><button type="button" class="cursor-interaction" data-action="close" aria-label="退出截图">Esc 退出</button></div><div class="qw-selection"><span class="qw-dimensions">${state.captureDone?'已确认选区':'自动选区'}</span>${state.annotation?'<div class="qw-annotation"></div>':''}</div>${state.captureDone?`<div class="qw-capture-actions" aria-label="截图工具栏">${[['move-up-right','标注','annotate'],['scan-text','提取文字','ocr'],['languages','翻译','capture-translate'],['pin','贴图','pin-capture'],['download','保存','save-capture'],['copy','复制','copy-capture'],['refresh-cw','重选','reselect']].map(([i,t,a])=>`<button type="button" class="cursor-interaction" data-action="${a}">${icon(i)}${t}</button>`).join('')}</div>`:''}</div>`;
+  }
+  function render() {
+    message.hidden=true;
+    stage.querySelector('.qw-soften').hidden=state.capturing||state.surface==='closed';
+    screen.innerHTML=state.capturing?capture():state.surface==='closed'?'':state.surface==='main'?main():state.tool==='search'?search(true):state.tool==='translate'?translate(true):clipboard(true);
+    if(state.capturing&&state.captureStyle)screen.querySelector('.qw-selection').setAttribute('style',state.captureStyle);
+    root.querySelectorAll('[data-trigger]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.trigger===state.tool&&state.surface!=='closed')));
+    root.querySelector('[data-action=main]').setAttribute('aria-pressed',String(state.surface==='main'));
+    root.querySelectorAll('[data-trigger]').forEach(b=>{if(b.dataset.trigger!=='search')b.querySelector('kbd').textContent=shortcuts[b.dataset.trigger];});
+    if(globalThis.lucide)lucide.createIcons({attrs:{width:17,height:17}});
+    if(state.recorder)screen.querySelector('#qw-hotkey')?.focus();
+  }
+  function activate(tool) {
+    state.recorder=null;
+    if(state.tool!==tool)state.query='';
+    if(tool==='capture'){state.tool=tool;state.capturing=true;state.captureDone=false;state.captureStyle='';state.annotation=false;state.surface='quick';}
+    else if(tool==='search'){
+      const promote=state.tool==='search'&&state.surface==='quick'&&!state.capturing;
+      state.tool='search';state.surface=promote?'main':'quick';state.capturing=false;
+    }else{
+      const close=state.tool===tool&&state.surface==='quick'&&!state.capturing;
+      state.tool=tool;state.surface=close?'closed':'quick';state.capturing=false;
+    }
+    render();save();
+  }
+  // 粘贴只更新演示提示，避免预览页面接触系统剪贴板或真实窗口。
+  function paste(plain=false) { const c=clips.find(c=>c.id===state.selected);if(!c)return;if(!state.keep){state.surface='closed';render();}toast(`已模拟${plain?'纯文本':''}粘贴到工作笔记：${c.title.slice(0,24)}`); }
+  root.addEventListener('click',event=>{
+    const target=event.target.closest('button');if(!target)return;
+    if(target.dataset.trigger){activate(target.dataset.trigger);return;}
+    if(target.dataset.nav){state.tool=target.dataset.nav;state.query='';state.filter='all';state.recorder=null;render();save();return;}
+    if(target.dataset.select){state.selected=target.dataset.select;screen.querySelectorAll('[data-row]').forEach(row=>{const selected=row.dataset.row===state.selected;row.classList.toggle('selected',selected);row.querySelector('[data-select]').setAttribute('aria-pressed',String(selected));});const detail=screen.querySelector('.qw-detail');if(detail){detail.outerHTML=clipDetail();if(globalThis.lucide)lucide.createIcons({attrs:{width:17,height:17}});}return;}
+    if(target.dataset.pin){const c=clips.find(c=>c.id===target.dataset.pin);c.pin=!c.pin;render();return;}
+    if(target.dataset.filter){state.filter=target.dataset.filter;syncSelection();render();return;}
+    if(target.dataset.edit){state.recorder=target.dataset.edit;render();return;}
+    const action=target.dataset.action;
+    if(action==='main'){state.surface='main';state.capturing=false;if(state.tool==='settings')state.tool='clipboard';render();save();}
+    else if(action==='settings'){state.surface='main';state.tool='settings';state.capturing=false;render();save();}
+    else if(action==='close'){state.surface='closed';state.capturing=false;render();save();}
+    else if(action==='keep'){state.keep=!state.keep;render();}
+    else if(action==='quick'){if(state.tool==='capture')activate('capture');else {state.surface='quick';render();save();}}
+    else if(action==='copy')toast('已模拟复制选中内容');
+    else if(action==='copy-translation')toast(state.translated?'已模拟复制译文':'请先完成翻译');
+    else if(action==='translate-now'){if(!state.source.trim()){toast('请输入需要翻译的文字');return;}state.translated=true;render();}
+    else if(action==='open-result')toast('已模拟打开文件');
+    else if(action==='capture-start')activate('capture');
+    else if(action==='reselect'){state.captureDone=false;state.captureStyle='';render();}
+    else if(action==='annotate'){state.annotation=!state.annotation;render();}
+    else if(action==='capture-translate'){state.capturing=false;state.tool='translate';state.surface='quick';state.source='Keep your tools close, and stay in the flow.';state.translated=true;render();save();}
+    else if(action==='ocr')toast('示例识别结果：Keep your tools close, and stay in the flow.');
+    else if(action==='pin-capture')toast('已模拟贴图，可在当前工作旁对照查看');
+    else if(action==='save-capture')toast('已模拟保存截图');
+    else if(action==='copy-capture'){state.capturing=false;state.surface='closed';render();toast('已模拟复制截图，返回当前工作');}
+    else if(action==='reset-keys'){Object.assign(shortcuts,defaults);state.recorder=null;render();toast('已恢复演示默认快捷键');}
+    else if(action==='cancel-record'){state.recorder=null;render();}
+    else if(action==='desktop-rules')toast('建议在此配置分类规则、目标文件夹与整理预览');
+  });
+  root.addEventListener('dblclick',event=>{if(event.target.closest('[data-select]'))paste();});
+  root.addEventListener('input',event=>{
+    if(event.target.matches('input[aria-label="搜索剪贴板记录"]')){state.query=event.target.value;syncSelection();screen.querySelector('.qw-list').innerHTML=clipRows();const detail=screen.querySelector('.qw-detail');if(detail)detail.outerHTML=clipDetail();if(globalThis.lucide)lucide.createIcons({attrs:{width:17,height:17}});}
+    if(event.target.matches('input[aria-label="搜索文件和应用"]')){state.query=event.target.value;screen.querySelector('.qw-result-list').outerHTML=searchResults();if(globalThis.lucide)lucide.createIcons({attrs:{width:17,height:17}});}
+    if(event.target.matches('textarea')){state.source=event.target.value;state.translated=false;screen.querySelector('.qw-translate-output').textContent='译文将在这里显示';}
+  });
+  root.addEventListener('keydown',event=>{
+    if(event.target.id==='qw-hotkey'){
+      event.preventDefault();if(['Control','Shift','Alt','Meta'].includes(event.key))return;
+      const warning=screen.querySelector('.qw-error');
+      if(!event.ctrlKey&&!event.altKey&&!event.metaKey){warning.hidden=false;warning.textContent='请同时按下 Ctrl 或 Alt 等组合键';return;}
+      const key=[event.ctrlKey?'Ctrl':null,event.altKey?'Alt':null,event.shiftKey?'Shift':null,event.metaKey?'Win':null,event.key.length===1?event.key.toUpperCase():event.key].filter(Boolean).join(' + ');
+      const conflict=Object.entries(shortcuts).find(([id,value])=>id!==state.recorder&&value.toLowerCase()===key.toLowerCase());
+      if(conflict){warning.hidden=false;warning.textContent='与'+tools.find(t=>t[0]===conflict[0])[1]+'的快捷键重复';return;}
+      shortcuts[state.recorder]=key;state.recorder=null;render();toast('已更新演示快捷键，未注册系统热键');return;
+    }
+    if(event.key==='Escape'){state.surface='closed';state.capturing=false;render();save();return;}
+    if(state.tool==='clipboard'&&state.surface!=='closed'&&!state.capturing){
+      if(event.ctrlKey&&event.key.toLowerCase()==='f'){event.preventDefault();screen.querySelector('input')?.focus();return;}
+      if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const list=visibleClips();if(!list.length)return;let index=list.findIndex(c=>c.id===state.selected);index=(index+(event.key==='ArrowDown'?1:-1)+list.length)%list.length;state.selected=list[index].id;const focused=document.activeElement?.getAttribute('aria-label');render();if(focused==='搜索剪贴板记录')screen.querySelector('input')?.focus();return;}
+      if(event.key==='Enter'){event.preventDefault();paste(event.shiftKey);}
+    }else if(state.tool==='translate'&&event.ctrlKey&&event.key==='Enter'){event.preventDefault();state.translated=!!state.source.trim();render();if(!state.translated)toast('请输入需要翻译的文字');}
+  });
+  // 坐标仅属于示例桌面；拖动选区不会触发真实屏幕捕获。
+  let drag=null;
+  root.addEventListener('pointerdown',event=>{
+    const layer=event.target.closest('.qw-capture');if(!layer||event.target.closest('button')||state.captureDone)return;
+    const rect=stage.getBoundingClientRect();drag={x:event.clientX-rect.left,y:event.clientY-rect.top,rect,layer};layer.setPointerCapture(event.pointerId);
+  });
+  root.addEventListener('pointermove',event=>{
+    if(!drag)return;const x=Math.max(5,Math.min(drag.rect.width-5,event.clientX-drag.rect.left));const y=Math.max(60,Math.min(drag.rect.height-100,event.clientY-drag.rect.top));const selection=screen.querySelector('.qw-selection');if(!selection)return;
+    const width=Math.abs(x-drag.x),height=Math.abs(y-drag.y);if(width<5&&height<5)return;
+    Object.assign(selection.style,{left:Math.min(x,drag.x)+'px',top:Math.min(y,drag.y)+'px',width:Math.max(8,width)+'px',height:Math.max(8,height)+'px'});
+    selection.querySelector('.qw-dimensions').textContent=`${Math.round(width)} × ${Math.round(height)}`;
+  });
+  root.addEventListener('pointerup',()=>{
+    if(!drag)return;state.captureStyle=screen.querySelector('.qw-selection')?.getAttribute('style')||'';drag=null;state.captureDone=true;render();
+  });
+  // 忽略本次操作的状态回传，防止宿主回显打断截图选区和输入焦点。
+  window.addEventListener('openai:set_globals',event=>{const next=event.detail?.globals?.widgetState?.privateContent;if(next&&tools.some(t=>t[0]===next.tool)&&(next.tool!==state.tool||next.surface!==state.surface)){state.tool=next.tool;state.surface=['main','quick','closed'].includes(next.surface)?next.surface:'quick';state.capturing=state.tool==='capture'&&state.surface==='quick';render();}});
+  render();
+  if(globalThis.Tweak){const design={radius:17,row:62};const tweak=new Tweak({container:root,onChange:()=>{root.style.setProperty('--w-radius',design.radius+'px');root.style.setProperty('--w-row',design.row+'px');}});tweak.addSlider(design,'radius',{label:'面板圆角',min:10,max:22,unit:'px'});tweak.addSlider(design,'row',{label:'快捷列表行高',min:50,max:72,unit:'px'});}
+})();
+</script>

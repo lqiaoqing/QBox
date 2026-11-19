@@ -8,6 +8,8 @@
 
 下一阶段见 [Windows 原生工作台 UI 实施计划](plans/2026-11-19-qbox-workbench-ui.md)。先接入现有搜索并完成工具界面，再逐项实现新功能。
 
+后续完善界面以 [QBox 界面设计基线、原图与核对清单](ui-baseline/README.md) 为准；0.2.8 尚未确认对齐。
+
 ## 发布与验收
 
 

@@ -1,0 +1,495 @@
+<style>
+#qbox-directions { width:100%; color-scheme:light dark; }
+#qbox-directions * { box-sizing:border-box; }
+#qbox-directions [hidden] { display:none !important; }
+#qbox-directions .qb-stage { min-height:790px; padding:8px 0 22px; }
+#qbox-directions .qb-product { --q-bg:light-dark(#f4f6f9,#191d24); --q-paper:light-dark(#ffffff,#222730); --q-subtle:light-dark(#f8f9fc,#1d222b); --q-ink:light-dark(#202b3c,#e9edf5); --q-muted:light-dark(#667287,#a2aec1); --q-line:light-dark(#e2e7ef,#343d4b); --q-accent:light-dark(#2563c7,#8bb6ff); --q-tint:light-dark(#eaf1fe,#263d60); --q-on:light-dark(#ffffff,#13243e); --q-radius:12px; --q-row:72px; color:var(--q-ink); font:14px/1.5 'Segoe UI Variable Text','Segoe UI','Microsoft YaHei UI',sans-serif; background:var(--q-bg); border:1px solid var(--q-line); border-radius:var(--q-radius); overflow:hidden; position:relative; }
+#qbox-directions .qb-product[data-design="dark"] { color-scheme:dark; --q-bg:#171b1a; --q-paper:#202623; --q-subtle:#1b201e; --q-ink:#ebefec; --q-muted:#a0afa6; --q-line:#354039; --q-accent:#b7dab3; --q-tint:#2c3e30; --q-on:#1c2b1f; --q-radius:16px; --q-row:72px; }
+#qbox-directions .qb-product[data-design="classic"] { --q-bg:light-dark(#f9fbfe,#181f2b); --q-subtle:light-dark(#f0f4fa,#1c2635); --q-accent:light-dark(#2466d1,#8bb7ff); --q-tint:light-dark(#dde9fd,#263e62); --q-radius:10px; max-width:760px; margin:34px auto 0; box-shadow:0 18px 60px #142e5218; }
+#qbox-directions button,#qbox-directions input,#qbox-directions textarea,#qbox-directions select { font:inherit; color:inherit; }
+#qbox-directions button { cursor:pointer; }
+#qbox-directions button:focus-visible,#qbox-directions input:focus-visible,#qbox-directions textarea:focus-visible,#qbox-directions select:focus-visible { outline:2px solid var(--q-accent); outline-offset:3px; }
+#qbox-directions button:disabled { opacity:.5; cursor:default; }
+#qbox-directions .qb-product svg { width:18px; height:18px; flex-shrink:0; stroke-width:1.6; }
+#qbox-directions .qb-titlebar { display:flex; align-items:center; justify-content:space-between; height:44px; padding:0 16px; border-bottom:1px solid var(--q-line); }
+#qbox-directions .qb-brand { display:flex; align-items:center; gap:9px; font-weight:600; letter-spacing:.15px; }
+#qbox-directions .qb-logo { display:grid; place-items:center; width:25px; height:25px; border-radius:7px; background:var(--q-accent); color:var(--q-on); font:600 18px/1 'Bahnschrift',sans-serif; }
+#qbox-directions .qb-small { font-size:12px; color:var(--q-muted); }
+#qbox-directions .qb-window-actions { display:flex; align-items:center; gap:22px; color:var(--q-muted); }
+#qbox-directions .qb-window-actions span { display:flex; }
+#qbox-directions .qb-window-actions svg { width:13px; height:13px; }
+#qbox-directions .qb-shell { display:grid; grid-template-columns:172px minmax(0,1fr); min-height:578px; }
+#qbox-directions .qb-sidebar { padding:22px 10px 16px; display:flex; flex-direction:column; gap:5px; border-right:1px solid var(--q-line); }
+#qbox-directions .qb-nav-caption { padding:0 13px 10px; font-size:11px; letter-spacing:1.1px; color:var(--q-muted); }
+#qbox-directions .qb-nav-item { background:transparent; border:0; border-radius:7px; padding:11px 13px; display:flex; align-items:center; gap:11px; width:100%; text-align:left; position:relative; white-space:nowrap; }
+#qbox-directions .qb-nav-item:hover { background:var(--q-subtle); }
+#qbox-directions .qb-nav-item[aria-pressed="true"] { background:var(--q-tint); color:var(--q-accent); font-weight:600; }
+#qbox-directions .qb-sidebar .qb-nav-item[aria-pressed="true"]:before { content:''; position:absolute; left:0; height:18px; width:3px; border-radius:4px; background:var(--q-accent); }
+#qbox-directions .qb-nav-bottom { margin-top:auto; padding-top:58px; }
+#qbox-directions .qb-sidebar-foot { padding:14px 13px 0; font-size:11px; color:var(--q-muted); }
+#qbox-directions .qb-main { min-width:0; padding:25px 27px 20px; background:var(--q-paper); }
+#qbox-directions .qb-page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:20px; }
+#qbox-directions .qb-overline { font-size:11px; color:var(--q-muted); margin-bottom:7px; letter-spacing:1.3px; }
+#qbox-directions .qb-heading { font-size:25px; line-height:1.25; font-weight:600; margin:0 0 8px; letter-spacing:-.5px; }
+#qbox-directions p { margin:0; }
+#qbox-directions .qb-description { font-size:12px; color:var(--q-muted); }
+#qbox-directions .qb-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 12px; min-height:35px; border:1px solid var(--q-line); background:var(--q-paper); border-radius:6px; white-space:nowrap; font-size:12px; }
+#qbox-directions .qb-button:hover { background:var(--q-subtle); }
+#qbox-directions .qb-primary { background:var(--q-accent); color:var(--q-on); border-color:var(--q-accent); font-weight:600; }
+#qbox-directions .qb-primary:hover { filter:brightness(.96); background:var(--q-accent); }
+#qbox-directions .qb-ghost { border-color:transparent; background:transparent; }
+#qbox-directions .qb-button svg { width:15px; height:15px; }
+#qbox-directions .qb-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#qbox-directions .qb-search-field { display:flex; align-items:center; gap:10px; border:1px solid var(--q-line); background:var(--q-subtle); border-radius:7px; padding:10px 12px; margin-bottom:14px; min-width:0; }
+#qbox-directions .qb-search-field svg { color:var(--q-muted); }
+#qbox-directions .qb-search-field input { background:transparent; border:0; outline:0; min-width:0; flex:1; width:100%; }
+#qbox-directions input::placeholder,#qbox-directions textarea::placeholder { color:var(--q-muted); opacity:1; }
+#qbox-directions kbd { display:inline-flex; align-items:center; justify-content:center; min-width:19px; padding:1px 5px; border:1px solid var(--q-line); border-bottom-width:2px; border-radius:4px; color:var(--q-muted); font:11px/1.5 'Segoe UI',sans-serif; white-space:nowrap; }
+#qbox-directions .qb-filters { display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-bottom:15px; }
+#qbox-directions .qb-filter { border:0; background:transparent; border-radius:5px; color:var(--q-muted); padding:5px 12px; font-size:12px; }
+#qbox-directions .qb-filter[aria-pressed="true"] { color:var(--q-accent); background:var(--q-tint); font-weight:600; }
+#qbox-directions .qb-section-label { color:var(--q-muted); font-size:11px; padding:4px 0 10px; letter-spacing:.7px; }
+#qbox-directions .qb-clipboard { display:grid; grid-template-columns:minmax(0,1.03fr) minmax(0,1fr); border:1px solid var(--q-line); border-radius:8px; overflow:hidden; }
+#qbox-directions .qb-clip-list { padding:7px; border-right:1px solid var(--q-line); min-width:0; }
+#qbox-directions .qb-item { display:flex; align-items:center; gap:12px; width:100%; min-width:0; min-height:var(--q-row); border:0; border-radius:6px; background:transparent; padding:11px; text-align:left; }
+#qbox-directions .qb-item:hover { background:var(--q-subtle); }
+#qbox-directions .qb-item[aria-pressed="true"] { background:var(--q-tint); }
+#qbox-directions .qb-item-icon { width:33px; height:36px; display:grid; place-items:center; border-radius:6px; color:var(--q-accent); background:var(--q-subtle); flex-shrink:0; }
+#qbox-directions .qb-item-content { display:grid; gap:5px; min-width:0; flex:1; }
+#qbox-directions .qb-item-title { font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#qbox-directions .qb-item-meta { font-size:11px; color:var(--q-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#qbox-directions .qb-item > .qb-small { font-size:10px; }
+#qbox-directions .qb-preview { background:var(--q-subtle); padding:19px; min-width:0; display:flex; flex-direction:column; gap:17px; }
+#qbox-directions .qb-preview-top { display:flex; justify-content:space-between; align-items:center; gap:8px; color:var(--q-muted); font-size:11px; }
+#qbox-directions .qb-preview-content { color:var(--q-ink); font-size:13px; line-height:1.9; overflow-wrap:anywhere; flex:1; }
+#qbox-directions pre { font:12px/1.95 'Cascadia Code',Consolas,monospace; margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+#qbox-directions .qb-code-comment { color:var(--q-muted); }
+#qbox-directions .qb-code-key { color:var(--q-accent); }
+#qbox-directions .qb-preview-info { border-top:1px solid var(--q-line); padding-top:12px; color:var(--q-muted); display:flex; justify-content:space-between; gap:10px; font-size:11px; }
+#qbox-directions .qb-bottom { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--q-muted); font-size:11px; margin-top:18px; flex-wrap:wrap; }
+#qbox-directions .qb-bottom > span { display:flex; align-items:center; gap:6px; }
+#qbox-directions .qb-bottom svg { width:13px; height:13px; }
+#qbox-directions .qb-toast { margin-top:14px; padding:10px 13px; background:var(--q-tint); color:var(--q-accent); border-radius:6px; font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+#qbox-directions .qb-empty { padding:38px 18px; text-align:center; color:var(--q-muted); font-size:13px; }
+#qbox-directions .qb-empty strong { color:var(--q-ink); display:block; font-size:15px; margin-bottom:7px; }
+#qbox-directions .qb-file-rows .qb-item { border-bottom:1px solid var(--q-line); border-radius:0; }
+#qbox-directions mark { background:transparent; color:var(--q-accent); font-weight:600; }
+#qbox-directions .qb-file-detail { padding:19px; background:var(--q-subtle); border:1px solid var(--q-line); border-radius:8px; margin-top:17px; display:flex; align-items:center; gap:13px; }
+#qbox-directions .qb-file-detail .qb-actions { margin-left:auto; }
+#qbox-directions .qb-capture { position:relative; background:var(--q-bg); padding:24px; border:1px solid var(--q-line); border-radius:8px; }
+#qbox-directions .qb-capture-doc { background:var(--q-paper); padding:24px; width:100%; min-height:210px; border:1px solid var(--q-line); border-radius:5px; }
+#qbox-directions .qb-document-title { font-size:17px; font-weight:600; margin-bottom:5px; }
+#qbox-directions .qb-document-meta { font-size:11px; color:var(--q-muted); padding-bottom:16px; border-bottom:1px solid var(--q-line); margin-bottom:18px; }
+#qbox-directions .qb-capture-selection { position:relative; border:2px solid var(--q-accent); padding:13px 15px; }
+#qbox-directions .qb-capture-selection:before,#qbox-directions .qb-capture-selection:after { content:''; width:7px; height:7px; border:1px solid var(--q-accent); background:var(--q-paper); position:absolute; }
+#qbox-directions .qb-capture-selection:before { top:-5px; left:-5px; }
+#qbox-directions .qb-capture-selection:after { bottom:-5px; right:-5px; }
+#qbox-directions .qb-capture-selection p { margin-top:7px; color:var(--q-muted); font-size:12px; }
+#qbox-directions .qb-capture-tools { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:5px; padding:8px; margin:14px auto 0; width:fit-content; border:1px solid var(--q-line); border-radius:8px; background:var(--q-paper); }
+#qbox-directions .qb-tool { display:grid; place-items:center; width:33px; height:32px; border:0; background:transparent; border-radius:4px; }
+#qbox-directions .qb-tool[aria-pressed="true"] { color:var(--q-accent); background:var(--q-tint); }
+#qbox-directions .qb-capture-tools .qb-divider { width:1px; height:19px; background:var(--q-line); margin:0 5px; }
+#qbox-directions .qb-capture-options { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-top:14px; }
+#qbox-directions .qb-text-output { margin-top:14px; padding:15px; background:var(--q-subtle); border:1px solid var(--q-line); border-radius:7px; }
+#qbox-directions .qb-text-output p { padding-top:9px; font-size:13px; }
+#qbox-directions .qb-translate-panes { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--q-line); border-radius:9px; overflow:hidden; }
+#qbox-directions .qb-translate-pane { padding:18px; min-width:0; display:flex; flex-direction:column; gap:18px; }
+#qbox-directions .qb-translate-pane + .qb-translate-pane { border-left:1px solid var(--q-line); background:var(--q-subtle); }
+#qbox-directions .qb-translate-pane textarea { resize:vertical; width:100%; min-height:160px; background:transparent; border:0; line-height:1.9; outline:0; }
+#qbox-directions .qb-translation { min-height:160px; line-height:1.9; }
+#qbox-directions .qb-select { background:transparent; border:1px solid var(--q-line); border-radius:5px; padding:5px 7px; max-width:100%; font-size:12px; }
+#qbox-directions .qb-translation-note { border-left:2px solid var(--q-accent); padding-left:12px; margin-top:19px; font-size:12px; color:var(--q-muted); }
+#qbox-directions .qb-desktop { background:var(--q-bg); padding:18px; border-radius:8px; display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+#qbox-directions .qb-desktop-group { border:1px solid var(--q-line); background:var(--q-paper); border-radius:8px; padding:13px; }
+#qbox-directions .qb-group-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:600; padding-bottom:14px; }
+#qbox-directions .qb-desktop-files { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px 7px; }
+#qbox-directions .qb-desktop-file { text-align:center; font-size:10px; color:var(--q-muted); min-width:0; overflow-wrap:anywhere; }
+#qbox-directions .qb-desktop-file svg { display:block; width:28px; height:31px; margin:0 auto 7px; color:var(--q-accent); }
+#qbox-directions .qb-plan { margin-top:14px; border:1px solid var(--q-line); border-radius:7px; padding:16px; }
+#qbox-directions .qb-plan-line { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; font-size:12px; border-bottom:1px solid var(--q-line); }
+#qbox-directions .qb-plan-line:last-of-type { border:0; margin-bottom:12px; }
+#qbox-directions .qb-plan-line span:last-child { color:var(--q-muted); }
+#qbox-directions .qb-settings-row { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:17px 0; border-bottom:1px solid var(--q-line); }
+#qbox-directions .qb-settings-row .qb-small { display:block; margin-top:4px; }
+#qbox-directions .qb-toggle { width:36px; height:21px; padding:3px; border-radius:20px; background:var(--q-line); border:0; flex-shrink:0; }
+#qbox-directions .qb-toggle:before { content:''; display:block; width:15px; height:15px; border-radius:50%; background:var(--q-paper); transition:transform .15s; }
+#qbox-directions .qb-toggle[aria-pressed="true"] { background:var(--q-accent); }
+#qbox-directions .qb-toggle[aria-pressed="true"]:before { transform:translateX(15px); }
+#qbox-directions .qb-command-head { display:flex; justify-content:space-between; align-items:center; padding:22px 26px 19px; }
+#qbox-directions .qb-command-head .qb-brand { font-size:18px; letter-spacing:-.5px; }
+#qbox-directions .qb-command-head .qb-logo { width:29px; height:29px; border-radius:9px; font-size:20px; }
+#qbox-directions .qb-command-caption { font-size:10px; letter-spacing:1.6px; color:var(--q-muted); margin-left:6px; }
+#qbox-directions .qb-topnav { display:flex; flex-wrap:wrap; gap:5px; padding:0 26px 18px; border-bottom:1px solid var(--q-line); }
+#qbox-directions .qb-topnav .qb-nav-item { width:auto; padding:8px 12px; font-size:12px; }
+#qbox-directions [data-design="dark"] .qb-main { padding:24px 28px 23px; background:var(--q-bg); min-height:479px; }
+#qbox-directions [data-design="dark"] .qb-page-head { margin-bottom:18px; }
+#qbox-directions [data-design="dark"] .qb-heading { font-size:24px; font-weight:500; }
+#qbox-directions [data-design="dark"] .qb-overline { color:var(--q-accent); font-size:10px; letter-spacing:2px; }
+#qbox-directions [data-design="dark"] .qb-search-field { padding:15px; background:var(--q-paper); border-radius:9px; border-color:var(--q-line); }
+#qbox-directions [data-design="dark"] .qb-search-field input { font-size:17px; }
+#qbox-directions [data-design="dark"] .qb-file-rows { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+#qbox-directions [data-design="dark"] .qb-file-rows .qb-item { border:1px solid var(--q-line); border-radius:8px; background:var(--q-paper); min-height:84px; }
+#qbox-directions [data-design="dark"] .qb-file-rows .qb-item[aria-pressed="true"] { background:var(--q-tint); border-color:var(--q-accent); }
+#qbox-directions [data-design="dark"] .qb-file-detail { margin-top:13px; background:var(--q-paper); }
+#qbox-directions .qb-compact-head { display:flex; align-items:center; gap:12px; padding:15px 20px 12px; }
+#qbox-directions .qb-compact-head .qb-logo { width:26px; height:26px; }
+#qbox-directions .qb-compact-label { font-family:Bahnschrift,'Segoe UI',sans-serif; font-weight:600; letter-spacing:1px; color:var(--q-accent); }
+#qbox-directions .qb-compact-head .qb-actions { margin-left:auto; }
+#qbox-directions .qb-compact-head .qb-button { padding:4px 6px; min-height:26px; font-size:11px; }
+#qbox-directions .qb-compact-nav { display:flex; align-items:center; padding:0 16px 9px; gap:3px; border-bottom:1px solid var(--q-line); flex-wrap:wrap; }
+#qbox-directions .qb-compact-nav .qb-nav-item { width:auto; padding:7px 10px; font-size:12px; gap:7px; }
+#qbox-directions .qb-compact-nav svg { width:15px; height:15px; }
+#qbox-directions [data-design="classic"] .qb-main { padding:18px 20px 16px; background:var(--q-bg); min-height:455px; }
+#qbox-directions [data-design="classic"] .qb-overline { display:none; }
+#qbox-directions [data-design="classic"] .qb-heading { font-size:18px; margin-bottom:4px; }
+#qbox-directions [data-design="classic"] .qb-page-head { margin-bottom:14px; }
+#qbox-directions [data-design="classic"][data-active="search"] .qb-page-head { display:none; }
+#qbox-directions [data-design="classic"][data-active="search"] .qb-main { min-height:340px; }
+#qbox-directions [data-design="classic"] .qb-search-field { background:var(--q-paper); padding:11px 12px; }
+#qbox-directions [data-design="classic"] .qb-file-rows .qb-item { min-height:58px; padding:8px 10px; border:0; border-radius:5px; }
+#qbox-directions [data-design="classic"] .qb-item-meta { font-size:11px; }
+#qbox-directions [data-design="classic"] .qb-file-detail { display:none; }
+#qbox-directions [data-design="classic"] .qb-clipboard { grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); }
+#qbox-directions [data-design="classic"][data-expanded="true"] { max-width:none; margin-top:8px; }
+#qbox-directions .qb-error { color:var(--q-accent); font-size:12px; padding-top:12px; }
+#qbox-directions .qb-inline-image { border:1px solid var(--q-line); background:var(--q-paper); border-radius:5px; padding:16px; margin:5px 0 10px; }
+#qbox-directions .qb-inline-image strong { font-size:14px; }
+#qbox-directions .qb-image-bars { display:grid; gap:7px; margin-top:14px; }
+#qbox-directions .qb-image-bars span { display:block; height:8px; background:var(--q-line); border-radius:2px; }
+#qbox-directions .qb-image-bars span:first-child { width:74%; background:var(--q-tint); }
+#qbox-directions .qb-image-bars span:nth-child(2) { width:91%; }
+#qbox-directions .qb-image-bars span:last-child { width:56%; }
+@media(max-width:760px) {
+ #qbox-directions .qb-shell { grid-template-columns:64px minmax(0,1fr); }
+ #qbox-directions .qb-sidebar { padding:20px 7px 14px; }
+ #qbox-directions .qb-sidebar .qb-nav-item { padding:12px; justify-content:center; }
+ #qbox-directions .qb-sidebar .qb-nav-item span,#qbox-directions .qb-nav-caption,#qbox-directions .qb-sidebar-foot { display:none; }
+ #qbox-directions .qb-main { padding:21px 18px 17px; }
+ #qbox-directions .qb-clipboard { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+ #qbox-directions .qb-clip-list { padding:4px; }
+ #qbox-directions .qb-item { gap:8px; padding:9px; }
+ #qbox-directions .qb-preview { padding:14px; }
+ #qbox-directions .qb-command-caption { display:none; }
+ #qbox-directions .qb-heading { font-size:22px; }
+}
+@media(max-width:540px) {
+ #qbox-directions .qb-stage { min-height:1140px; }
+ #qbox-directions .qb-shell { grid-template-columns:1fr; }
+ #qbox-directions .qb-sidebar { flex-direction:row; flex-wrap:wrap; border-right:0; border-bottom:1px solid var(--q-line); padding:8px; gap:1px; }
+ #qbox-directions .qb-sidebar .qb-nav-item { padding:8px 6px; width:auto; gap:4px; font-size:11px; }
+ #qbox-directions .qb-sidebar .qb-nav-item span { display:inline; }
+ #qbox-directions .qb-sidebar .qb-nav-item svg { width:14px; height:14px; }
+ #qbox-directions .qb-nav-bottom { margin:0; padding:0; }
+ #qbox-directions .qb-sidebar .qb-nav-item[aria-pressed="true"]:before { display:none; }
+ #qbox-directions .qb-titlebar { padding:0 12px; }
+ #qbox-directions .qb-titlebar .qb-small { display:none; }
+ #qbox-directions .qb-main,#qbox-directions [data-design="dark"] .qb-main,#qbox-directions [data-design="classic"] .qb-main { padding:18px 13px; }
+ #qbox-directions .qb-page-head { flex-wrap:wrap; }
+ #qbox-directions .qb-heading,#qbox-directions [data-design="dark"] .qb-heading { font-size:21px; }
+ #qbox-directions .qb-page-head > .qb-actions { width:100%; }
+ #qbox-directions .qb-description { font-size:11px; }
+ #qbox-directions .qb-clipboard,#qbox-directions [data-design="classic"] .qb-clipboard { grid-template-columns:1fr; }
+ #qbox-directions .qb-clip-list { border-right:0; }
+ #qbox-directions .qb-clip-list .qb-item { min-height:59px; }
+ #qbox-directions .qb-preview { border-top:1px solid var(--q-line); }
+ #qbox-directions .qb-preview-content { min-height:90px; }
+ #qbox-directions [data-design="dark"] .qb-file-rows { grid-template-columns:1fr; }
+ #qbox-directions .qb-file-detail { flex-wrap:wrap; }
+ #qbox-directions .qb-file-detail .qb-actions { margin:3px 0 0; }
+ #qbox-directions .qb-command-head { padding:18px 14px; }
+ #qbox-directions .qb-topnav { padding:0 10px 12px; gap:1px; }
+ #qbox-directions .qb-topnav .qb-nav-item { padding:7px 8px; font-size:11px; gap:5px; }
+ #qbox-directions .qb-topnav svg { width:15px; height:15px; }
+ #qbox-directions .qb-translate-panes { grid-template-columns:1fr; }
+ #qbox-directions .qb-translate-pane + .qb-translate-pane { border-left:0; border-top:1px solid var(--q-line); }
+ #qbox-directions .qb-translate-pane textarea,#qbox-directions .qb-translation { min-height:96px; }
+ #qbox-directions .qb-capture { padding:12px; }
+ #qbox-directions .qb-capture-doc { padding:14px; }
+ #qbox-directions .qb-capture-selection { padding:10px; }
+ #qbox-directions .qb-capture-tools { gap:2px; padding:5px; }
+ #qbox-directions .qb-capture-tools .qb-divider { margin:0 1px; }
+ #qbox-directions .qb-capture-tools .qb-button { font-size:11px; padding:6px; }
+ #qbox-directions .qb-tool { width:28px; }
+ #qbox-directions .qb-desktop { padding:10px; gap:9px; }
+ #qbox-directions .qb-desktop-group { padding:10px 8px; }
+ #qbox-directions .qb-desktop-files { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #qbox-directions .qb-compact-head { padding:14px 13px 10px; gap:8px; }
+ #qbox-directions .qb-compact-nav { padding:0 8px 9px; gap:0; }
+ #qbox-directions .qb-compact-nav .qb-nav-item { padding:6px 7px; gap:4px; font-size:11px; }
+ #qbox-directions .qb-product[data-design="classic"] { margin-top:8px; }
+ #qbox-directions .qb-button { white-space:normal; }
+}
+@media(prefers-reduced-motion:reduce) { #qbox-directions *,#qbox-directions *:before { transition:none !important; animation:none !important; } }
+</style>
+<div id="qbox-directions" class="viz-carousel" aria-label="QBox 三种界面方向" data-previous-label="上一方案" data-next-label="下一方案">
+  <section data-variant="Windows 原生工作台" aria-label="Windows 原生工作台">
+    <div class="qb-stage"><div class="qb-product" data-design="native" aria-label="原生工作台设计"></div></div>
+  </section>
+  <section data-variant="深色命令空间" aria-label="深色命令空间" hidden>
+    <div class="qb-stage"><div class="qb-product" data-design="dark" aria-label="深色命令空间设计"></div></div>
+  </section>
+  <section data-variant="现有搜索框演进" aria-label="现有搜索框演进" hidden>
+    <div class="qb-stage"><div class="qb-product" data-design="classic" aria-label="轻量搜索框设计"></div></div>
+  </section>
+</div>
+<script>
+(function () {
+  'use strict';
+  const root = document.getElementById('qbox-directions');
+  const modules = [
+    {id:'search',label:'搜索',icon:'search'}, {id:'clipboard',label:'剪贴板',icon:'clipboard'},
+    {id:'capture',label:'截图',icon:'scan'}, {id:'desktop',label:'桌面整理',icon:'panels-top-left'},
+    {id:'translate',label:'翻译',icon:'languages'}
+  ];
+  const clips = [
+    {id:'code',type:'文字',icon:'code-2',title:'设备进入低功耗模式',source:'Visual Studio Code',time:'刚刚',pin:true,content:'设备进入低功耗模式前，需要保存当前状态。唤醒后先恢复外设，再继续处理待完成的任务。'},
+    {id:'image',type:'图片',icon:'image',title:'QBox 界面草案.png',source:'截图',time:'2 分钟前',pin:false,content:'QBox 界面草案'},
+    {id:'url',type:'文字',icon:'link',title:'https://learn.microsoft.com/windows/',source:'Microsoft Edge',time:'8 分钟前',pin:false,content:'https://learn.microsoft.com/windows/'},
+    {id:'file',type:'文件',icon:'file-text',title:'需求说明.pdf',source:'文件资源管理器',time:'12 分钟前',pin:true,content:'需求说明.pdf'},
+    {id:'note',type:'文字',icon:'text',title:'周三确认剪贴板交互方案',source:'记事本',time:'24 分钟前',pin:false,content:'周三确认剪贴板交互方案。\n重点验证：键盘选择、连续粘贴、纯文本粘贴，以及退出后的历史恢复。'}
+  ];
+  const files = [
+    {name:'项目资料',path:'D:\\Projects\\项目资料',kind:'文件夹',icon:'folder'},
+    {name:'中文资料.txt',path:'D:\\Documents\\中文资料.txt',kind:'文本文档',icon:'file-text'},
+    {name:'设计参考资料',path:'D:\\Design\\设计参考资料',kind:'文件夹',icon:'folder'},
+    {name:'QBox 使用说明.pdf',path:'D:\\Documents\\QBox 使用说明.pdf',kind:'PDF 文档',icon:'file-text'},
+    {name:'Visual Studio Code',path:'应用 · 开发工具',kind:'应用',icon:'code-2'},
+    {name:'AnyConnect',path:'应用 · 网络工具',kind:'应用',icon:'app-window'}
+  ];
+  const products = [];
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const icon = name => '<i data-lucide="' + name + '" aria-hidden="true"></i>';
+  const button = (label, action, name, primary) => '<button type="button" class="qb-button' + (primary ? ' qb-primary' : '') + '" data-action="' + action + '">' + (name ? icon(name) : '') + label + '</button>';
+  const sampleFoot = '<span>交互预览 · 示例数据</span>';
+  function highlightName(name, query) {
+    const offset = query ? name.toLowerCase().indexOf(query.toLowerCase()) : -1;
+    return offset < 0 ? escapeHtml(name) : escapeHtml(name.slice(0,offset)) + '<mark>' + escapeHtml(name.slice(offset,offset + query.length)) + '</mark>' + escapeHtml(name.slice(offset + query.length));
+  }
+  const codeHtml = '<pre><span class="qb-code-comment">// 唤醒后先恢复外设，再继续任务</span>\n<span class="qb-code-key">if</span> (device.isAwake) {\n  restorePeripherals();\n  resumePendingTasks();\n}</pre>';
+  function icons() { if (globalThis.lucide) globalThis.lucide.createIcons({attrs:{width:18,height:18}}); }
+  function navItem(item, active) { return '<button type="button" class="qb-nav-item" data-module="' + item.id + '" aria-label="' + item.label + '" aria-pressed="' + (item.id === active) + '">' + icon(item.icon) + '<span>' + item.label + '</span></button>'; }
+  function save() {
+    if (window.openai && window.openai.setWidgetState) {
+      const views = {};
+      products.forEach(product => { views[product.design] = {module:product.state.module,expanded:product.state.expanded}; });
+      window.openai.setWidgetState({modelContent:{preview:'QBox 三种界面方向'},privateContent:{qboxViews:views}}).catch(function () {});
+    }
+  }
+  function head(product, title, description, actions) {
+    const captions = {native:'QBOX / 工具工作台',dark:'QBOX / AT YOUR COMMAND',classic:'QBOX'};
+    return '<div class="qb-page-head"><div><div class="qb-overline">' + captions[product.design] + '</div><h2 class="qb-heading">' + title + '</h2><p class="qb-description">' + description + '</p></div><div class="qb-actions">' + (actions || '') + '</div></div>';
+  }
+  function footer(left) { return '<div class="qb-bottom"><span>' + left + '</span>' + sampleFoot + '</div>'; }
+  function toast(product, text) {
+    const target = product.el.querySelector('.qb-message');
+    target.innerHTML = '<div class="qb-toast" role="status">' + escapeHtml(text) + '<button class="qb-button qb-ghost" type="button" data-action="dismiss" aria-label="关闭提示">' + icon('x') + '</button></div>';
+    icons();
+  }
+  function clipboardView(product) {
+    const s = product.state;
+    const pause = button(s.paused ? '继续记录' : '暂停记录','pause',s.paused ? 'play' : 'pause');
+    const filters = ['全部','文字','图片','文件','收藏'];
+    return head(product,'剪贴板','找回刚刚复制的内容，接着用。',pause) +
+      '<label class="qb-search-field">' + icon('search') + '<input data-input="clips" aria-label="搜索剪贴板记录" placeholder="搜索文字、链接或文件…" value="' + escapeHtml(s.clipQuery) + '"><kbd>Ctrl K</kbd></label>' +
+      '<div class="qb-filters" aria-label="剪贴板类型">' + filters.map(filter => '<button class="qb-filter" type="button" data-filter="' + filter + '" aria-pressed="' + (s.filter === filter) + '">' + filter + '</button>').join('') + '</div>' +
+      '<div class="qb-clipboard"><div class="qb-clip-list"></div><div class="qb-preview"></div></div>' +
+      footer(icon(s.paused ? 'pause' : 'shield-check') + (s.paused ? '记录已暂停' : '仅保存在此设备'));
+  }
+  function renderClipResults(product) {
+    const s = product.state;
+    const matches = clips.filter(clip => (s.filter === '全部' || s.filter === clip.type || s.filter === '收藏' && s.pins[clip.id]) && (clip.title + clip.content + clip.source).toLowerCase().includes(s.clipQuery.toLowerCase()));
+    if (!matches.some(clip => clip.id === s.selectedClip)) s.selectedClip = matches[0] ? matches[0].id : '';
+    product.el.querySelector('.qb-clip-list').innerHTML = '<div class="qb-section-label" style="padding-left:10px">今天 · ' + matches.length + ' 条</div>' + (matches.length ? matches.map(clip => '<button type="button" class="qb-item" data-clip="' + clip.id + '" aria-pressed="' + (clip.id === s.selectedClip) + '"><span class="qb-item-icon">' + icon(clip.icon) + '</span><span class="qb-item-content"><span class="qb-item-title">' + escapeHtml(clip.title) + '</span><span class="qb-item-meta">' + clip.source + ' · ' + clip.time + '</span></span>' + (s.pins[clip.id] ? icon('pin') : '') + '</button>').join('') : '<div class="qb-empty"><strong>没有找到这条记录</strong>换个关键词，或切换内容类型。</div>');
+    const selected = matches.find(clip => clip.id === s.selectedClip);
+    const preview = product.el.querySelector('.qb-preview');
+    if (!selected) { preview.innerHTML = '<div class="qb-empty">选择记录后在这里预览</div>'; icons(); return; }
+    let content = escapeHtml(selected.content).replace(/\n/g,'<br>');
+    if (selected.id === 'code') content = '<p style="margin-bottom:17px">' + content + '</p>' + codeHtml;
+    if (selected.type === '图片') content = '<div class="qb-inline-image"><strong>QBox 界面草案</strong><div class="qb-image-bars"><span></span><span></span><span></span></div><p class="qb-small" style="margin-top:15px">让常用工具触手可及</p></div><span class="qb-small">1280 × 720 · PNG</span>';
+    if (selected.type === '文件') content = '<div style="display:flex;gap:12px;align-items:center">' + icon('file-text') + '<div><strong>需求说明.pdf</strong><div class="qb-small">PDF 文档 · 248 KB</div></div></div><p class="qb-small" style="margin-top:20px">D:\\Documents\\需求说明.pdf</p>';
+    preview.innerHTML = '<div class="qb-preview-top"><span>' + selected.type + '预览</span><button type="button" class="qb-button qb-ghost" data-action="pin" aria-label="' + (s.pins[selected.id] ? '取消收藏' : '收藏') + '">' + icon(s.pins[selected.id] ? 'pin-off' : 'pin') + '</button></div><div class="qb-preview-content">' + content + '</div><div class="qb-actions">' + button('复制','copy','copy',true) + button(selected.type === '图片' ? '贴到屏幕' : '纯文本','plain',selected.type === '图片' ? 'pin' : 'text') + (selected.type === '文字' ? button('翻译','clip-translate','languages') : '') + '</div><div class="qb-preview-info"><span>' + selected.source + '</span><span>' + selected.time + '</span></div>';
+    icons();
+  }
+  function searchView(product) {
+    const s = product.state;
+    return head(product,product.design === 'dark' ? '下一步，交给 QBox。' : '搜索','文件、应用和工具动作，从这里开始。','') +
+      '<label class="qb-search-field">' + icon('search') + '<input data-input="files" aria-label="搜索文件和应用" value="' + escapeHtml(s.fileQuery) + '" placeholder="搜索文件、文件夹和应用…"><kbd>Enter</kbd></label>' +
+      '<div class="qb-filters"><button type="button" class="qb-filter" aria-pressed="true" data-file-filter="all">文件与应用</button><button type="button" class="qb-filter" aria-pressed="false" data-action="commands">工具动作</button></div><div class="qb-file-results"></div>' +
+      footer('<kbd>↑</kbd><kbd>↓</kbd> 选择　<kbd>Enter</kbd> 打开　<kbd>Esc</kbd> 收起');
+  }
+  function renderFiles(product) {
+    const s = product.state;
+    product.el.querySelector('[data-file-filter="all"]').setAttribute('aria-pressed','true');
+    product.el.querySelector('.qb-filters [data-action="commands"]').setAttribute('aria-pressed','false');
+    const q = s.fileQuery.toLowerCase();
+    const list = files.filter(file => !q || (file.name + file.path).toLowerCase().includes(q));
+    const selected = list[s.selectedFile] || list[0];
+    product.el.querySelector('.qb-file-results').innerHTML = '<div class="qb-section-label">' + (q ? '匹配结果' : '最近使用') + ' · ' + list.length + '</div><div class="qb-file-rows">' + (list.length ? list.map((file,index) => '<button type="button" class="qb-item" data-file="' + index + '" aria-pressed="' + (selected === file) + '"><span class="qb-item-icon">' + icon(file.icon) + '</span><span class="qb-item-content"><span class="qb-item-title">' + highlightName(file.name,s.fileQuery) + '</span><span class="qb-item-meta">' + escapeHtml(file.path) + '</span></span><span class="qb-small">' + (index === 0 ? '↵' : '') + '</span></button>').join('') : '<div class="qb-empty"><strong>没有匹配的示例</strong>试试“资料”“QBox”或“Any”。</div>') + '</div>' + (selected ? '<div class="qb-file-detail">' + icon(selected.icon) + '<div><div>' + escapeHtml(selected.name) + '</div><div class="qb-small">' + selected.kind + '</div></div><div class="qb-actions">' + button('打开','open-file','arrow-up-right',true) + button('复制路径','copy-path','copy') + '</div></div>' : '');
+    icons();
+  }
+  function commandResults(product) {
+    product.state.commandMode = true;
+    product.el.querySelector('[data-file-filter="all"]').setAttribute('aria-pressed','false');
+    product.el.querySelector('.qb-filters [data-action="commands"]').setAttribute('aria-pressed','true');
+    product.el.querySelector('.qb-file-results').innerHTML = '<div class="qb-section-label">工具动作</div><div class="qb-file-rows">' + [
+      {id:'capture',label:'截取屏幕区域',detail:'直接进入框选与标注',icon:'scan'},
+      {id:'clipboard',label:'打开剪贴板历史',detail:'查找文字、图片和文件',icon:'clipboard'},
+      {id:'translate',label:'快速翻译',detail:'输入文字，或从截图提取',icon:'languages'},
+      {id:'desktop',label:'整理桌面',detail:'查看分组与归档预览',icon:'panels-top-left'}
+    ].map(item => '<button class="qb-item" type="button" data-module="' + item.id + '"><span class="qb-item-icon">' + icon(item.icon) + '</span><span class="qb-item-content"><span class="qb-item-title">' + item.label + '</span><span class="qb-item-meta">' + item.detail + '</span></span>' + icon('arrow-up-right') + '</button>').join('') + '</div>';
+    icons();
+  }
+  function captureView(product) {
+    const tools = [['mouse-pointer-2','选择'],['square','矩形'],['arrow-up-right','箭头'],['pencil','画笔'],['type','文字'],['grid-2x2','马赛克']];
+    return head(product,'截图与贴图','框选后直接标注、提取文字或翻译。',button('新建截图','new-capture','plus',true)) +
+      '<div class="qb-capture"><div class="qb-capture-doc"><div class="qb-document-title">QBox · 产品设计笔记</div><div class="qb-document-meta">界面探索 / 工作记录</div><div class="qb-capture-selection"><strong>Keep the tools close.</strong><p>A quiet workspace helps you focus on the task at hand.</p></div></div><div class="qb-capture-tools" aria-label="截图标注工具">' + tools.map((tool,index) => '<button type="button" class="qb-tool" data-annotation="' + tool[1] + '" aria-label="' + tool[1] + '" aria-pressed="' + (index === 0) + '">' + icon(tool[0]) + '</button>').join('') + '<span class="qb-divider"></span>' + button('复制','copy-image','copy',true) + '</div></div>' +
+      '<div class="qb-capture-options"><div class="qb-actions">' + button('提取文字','ocr','scan-text') + button('翻译','capture-translate','languages') + '</div><div class="qb-actions">' + button('贴到屏幕','stick','pin') + button('保存','save-image','download') + '</div></div><div class="qb-ocr-output"></div>' +
+      footer(icon('image') + '区域截图 · 640 × 240');
+  }
+  function translationView(product) {
+    const s = product.state;
+    return head(product,'快捷翻译','输入、粘贴或截图取词，译文留在手边。',button('从截图提取','translate-capture','scan-text')) +
+      '<div class="qb-translate-panes"><div class="qb-translate-pane"><div class="qb-actions"><select class="qb-select" aria-label="源语言" data-language="source"><option>自动检测</option><option>英语</option><option>简体中文</option></select><span class="qb-small">原文</span></div><textarea data-input="translation" aria-label="待翻译文字" placeholder="输入要翻译的文字…">' + escapeHtml(s.translationInput) + '</textarea><div class="qb-actions">' + button('翻译','translate-now','languages',true) + button('清空','clear-translation','x') + '</div></div><div class="qb-translate-pane"><div class="qb-actions"><select class="qb-select" aria-label="目标语言" data-language="target"><option>简体中文</option><option>英语</option><option>日语</option></select><span class="qb-small">译文</span></div><div class="qb-translation" aria-live="polite">' + escapeHtml(s.translationOutput || '让工具触手可及，让工作空间保持清爽。') + '</div><div class="qb-actions">' + button('复制译文','copy-translation','copy') + button('置顶','stick-translation','pin') + '</div></div></div><div class="qb-translation-error" role="alert"></div><div class="qb-translation-note">截图、剪贴板和划词都能送到同一个翻译面板。</div>' +
+      footer(icon('languages') + '示例译文 · 引擎可在设置中选择');
+  }
+  function desktopView(product) {
+    const groups = [
+      {name:'项目',files:[['folder','QBox'],['folder','固件工程'],['folder','参考代码']]},
+      {name:'文档',files:[['file-text','需求说明.pdf'],['file-text','接口文档.md'],['file-spreadsheet','开发计划.xlsx']]},
+      {name:'图片',files:[['image','界面草案.png'],['image','参考截图.png'],['image','流程图.png']]},
+      {name:'待处理',files:[['archive','资料.zip'],['file-text','临时笔记.txt'],['file','未命名文件']]}
+    ];
+    return head(product,'桌面整理','分组放好常用文件，归档前先看预览。',button('整理预览','preview-organize','wand-sparkles',true)) +
+      '<div class="qb-filters"><button type="button" class="qb-filter" aria-pressed="true" data-action="desktop-groups">桌面分组</button><button type="button" class="qb-filter" aria-pressed="false" data-action="organize-rules">归档规则</button></div><div class="qb-desktop-content"><div class="qb-desktop">' + groups.map(group => '<section class="qb-desktop-group"><div class="qb-group-head"><span>' + group.name + '</span><span class="qb-small">' + group.files.length + '</span></div><div class="qb-desktop-files">' + group.files.map(file => '<div class="qb-desktop-file">' + icon(file[0]) + escapeHtml(file[1]) + '</div>').join('') + '</div></section>').join('') + '</div></div><div class="qb-organize-plan"></div>' +
+      footer(icon('monitor') + '桌面分组 · 拖放与规则共用');
+  }
+  function settingsView(product) {
+    return head(product,'设置','只开启你需要的工具。','') + '<div class="qb-section-label">模块与唤起</div>' + modules.map(item => '<div class="qb-settings-row"><div>' + item.label + '<span class="qb-small">' + (item.id === 'search' ? '保留双击 Ctrl 唤起搜索' : '独立快捷键，可自行设置') + '</span></div><button class="qb-toggle" type="button" data-setting="' + item.id + '" aria-label="启用' + item.label + '" aria-pressed="true"></button></div>').join('') + '<div class="qb-settings-row"><div>快捷键冲突检测<span class="qb-small">被其他软件占用时，提示更换组合键</span></div><span class="qb-small">自动检测</span></div>' + footer('外观跟随系统 · 模块独立启停');
+  }
+  function renderMain(product) {
+    const s = product.state;
+    product.el.dataset.active = s.module;
+    const views = {search:searchView,clipboard:clipboardView,capture:captureView,desktop:desktopView,translate:translationView,settings:settingsView};
+    product.el.querySelector('.qb-main').innerHTML = views[s.module](product) + '<div class="qb-message" aria-live="polite"></div>';
+    product.el.querySelectorAll('[data-module]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.module === s.module)));
+    if (s.module === 'clipboard') renderClipResults(product);
+    if (s.module === 'search') renderFiles(product);
+    icons();
+  }
+  function renderShell(product) {
+    const s = product.state;
+    const nav = modules.map(item => navItem(item,s.module)).join('');
+    const settings = navItem({id:'settings',label:'设置',icon:'settings-2'},s.module);
+    const windowActions = '<div class="qb-window-actions" aria-hidden="true"><span>' + icon('minus') + '</span><span>' + icon('square') + '</span><span>' + icon('x') + '</span></div>';
+    if (product.design === 'native') product.el.innerHTML = '<div class="qb-titlebar"><div class="qb-brand"><span class="qb-logo">Q</span>QBox <span class="qb-small" style="font-weight:400;margin-left:7px">工具在手边</span></div>' + windowActions + '</div><div class="qb-shell"><nav class="qb-sidebar" aria-label="工具导航"><div class="qb-nav-caption">常用工具</div>' + nav + '<div class="qb-nav-bottom">' + settings + '<div class="qb-sidebar-foot">QBox · 界面概念</div></div></nav><main class="qb-main"></main></div>';
+    if (product.design === 'dark') product.el.innerHTML = '<div class="qb-command-head"><div class="qb-brand"><span class="qb-logo">Q</span>QBox<span class="qb-command-caption">A LITTLE MORE FOCUS.</span></div><div class="qb-actions">' + button('设置','go-settings','settings-2') + '</div></div><nav class="qb-topnav" aria-label="工具导航">' + nav + '</nav><main class="qb-main"></main>';
+    if (product.design === 'classic') product.el.innerHTML = '<div class="qb-compact-head"><span class="qb-logo">Q</span><span class="qb-compact-label">QBOX</span><span class="qb-small">文件 · 应用 · 工具</span><div class="qb-actions">' + button(s.expanded ? '收起' : '展开','expand',s.expanded ? 'chevrons-down' : 'chevrons-up') + '<button class="qb-button qb-ghost" type="button" data-action="go-settings" aria-label="打开设置">' + icon('settings-2') + '</button></div></div><nav class="qb-compact-nav" aria-label="工具导航">' + nav + '</nav><main class="qb-main"></main>';
+    product.el.dataset.expanded = String(s.expanded);
+    renderMain(product);
+  }
+  function changeModule(product, id) { product.state.module = id; product.state.commandMode = false; renderMain(product); save(); }
+  function organizePreview(product) {
+    const target = product.el.querySelector('.qb-organize-plan');
+    target.innerHTML = '<div class="qb-plan"><strong>本次归档预览</strong><div class="qb-plan-line"><span>需求说明.pdf</span><span>桌面 / 文档</span></div><div class="qb-plan-line"><span>参考截图.png</span><span>桌面 / 图片</span></div><div class="qb-actions">' + button('确认整理 2 项','confirm-organize','check',true) + button('取消','cancel-organize','x') + '</div></div>';
+    icons();
+  }
+  const saved = window.openai && window.openai.widgetState && window.openai.widgetState.privateContent ? window.openai.widgetState.privateContent.qboxViews || {} : {};
+  root.querySelectorAll('.qb-product').forEach(el => {
+    const design = el.dataset.design;
+    const prior = saved[design] || {};
+    const product = {el:el,design:design,state:{module:prior.module && ['search','clipboard','capture','desktop','translate','settings'].includes(prior.module) ? prior.module : design === 'native' ? 'clipboard' : 'search',expanded:Boolean(prior.expanded),clipQuery:'',filter:'全部',selectedClip:'code',pins:{code:true,file:true},paused:false,fileQuery:design === 'classic' ? '资料' : '',selectedFile:0,commandMode:false,translationInput:'Keep the tools close, and the workspace clear.',translationOutput:''}};
+    products.push(product);
+    renderShell(product);
+    // 三个方案各自保存局部操作状态，切换外观不会改写系统剪贴板或真实文件。
+    el.addEventListener('click',function (event) {
+      const control = event.target.closest('button');
+      if (!control || !el.contains(control)) return;
+      const s = product.state;
+      if (control.dataset.module) { changeModule(product,control.dataset.module); return; }
+      if (control.dataset.filter) { s.filter = control.dataset.filter; renderMain(product); return; }
+      if (control.dataset.clip) { s.selectedClip = control.dataset.clip; renderClipResults(product); return; }
+      if (control.dataset.file !== undefined) { s.selectedFile = Number(control.dataset.file); renderFiles(product); return; }
+      if (control.dataset.fileFilter) { s.commandMode = false; control.setAttribute('aria-pressed','true'); el.querySelector('.qb-filters [data-action="commands"]').setAttribute('aria-pressed','false'); renderFiles(product); return; }
+      if (control.dataset.annotation) { el.querySelectorAll('[data-annotation]').forEach(item => item.setAttribute('aria-pressed',String(item === control))); toast(product,'已选择' + control.dataset.annotation + '工具'); return; }
+      if (control.dataset.setting) { control.setAttribute('aria-pressed',String(control.getAttribute('aria-pressed') !== 'true')); return; }
+      const action = control.dataset.action;
+      if (action === 'dismiss') { el.querySelector('.qb-message').innerHTML = ''; return; }
+      if (action === 'pause') { s.paused = !s.paused; renderMain(product); return; }
+      if (action === 'pin') { s.pins[s.selectedClip] = !s.pins[s.selectedClip]; renderClipResults(product); return; }
+      if (action === 'copy') { toast(product,'已复制这条示例内容'); return; }
+      if (action === 'plain') { toast(product,clips.find(clip => clip.id === s.selectedClip).type === '图片' ? '示例图片已置顶，可在当前任务旁对照' : '已复制为纯文本'); return; }
+      if (action === 'clip-translate') { s.translationInput = clips.find(clip => clip.id === s.selectedClip).content; s.translationOutput = '这条记录会送入翻译面板，可继续选择目标语言。'; changeModule(product,'translate'); return; }
+      if (action === 'commands') { commandResults(product); return; }
+      if (action === 'open-file') { toast(product,'已提交打开请求（原型演示）'); return; }
+      if (action === 'copy-path') { toast(product,'已复制所选示例路径'); return; }
+      if (action === 'go-settings') { changeModule(product,'settings'); return; }
+      if (action === 'expand') { s.expanded = !s.expanded; renderShell(product); save(); return; }
+      if (action === 'new-capture') { toast(product,'进入区域框选 → 标注 → 复制或保存（流程预览）'); return; }
+      if (action === 'copy-image') { toast(product,'示例截图已复制'); return; }
+      if (action === 'stick' || action === 'stick-translation') { toast(product,'已置顶，可留在当前任务旁参考（原型演示）'); return; }
+      if (action === 'save-image') { toast(product,'保存截图时选择位置与格式（原型演示）'); return; }
+      if (action === 'ocr') { el.querySelector('.qb-ocr-output').innerHTML = '<div class="qb-text-output"><span class="qb-small">识别出的文字</span><p>Keep the tools close. A quiet workspace helps you focus on the task at hand.</p><div class="qb-actions" style="margin-top:12px">' + button('复制文字','copy','copy') + button('翻译','capture-translate','languages') + '</div></div>'; icons(); return; }
+      if (action === 'capture-translate' || action === 'translate-capture') { s.translationInput = 'Keep the tools close. A quiet workspace helps you focus on the task at hand.'; s.translationOutput = '让工具触手可及。清爽的工作空间能帮助你专注于眼前的任务。'; changeModule(product,'translate'); return; }
+      if (action === 'clear-translation') { s.translationInput = ''; s.translationOutput = '译文会显示在这里'; el.querySelector('[data-input="translation"]').value = ''; el.querySelector('.qb-translation').textContent = s.translationOutput; el.querySelector('.qb-translation-error').textContent = ''; return; }
+      if (action === 'copy-translation') { toast(product,'已复制示例译文'); return; }
+      if (action === 'translate-now') {
+        const error = el.querySelector('.qb-translation-error');
+        if (!s.translationInput.trim()) { error.textContent = '请先输入要翻译的文字。'; return; }
+        error.textContent = ''; control.disabled = true; control.textContent = '正在翻译…';
+        const target = el.querySelector('.qb-translation');
+        target.textContent = '正在翻译…';
+        setTimeout(function () {
+          if (!el.contains(target)) return;
+          const source = s.translationInput.toLowerCase();
+          s.translationOutput = source.includes('quiet workspace') ? '让工具触手可及。清爽的工作空间能帮助你专注于眼前的任务。' : source.includes('keep the tools') ? '让工具触手可及，让工作空间保持清爽。' : '这里将展示所选引擎的译文。当前原型只演示翻译流程。';
+          target.textContent = s.translationOutput; control.disabled = false; control.innerHTML = icon('languages') + '翻译'; icons();
+        },650);
+        return;
+      }
+      if (action === 'preview-organize') { organizePreview(product); return; }
+      if (action === 'cancel-organize') { el.querySelector('.qb-organize-plan').innerHTML = ''; return; }
+      if (action === 'confirm-organize') { el.querySelector('.qb-organize-plan').innerHTML = '<div class="qb-toast" role="status"><span>已整理 2 项 · 原型演示</span>' + button('撤销','undo-organize','undo-2') + '</div>'; icons(); return; }
+      if (action === 'undo-organize') { el.querySelector('.qb-organize-plan').innerHTML = ''; toast(product,'已恢复整理前的位置（原型演示）'); return; }
+      if (action === 'desktop-groups') { renderMain(product); return; }
+      if (action === 'organize-rules') {
+        control.setAttribute('aria-pressed','true'); el.querySelector('[data-action="desktop-groups"]').setAttribute('aria-pressed','false');
+        el.querySelector('.qb-desktop-content').innerHTML = '<div class="qb-plan"><strong>按文件类型归档</strong><div class="qb-settings-row"><div>图片<span class="qb-small">PNG、JPG、WebP → 桌面 / 图片</span></div><button class="qb-toggle" type="button" data-setting="images" aria-label="启用图片归档" aria-pressed="true"></button></div><div class="qb-settings-row"><div>文档<span class="qb-small">PDF、DOCX、TXT → 桌面 / 文档</span></div><button class="qb-toggle" type="button" data-setting="documents" aria-label="启用文档归档" aria-pressed="true"></button></div><p class="qb-small" style="padding-top:15px">未命中规则的文件保留原位。</p></div>';
+        el.querySelector('.qb-organize-plan').innerHTML = ''; return;
+      }
+    });
+    el.addEventListener('input',function (event) {
+      const field = event.target.dataset.input;
+      if (field === 'clips') { product.state.clipQuery = event.target.value; renderClipResults(product); }
+      if (field === 'files') { product.state.fileQuery = event.target.value; product.state.selectedFile = 0; product.state.commandMode = false; renderFiles(product); }
+      if (field === 'translation') product.state.translationInput = event.target.value;
+    });
+    el.addEventListener('keydown',function (event) {
+      const s = product.state;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { const input = el.querySelector('.qb-search-field input'); if (input) { event.preventDefault(); input.focus(); input.select(); } }
+      if (event.target.matches('[data-input="files"]') && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        const count = el.querySelectorAll('[data-file]').length;
+        if (!count) return;
+        event.preventDefault(); s.selectedFile = (s.selectedFile + (event.key === 'ArrowDown' ? 1 : -1) + count) % count; renderFiles(product);
+      }
+      if (event.target.matches('[data-input="files"]') && event.key === 'Enter') { event.preventDefault(); if (el.querySelector('[data-file]')) toast(product,'已提交打开请求（原型演示）'); }
+    });
+    if (globalThis.Tweak) {
+      const appearance = {radius:design === 'native' ? 12 : design === 'dark' ? 16 : 10,spacing:'舒适'};
+      const tweak = new globalThis.Tweak({container:el,onChange:function () { el.style.setProperty('--q-radius',appearance.radius + 'px'); el.style.setProperty('--q-row',appearance.spacing === '紧凑' ? '60px' : '72px'); }});
+      tweak.addSlider(appearance,'radius',{label:'窗口圆角',min:4,max:20,unit:'px'});
+      tweak.addSelect(appearance,'spacing',{label:'列表密度',options:['舒适','紧凑']});
+    }
+  });
+  window.addEventListener('openai:set_globals',function (event) {
+    const state = event.detail && event.detail.globals && event.detail.globals.widgetState;
+    const views = state && state.privateContent && state.privateContent.qboxViews;
+    if (!views) return;
+    products.forEach(product => {
+      const next = views[product.design];
+      if (next && ['search','clipboard','capture','desktop','translate','settings'].includes(next.module)) {
+        product.state.module = next.module; product.state.expanded = Boolean(next.expanded); renderShell(product);
+      }
+    });
+  });
+})();
+</script>
