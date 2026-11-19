@@ -61,6 +61,15 @@ public partial class MainWindow : Window
     private readonly SearchHotPathWarmup _searchWarmup = new();
     private readonly SearchChromeState _chrome = new();
     private const double ResultRowHeight = 56;
+    private string _page = "Search", _lastPage = "Search";
+    private SearchChromeKind _appliedKind = SearchChromeKind.Compact;
+    private double _fullWidth = 960, _fullHeight = 640, _quickWidth = 640;
+    private bool _applyingChrome;
+    private string? _selectionId, _selectionQuery;
+    private bool _previewOpen;
+    private Button? _previewReturn;
+    private string _translationText = "Hello, welcome to QBox.";
+
 
     internal MainWindow(DesktopOptions options, DesktopStore store, DesktopSettings settings)
     {
@@ -81,6 +90,7 @@ public partial class MainWindow : Window
         BrandText.Text = "QBOX · 全局共享试用";
 #endif
         IsVisibleChanged += OnVisibilityChanged;
+        SizeChanged += OnWindowSizeChanged;
         _idleReclaim.Tick += OnIdleReclaim;
         Icon = (ImageSource)FindResource("AppIcon");
         _notice = store.LoadError;
@@ -126,6 +136,7 @@ public partial class MainWindow : Window
         _tray.DoubleClick += (_, _) => Dispatcher.BeginInvoke(ShowSearch);
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add("打开搜索", null, (_, _) => Dispatcher.BeginInvoke(ShowSearch));
+        menu.Items.Add("打开工作台", null, (_, _) => Dispatcher.BeginInvoke(ShowWorkbench));
         menu.Items.Add("更新索引", null, (_, _) => Dispatcher.BeginInvoke(async () => await UpdateAsync()));
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add("退出 QBox", null, (_, _) => Dispatcher.BeginInvoke(Quit));
@@ -137,7 +148,9 @@ public partial class MainWindow : Window
         if (_quitting) return;
         var wasVisible = IsVisible;
         if (!wasVisible) _chrome.ShowFromHidden();
-        ApplyChrome();
+        var collapsed = _chrome.TryCollapseFromFull(QueryBox.Text);
+        SetPage("Search");
+        if (collapsed) ApplyChromeAfterKindChange();
         if (!wasVisible) PlaceWindow(true);
         Show();
         WindowState = WindowState.Normal;
@@ -147,17 +160,37 @@ public partial class MainWindow : Window
         QueryBox.Focus();
         QueryBox.SelectAll();
     }
+    private void ShowWorkbench()
+    {
+        if (_quitting) return;
+        var wasVisible = IsVisible;
+        if (!wasVisible) { _chrome.ShowFromHidden(); Show(); }
+        _chrome.TryExpandToFull();
+        SetPage(_lastPage);
+        ApplyChromeAfterKindChange();
+        if (!wasVisible) PlaceWindow(true);
+        WindowState = WindowState.Normal;
+        Activate();
+    }
     private void ToggleSearch()
     {
-        if (!IsVisible || !IsActive) { ShowSearch(); return; }
-        // 已唤起再按双 Ctrl：先进入完整界面，已在完整界面则收起。
+        if (!IsVisible) { ShowSearch(); return; }
+        if (!IsActive)
+        {
+            if (_chrome.Kind == SearchChromeKind.Full) { SetPage("Search"); Activate(); QueryBox.Focus(); }
+            else ShowSearch();
+            return;
+        }
+        if (_chrome.Kind == SearchChromeKind.Full && _page != "Search") { SetPage("Search"); QueryBox.Focus(); return; }
         if (!_chrome.TryExpandToFull()) { Hide(); return; }
+        SetPage("Search");
         ApplyChromeAfterKindChange();
     }
     private void OnExpandToFull(object sender, RoutedEventArgs e) => ExpandToFull();
     private void ExpandToFull()
     {
         if (!_chrome.TryExpandToFull()) return;
+        SetPage("Search");
         ApplyChromeAfterKindChange();
     }
     private void OnCollapseToQuick(object sender, RoutedEventArgs e)
@@ -191,6 +224,7 @@ public partial class MainWindow : Window
         _chrome.Reset();
         QueryBox.Text = "";
         _resultQuery = "";
+        _selectionId = null; _selectionQuery = null;
         _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
@@ -388,8 +422,11 @@ public partial class MainWindow : Window
 
     private async Task SearchAsync()
     {
-        if (_quitting || !IsVisible) return;
+        if (_quitting || !IsVisible || _chrome.Kind == SearchChromeKind.Full && _page != "Search") return;
         var query = QueryBox.Text;
+        if (_selectionQuery != query) { _selectionId = null; _selectionQuery = query; }
+        if (_resultQuery == query && Results.SelectedItem is ResultRow selectedRow)
+            _selectionId = selectedRow.Hit.Candidate.Id;
         // 已有当前查询的展示结果时静默换新视图，避免实时更新把底栏闪成「正在搜索…」。
         var silent = SearchProgress.SilentRefresh(query, _resultQuery, Results.IsEnabled);
         _icons.CancelPending();
@@ -449,6 +486,9 @@ public partial class MainWindow : Window
             if (Volatile.Read(ref _rustDisabled) != 0) _notice ??= "Rust 搜索引擎出错，已回退 C# 引擎。";
             // UI 线程上的版本复核同时约束展示和打开，取消来不及的旧查询也不能抢回结果。
             if (!_queries.IsCurrent(request) || _loading) return;
+            // 续填期间用户仍可移动选中项，替换列表前读取最新选择。
+            if (_resultQuery == query && Results.SelectedItem is ResultRow currentSelection)
+                _selectionId = currentSelection.Hit.Candidate.Id;
             _resultVersion = request.Version;
             _resultQuery = query;
             _searchElapsed = Stopwatch.GetElapsedTime(started);
@@ -456,11 +496,11 @@ public partial class MainWindow : Window
             _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
                 (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
                     hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"), _settings.ResultShortcuts)).ToArray();
-            var selected = Results.SelectedIndex;
             Results.ItemsSource = _rows;
             Results.IsEnabled = true;
-            Results.SelectedIndex = _rows.Length == 0 ? -1
-                : silent && (uint)selected < (uint)_rows.Length ? selected : 0;
+            var selected = _selectionId == null ? -1 : Array.FindIndex(_rows, row => row.Hit.Candidate.Id == _selectionId);
+            Results.SelectedIndex = _rows.Length == 0 ? -1 : selected >= 0 ? selected : 0;
+            _selectionId = (Results.SelectedItem as ResultRow)?.Hit.Candidate.Id;
             EmptyPanel.Visibility = _rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (_rows.Length == 0) SetEmpty("没有找到匹配项", "可以尝试名称片段，或在菜单中更新索引。", false);
             foreach (var row in _rows)
@@ -539,7 +579,9 @@ public partial class MainWindow : Window
         if (e.Key == Key.ImeProcessed) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var modifiers = Keyboard.Modifiers;
-        if (key == Key.Escape) { Hide(); e.Handled = true; }
+        if (key == Key.Escape && _previewOpen) { ClosePreview(); e.Handled = true; }
+        else if (key == Key.Escape) { Hide(); e.Handled = true; }
+        else if (_chrome.Kind == SearchChromeKind.Full && _page != "Search") return;
         else if (modifiers == ModifierKeys.Control && key == Key.R) { e.Handled = true; await ReloadAsync(); }
         // 本机数字组合键已与截图工具冲突；只有用户启用后才提供 Alt 数字入口。
         else if (_settings.ResultShortcuts && modifiers == ModifierKeys.Alt && key >= Key.D1 && key <= Key.D9)
@@ -604,35 +646,59 @@ public partial class MainWindow : Window
     }
     private void ApplyChrome()
     {
-        if (!IsInitialized) return;
-        var kind = _chrome.Kind;
-        var full = kind == SearchChromeKind.Full;
-        var showResults = kind != SearchChromeKind.Compact;
-        ExpandFullButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
-        TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
-        StatusBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
-        ResultsPane.Visibility = showResults ? Visibility.Visible : Visibility.Collapsed;
-        ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
-        var work = SystemParameters.WorkArea;
-        MaxWidth = Math.Max(MinWidth, work.Width - 24);
-        UpdateLayout();
-        var preferred = PreferredHeight(kind);
-        var workHeight = Math.Max(56, work.Height - 24);
-        // 先放松再收紧宽高约束，避免从完整界面切回时旧的 MinHeight 把快捷窗口卡住。
-        MinHeight = 56;
-        MaxHeight = workHeight;
-        if (full)
+        if (!IsInitialized || _applyingChrome) return;
+        _applyingChrome = true;
+        try
         {
-            MinHeight = 240;
-            MaxHeight = Math.Max(MinHeight, workHeight);
-            Height = Math.Min(MaxHeight, Math.Max(MinHeight, preferred));
+            var kind = _chrome.Kind;
+            var full = kind == SearchChromeKind.Full;
+            var search = !full || _page == "Search";
+            ExpandFullButton.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+            TitleBar.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+            Navigation.Visibility = full ? Visibility.Visible : Visibility.Collapsed;
+            NavColumn.Width = full ? new GridLength(Width < 700 ? 64 : 170) : new GridLength(0);
+            SearchBar.Visibility = search ? Visibility.Visible : Visibility.Collapsed;
+            StatusBar.Visibility = full && search ? Visibility.Visible : Visibility.Collapsed;
+            ResultsPane.Visibility = search && kind != SearchChromeKind.Compact ? Visibility.Visible : Visibility.Collapsed;
+            ToolHost.Visibility = full && !search ? Visibility.Visible : Visibility.Collapsed;
+            ResizeMode = full ? ResizeMode.CanResizeWithGrip : ResizeMode.NoResize;
+            var work = SystemParameters.WorkArea;
+            MinHeight = 56; MinWidth = Math.Min(480, work.Width); MaxWidth = Math.Max(MinWidth, work.Width - 24);
+            MaxHeight = Math.Max(56, work.Height - 24);
+            if (full)
+            {
+                MinHeight = Math.Min(360, MaxHeight);
+                if (_appliedKind != SearchChromeKind.Full)
+                {
+                    Width = Math.Clamp(_fullWidth, MinWidth, MaxWidth);
+                    Height = Math.Clamp(_fullHeight, MinHeight, MaxHeight);
+                    NavColumn.Width = new GridLength(Width < 700 ? 64 : 170);
+                    UpdateNavigation();
+                }
+            }
+            else
+            {
+                Width = Math.Clamp(_quickWidth, MinWidth, MaxWidth);
+                UpdateLayout();
+                Height = Math.Min(Math.Max(PreferredHeight(kind), 56), MaxHeight);
+                MinHeight = MaxHeight = Height;
+            }
+            _appliedKind = kind;
+            PlaceWindow(false);
         }
-        else
+        finally { _applyingChrome = false; }
+    }
+
+    private void OnWindowSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_applyingChrome || !IsInitialized) return;
+        if (_chrome.Kind == SearchChromeKind.Full)
         {
-            Height = Math.Min(Math.Max(preferred, 56), workHeight);
-            MinHeight = MaxHeight = Height;
+            _fullWidth = ActualWidth; _fullHeight = ActualHeight;
+            NavColumn.Width = new GridLength(ActualWidth < 700 ? 64 : 170);
+            UpdateNavigation();
         }
-        PlaceWindow(false);
+        else _quickWidth = ActualWidth;
     }
 
     private double PreferredHeight(SearchChromeKind kind)
@@ -701,47 +767,20 @@ public partial class MainWindow : Window
         }
         Item("更新索引", async () => await UpdateAsync(), _update == null);
         Item("取消索引更新", () => _update?.Cancel(), _update != null);
-        Item(_settings.AutoUpdate ? "关闭启动时实时更新" : "开启启动时实时更新", () =>
-        {
-            _settings = _settings with { AutoUpdate = !_settings.AutoUpdate };
-            SaveSettings();
-            if (!_settings.AutoUpdate) _update?.Cancel();
-            else _ = UpdateAsync();
-        });
+        Item(_settings.AutoUpdate ? "关闭启动时实时更新" : "开启启动时实时更新", ToggleAutoUpdate);
         Item("重新载入索引    Ctrl+R", async () => await ReloadAsync());
-        Item(_settings.ResultShortcuts ? "关闭 Alt+1～9 结果快捷键" : "启用 Alt+1～9 结果快捷键", async () =>
-        {
-            _settings = _settings with { ResultShortcuts = !_settings.ResultShortcuts };
-            SaveSettings(); await SearchAsync();
-        });
+        Item(_settings.ResultShortcuts ? "关闭 Alt+1～9 结果快捷键" : "启用 Alt+1～9 结果快捷键", ToggleResultShortcuts);
         Item("选择索引目录…", async () => await ChooseIndexDirectoryAsync(), _update == null);
         var keys = new MenuItem { Header = "唤起快捷键" };
         foreach (var setting in new[] { "DoubleCtrl", "Ctrl+Alt+Space", "Ctrl+Shift+Space", "Ctrl+Space" })
         {
             var key = new MenuItem { Header = setting == "DoubleCtrl" ? "双击 Ctrl" : setting.Replace("Space", "空格"), IsCheckable = true, IsChecked = _hotkey?.Setting == setting };
-            key.Click += (_, _) =>
-            {
-                if (_hotkey!.Set(setting))
-                {
-                    _settings = _settings with { Hotkey = setting };
-                    SaveSettings();
-                    HotkeyText.Text = "Enter 打开 · " + _hotkey.Display;
-                    if (_tray != null) _tray.Text = "QBox · " + _hotkey.Display;
-                    _notice = null;
-                }
-                else _notice = "该快捷键已被占用，当前快捷键保持为 " + _hotkey.Display;
-                RefreshStatus();
-            };
+            key.Click += (_, _) => SetSearchHotkey(setting);
             keys.Items.Add(key);
         }
         menu.Items.Add(keys);
         menu.Items.Add(new Separator());
-        Item("打开数据目录", () =>
-        {
-            try { Directory.CreateDirectory(_options.StateDirectory); using var p = Process.Start(new ProcessStartInfo(_options.StateDirectory) { UseShellExecute = true }); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
-            { _store.Log(error); _notice = "数据目录无法打开：" + error.Message; RefreshStatus(); }
-        });
+        Item("打开数据目录", OpenDataDirectory);
         Item("退出 QBox", Quit);
         menu.IsOpen = true;
     }

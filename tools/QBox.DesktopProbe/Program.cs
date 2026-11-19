@@ -106,6 +106,48 @@ internal static class Program
             timer.Restart(); window.Show(); Wait(() => !(bool)Get("_searching") && Rows() == 1);
             times.Add(timer.Elapsed.TotalMilliseconds);
         }
+        var wide = VolumeIndex.Create(geometry, new(7, 100), new[] { File(5, ".", true) }
+            .Concat(Enumerable.Range(20, 235).Select(n => File((ulong)n, $"qboxworkbench{n:D4}.txt"))));
+        void Capture(string name)
+        {
+            window.UpdateLayout();
+            var content = (FrameworkElement)window.Content;
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth),
+                (int)Math.Ceiling(content.ActualHeight), 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            bitmap.Render(content);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            using var output = System.IO.File.Create(Path.Combine(root, "..", name + ".png"));
+            encoder.Save(output);
+        }
+        Set("_indexes", new[] { wide });
+        Set("_liveIndexes", new[] { new LiveIndexFile("workbench-probe", new(wide), 0, 0, default) });
+        query.Text = "qboxworkbench";
+        Wait(() => !(bool)Get("_searching") && Rows() == SearchChromeLayout.QuickResultCap);
+        var results = (ListBox)window.FindName("Results");
+        results.SelectedIndex = 5;
+        string SelectedId() => ((SearchHit)results.SelectedItem.GetType().GetProperty("Hit")!.GetValue(results.SelectedItem)!).Candidate.Id;
+        var selectedId = SelectedId();
+        Capture("quick-search");
+        typeof(MainWindow).GetMethod("ExpandToFull", Private)!.Invoke(window, null);
+        Wait(() => !(bool)Get("_searching") && Rows() == 235);
+        Check(query.Text == "qboxworkbench" && SelectedId() == selectedId, "workbench expansion or auto-fill lost selection");
+        Capture("workbench-search");
+        var setPage = typeof(MainWindow).GetMethod("SetPage", Private)!;
+        setPage.Invoke(window, ["Clipboard"]);
+        version = Version();
+        Invoke("SearchAsync").GetAwaiter().GetResult();
+        Check(Version() == version, "non-search page started a foreground query");
+        typeof(MainWindow).GetMethod("OpenPreview", Private)!.Invoke(window, ["Clipboard"]);
+        Capture("clipboard-preview");
+        setPage.Invoke(window, ["Settings"]);
+        Capture("workbench-settings");
+        setPage.Invoke(window, ["Search"]);
+        Wait(() => !(bool)Get("_searching") && Rows() == 235);
+        Check(SelectedId() == selectedId, "return to search lost selection");
+        window.ShowSearch();
+        Wait(() => !(bool)Get("_searching") && Rows() == SearchChromeLayout.QuickResultCap);
+        Check(SelectedId() == selectedId, "return to quick search lost visible selection");
         var icons = Get("_icons"); var iconType = icons.GetType(); var completed = 0;
         Action<System.Windows.Media.ImageSource?> callback = _ => Interlocked.Increment(ref completed);
         for (var i = 0; i < 1000; i++) iconType.GetMethod("Load")!.Invoke(icons, ["X:\\qbox-icon-probe-" + i + ".txt", callback]);
@@ -122,6 +164,8 @@ internal static class Program
             unchangedCatalogPreservedRows = true, hiddenInputAndRefreshSkipped = true,
             hideInvalidatedResults = true, hideClearedQuery = true, reshowStartedEmpty = true,
             reshowUsedLatestIndex = true, staleIconQueueClearedAndReusable = true,
+            workbenchExpansionAndFillPreservedSelection = true, nonSearchPageSkippedForegroundQuery = true,
+            quickSearchRestoredResultCap = true,
             firstShowMs = firstShow, changedShowMs = changedShow, repeatedShowQueryMs = times,
             scope = "Offscreen STA window with placeholder icons, isolated state, no global hotkeys/worker; not physical input or end-to-end activation timing"
         }, new JsonSerializerOptions { WriteIndented = true }));
