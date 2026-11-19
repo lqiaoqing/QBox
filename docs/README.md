@@ -6,6 +6,8 @@
 
 面向使用和构建的说明在仓库根目录的 [README.md](../README.md) 和 [CHANGELOG.md](../CHANGELOG.md)。第三方读音表许可见 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md)。
 
+下一阶段见 [Windows 原生工作台 UI 实施计划](plans/2026-11-19-qbox-workbench-ui.md)。先接入现有搜索并完成工具界面，再逐项实现新功能。
+
 ## 发布与验收
 
 
