@@ -2,7 +2,7 @@
 
 **目标**：把现有纯 Rust 试用版补成可替代 C# 0.2.5 的 Windows x64 版本。多卷实时更新、旧数据升级和日常操作要能用，搜索速度不能退化，空闲占用要有同口径结果。
 
-**做法**：在 `D:/Work/workspace/QBox-rust-engine` 的 `feat/windows-rust-parity` 上继续。复用 Rust 搜索核心、当前桌面界面、Windows Shell 和现有 worker 协议；用 QBI 基础索引加 QBD 增量维护每个卷。本文是[原 P0–P7 计划](2026-11-18-qbox-rust-windows-parity.md)的续做清单，任务按下列顺序推进，验证以本文为准。
+**做法**：在 `QBox-rust-engine` 工作树的 `feat/windows-rust-parity` 上继续。复用 Rust 搜索核心、当前桌面界面、Windows Shell 和现有 worker 协议；用 QBI 基础索引加 QBD 增量维护每个卷。本文是[原 P0–P7 计划](2026-11-18-qbox-rust-windows-parity.md)的续做清单，任务按下列顺序推进，验证以本文为准。
 
 ## 开工前：认领已有进展
 
