@@ -15,7 +15,7 @@ internal static class DesktopDefaults
     public const string DisplayName = "QBox";
     public const string Hotkey = "DoubleCtrl";
     public const bool AutoUpdate = true;
-    public const string SearchEngine = "rust";
+    public const string SearchEngine = "csharp";
 #endif
 }
 

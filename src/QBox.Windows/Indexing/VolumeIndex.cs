@@ -309,6 +309,7 @@ public sealed class VolumeIndex
         using var textLease = Text.Pin();
         cancellationToken.ThrowIfCancellationRequested();
         var source = new IndexSearchSource(this, history, resolvePaths ? live : null);
+        var explicitExecutableQuery = collector.Query.Text.Contains(".exe", StringComparison.OrdinalIgnoreCase);
         foreach (var i in SearchNames(collector.Query.Text, cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -334,11 +335,14 @@ public sealed class VolumeIndex
             }
             // 无开始菜单入口的便携 EXE 仍可直接启动；包目录中的 EXE 由注册入口负责激活。
             if (resolvePaths && !live!.HasPath(this, i)) continue;
-            // 普通候选只验证父链；完整路径留给 EXE 来源判定和最终展示的少量结果。
-            var livePath = resolvePaths && executable ? live!.PathFor(this, i) : null;
-            var application = executable && friendlyMatch && !collector.Query.Text.Contains(".exe", StringComparison.OrdinalIgnoreCase) &&
-                !(resolvePaths ? InPackagePath(livePath!) : InPackageDirectory(name.Parent)) && collector.Query.Score(display.Span, cancellationToken) > 1 &&
-                representedExecutables?.Contains(livePath ?? PathFor(i)) != true;
+            var application = false;
+            // 只有可能进入应用分组的 EXE 才需要解析完整路径；普通文件的路径在展示时生成。
+            if (executable && friendlyMatch && !explicitExecutableQuery && collector.Query.Score(display.Span, cancellationToken) > 1)
+            {
+                var livePath = resolvePaths ? live!.PathFor(this, i) : null;
+                application = !(resolvePaths ? InPackagePath(livePath!) : InPackageDirectory(name.Parent)) &&
+                    representedExecutables?.Contains(livePath ?? PathFor(i)) != true;
+            }
             var kind = node.IsDirectory ? SearchItemKind.Directory : shortcut ? SearchItemKind.Shortcut :
                 application ? SearchItemKind.Application : SearchItemKind.File;
             var key = ((ulong)(uint)nodeIndex << 32) | (uint)i;

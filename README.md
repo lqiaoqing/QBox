@@ -1,6 +1,6 @@
 # QBox
 
-Windows 文件、目录和应用的快捷搜索工具，后续扩展为剪贴板与截图工具箱。当前产品构建版 **0.2.6**；功能变化见 [CHANGELOG](CHANGELOG.md)，接续目标见 [ROADMAP](ROADMAP.md)。
+Windows 文件、目录和应用的快捷搜索工具，后续扩展为剪贴板与截图工具箱。当前产品构建版 **0.2.7**；功能变化见 [CHANGELOG](CHANGELOG.md)，接续目标见 [ROADMAP](ROADMAP.md)。
 
 ## 开发者快速开始
 
@@ -40,7 +40,7 @@ pwsh -File scripts/dev.ps1
 
 ## 使用发布版
 
-运行 [`releases/0.2.6/QBox.exe`](releases/0.2.6/QBox.exe)，同目录保留 `qbox_engine.dll`。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。0.2.6 默认使用 Rust 搜索；需要 C# 对照时可加 `--search-engine csharp`，或运行[原 0.2.5](releases/0.2.5/QBox.exe)。
+运行 [`releases/0.2.7/QBox.exe`](releases/0.2.7/QBox.exe)，默认使用 C# 搜索。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。需要对照时可运行 [0.2.6 的 Rust 默认版](releases/0.2.6/QBox.exe)；0.2.7 也可通过 `--search-engine rust` 切换，同目录需保留 `qbox_engine.dll`。
 
 另有可选的 [0.2.3-global.1 全局名称共享试用版](releases/0.2.3-global.1/README.md)，使用独立程序和数据目录，用于比较内存与查询体验。
 

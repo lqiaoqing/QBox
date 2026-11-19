@@ -16,6 +16,7 @@ public sealed class SearchCollector
     private readonly CancellationToken _cancellationToken;
     private readonly PriorityQueue<Row, Row>[] _best = Enum.GetValues<LauncherLane>()
         .Select(_ => new PriorityQueue<Row, Row>(new WorstFirst())).ToArray();
+    private readonly int[] _capacity;
     private int _total;
     public PreparedQuery Query { get; }
 
@@ -24,6 +25,8 @@ public sealed class SearchCollector
         ArgumentOutOfRangeException.ThrowIfNegative(limit);
         Query = new FuzzyMatcher().Prepare(query);
         _limit = limit;
+        _capacity = new int[_best.Length];
+        Array.Fill(_capacity, limit);
         _cancellationToken = cancellationToken;
     }
 
@@ -72,15 +75,21 @@ public sealed class SearchCollector
         if (best.Count == capacity)
         {
             if (BestFirst.Instance.Compare(row, best.Peek()) >= 0) return;
-            best.Dequeue();
+            best.DequeueEnqueue(row, row);
+            return;
         }
         best.Enqueue(row, row);
-        // 早桶增加后，晚桶只保留仍可能展示的条数；不能用晚桶的名额反向裁掉混合桶前十。
+        // 容量只随前面分组的条数改变；替换同桶元素无需重算，宽查询也不用逐项累加。
         for (var index = (int)lane + 1; index < _best.Length; index++)
-            while (_best[index].Count > Capacity((LauncherLane)index)) _best[index].Dequeue();
+        {
+            _capacity[index] = ComputeCapacity((LauncherLane)index);
+            while (_best[index].Count > _capacity[index]) _best[index].Dequeue();
+        }
     }
 
-    private int Capacity(LauncherLane lane)
+    private int Capacity(LauncherLane lane) => _capacity[(int)lane];
+
+    private int ComputeCapacity(LauncherLane lane)
     {
         var earlier = 0;
         for (var index = 0; index < (int)lane; index++)
