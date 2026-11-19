@@ -1,6 +1,6 @@
 # 当前状态与接续目标
 
-当前正式版为 **0.2.7**，默认使用 C# 搜索。后续继续维护现有桌面架构；纯 Rust 重写已停止。版本变化看 [CHANGELOG](CHANGELOG.md)，开发方法看 [DEVELOPING](DEVELOPING.md)。旧设计和研究报告作为历史证据，不是待办清单。
+当前正式版为 **0.2.8**，默认使用 C# 搜索。后续继续维护现有桌面架构；纯 Rust 重写已停止。版本变化看 [CHANGELOG](CHANGELOG.md)，开发方法看 [DEVELOPING](DEVELOPING.md)。旧设计和研究报告作为历史证据，不是待办清单。
 
 ## 已完成
 
