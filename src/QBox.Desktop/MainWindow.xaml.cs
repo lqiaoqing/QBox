@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
     private int _limit = SearchChromeLayout.QuickResultCap, _total;
+    private TimeSpan _searchElapsed;
     private bool _loading, _searching, _silentRefresh, _loaded, _quitting, _opening;
     private bool _dragging;
     private Point _resultPressPosition;
@@ -425,6 +426,7 @@ public partial class MainWindow : Window
         var history = _history.ForQuery(query);
         try
         {
+            var started = Stopwatch.GetTimestamp();
             var response = await Task.Run(() =>
             {
                 if (rustEngine != null && Volatile.Read(ref _rustDisabled) == 0)
@@ -449,6 +451,7 @@ public partial class MainWindow : Window
             if (!_queries.IsCurrent(request) || _loading) return;
             _resultVersion = request.Version;
             _resultQuery = query;
+            _searchElapsed = Stopwatch.GetElapsedTime(started);
             _total = response.TotalMatches;
             _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
                 (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
@@ -683,7 +686,7 @@ public partial class MainWindow : Window
         if (!IsInitialized) return;
         var snapshot = _snapshotText + (_realtime ? " · 实时更新" : "");
         StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
-            (SearchProgress.ShowSearching(_searching, _silentRefresh) ? "正在搜索…" : QueryBox.Text.Length == 0 ? snapshot : $"{_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
+            (SearchProgress.ShowSearching(_searching, _silentRefresh) ? "正在搜索…" : QueryBox.Text.Length == 0 || _resultQuery != QueryBox.Text ? snapshot : $"{_searchElapsed.TotalMilliseconds:0} ms · {_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
         StatusText.ToolTip = StatusText.Text;
     }
 
