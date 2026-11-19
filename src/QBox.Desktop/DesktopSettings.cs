@@ -9,11 +9,13 @@ internal static class DesktopDefaults
     public const string DisplayName = "QBox 全局共享试用";
     public const string Hotkey = "Ctrl+Alt+Space";
     public const bool AutoUpdate = false;
+    public const string SearchEngine = "csharp";
 #else
     public const string StateFolder = "QBox";
     public const string DisplayName = "QBox";
     public const string Hotkey = "DoubleCtrl";
     public const bool AutoUpdate = true;
+    public const string SearchEngine = "rust";
 #endif
 }
 
@@ -21,13 +23,13 @@ public sealed record DesktopSettings(int Version = 1, string? IndexDirectory = n
     bool ResultShortcuts = false);
 
 public sealed record DesktopOptions(string StateDirectory, string? IndexDirectory, bool StartHidden, string? WorkerJob,
-    bool WatchWorker = false, string SearchEngine = "csharp")
+    bool WatchWorker = false, string SearchEngine = DesktopDefaults.SearchEngine)
 {
     public static DesktopOptions Parse(string[] args)
     {
         var state = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DesktopDefaults.StateFolder);
         string? indexes = null, workerJob = null;
-        var hidden = false; var watch = false; var engine = "csharp";
+        var hidden = false; var watch = false; var engine = DesktopDefaults.SearchEngine;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--start-hidden") { hidden = true; continue; }
