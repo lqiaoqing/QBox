@@ -13,11 +13,16 @@ internal sealed class ShellIconLoader : IDisposable
     private readonly object _gate = new();
     private long _version;
     private readonly Dictionary<string, ImageSource?> _cache = new(StringComparer.Ordinal);
+    private const int MaxCacheEntries = 2048;
     public ShellIconLoader()
     {
         var thread = new Thread(Work) { IsBackground = true, Name = "QBox icons" };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
+    }
+    public bool TryGetCached(string path, out ImageSource? image)
+    {
+        lock (_gate) return _cache.TryGetValue(path, out image);
     }
     public void Load(string path, Action<ImageSource?> done)
     {
@@ -61,7 +66,7 @@ internal sealed class ShellIconLoader : IDisposable
                 image = Read(request.Path);
                 lock (_gate)
                 {
-                    if (_cache.Count >= 512) _cache.Clear();
+                    if (_cache.Count >= MaxCacheEntries) _cache.Clear();
                     _cache[request.Path] = image;
                 }
                 if (request.Version == Volatile.Read(ref _version)) request.Done(image);

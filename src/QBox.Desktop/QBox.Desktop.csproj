@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>QBox</AssemblyName>
-    <Version>0.2.8</Version>
+    <Version>0.2.9</Version>
     <Product>QBox</Product>
     <Description>Windows 文件与应用搜索</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>

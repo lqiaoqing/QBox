@@ -58,6 +58,9 @@ public partial class MainWindow : Window
     private int _indexPathCount;
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _idleReclaim = new() { Interval = IdleWorkingSetReclaim.Delay };
+    private readonly DispatcherTimer _autoFillTimer = new() { Interval = TimeSpan.FromMilliseconds(220) };
+    private long _autoFillVersion;
+    private string _autoFillQuery = "";
     private readonly SearchHotPathWarmup _searchWarmup = new();
     private readonly SearchChromeState _chrome = new();
     private const double ResultRowHeight = 56;
@@ -92,6 +95,7 @@ public partial class MainWindow : Window
         IsVisibleChanged += OnVisibilityChanged;
         SizeChanged += OnWindowSizeChanged;
         _idleReclaim.Tick += OnIdleReclaim;
+        _autoFillTimer.Tick += OnAutoFillTick;
         Icon = (ImageSource)FindResource("AppIcon");
         _startupWarning = store.LoadError;
         _rustRequested = options.SearchEngine == "rust";
@@ -226,6 +230,7 @@ public partial class MainWindow : Window
         _resultQuery = "";
         _selectionId = null; _selectionQuery = null;
         _notice = null;
+        _autoFillTimer.Stop();
         _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
@@ -421,6 +426,7 @@ public partial class MainWindow : Window
         if (!_loaded || _quitting) return;
         // 用户输入新查询时清除一次性操作提示，避免旧通知长期遮挡搜索耗时。
         _notice = null;
+        _autoFillTimer.Stop();
         _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
         if (IsVisible && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
         await SearchAsync();
@@ -499,9 +505,18 @@ public partial class MainWindow : Window
             _resultQuery = query;
             _searchElapsed = Stopwatch.GetElapsedTime(started);
             _total = response.TotalMatches;
-            _rows = response.Items.Select((hit, i) => new ResultRow(hit, i,
-                (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
-                    hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon"), _settings.ResultShortcuts)).ToArray();
+            _rows = response.Items.Select((hit, i) =>
+            {
+                var placeholder = (ImageSource)FindResource(hit.Candidate.Kind == SearchItemKind.Directory ? "FolderIcon" :
+                    hit.Candidate.Kind is SearchItemKind.Shortcut or SearchItemKind.Application ? "AppIcon" : "FileIcon");
+                var row = new ResultRow(hit, i, placeholder, _settings.ResultShortcuts);
+                if (_icons.TryGetCached(hit.Candidate.Target, out var cached) && cached != null)
+                {
+                    row.Icon = cached;
+                    row.TryMarkIconRequested();
+                }
+                return row;
+            }).ToArray();
             Results.ItemsSource = _rows;
             Results.IsEnabled = true;
             var selected = _selectionId == null ? -1 : Array.FindIndex(_rows, row => row.Hit.Candidate.Id == _selectionId);
@@ -509,14 +524,9 @@ public partial class MainWindow : Window
             _selectionId = (Results.SelectedItem as ResultRow)?.Hit.Candidate.Id;
             EmptyPanel.Visibility = _rows.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             if (_rows.Length == 0) SetEmpty("没有找到匹配项", "可以尝试名称片段，或在菜单中更新索引。", false);
-            foreach (var row in _rows)
-            {
-                _icons.Load(row.Hit.Candidate.Target, image =>
-                {
-                    if (image == null || _lifetime.IsCancellationRequested) return;
-                    Dispatcher.BeginInvoke(() => { if (_rows.Contains(row)) row.Icon = image; });
-                });
-            }
+            // 仅预取首屏前 16 条图标，其余行在虚拟化滚动进入视口时按需加载，避免大结果集阻塞队列与 UI。
+            var preloadCount = Math.Min(_rows.Length, 16);
+            for (var i = 0; i < preloadCount; i++) RequestRowIcon(_rows[i], _resultVersion);
             if (_chrome.Kind != SearchChromeKind.Compact) ApplyChrome();
             ScheduleFullAutoFill();
         }
@@ -534,20 +544,52 @@ public partial class MainWindow : Window
         }
     }
 
-    // 完整界面在首屏结果已经画出后，按页自动续填到安全上限，不再等点击「更多结果」。
+    private void OnResultRowLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ResultRow row }) RequestRowIcon(row, _resultVersion);
+    }
+
+    private void OnResultRowDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is ResultRow row) RequestRowIcon(row, _resultVersion);
+    }
+
+    private void RequestRowIcon(ResultRow row, long resultVersion)
+    {
+        if (_quitting || !row.TryMarkIconRequested()) return;
+        if (_icons.TryGetCached(row.Hit.Candidate.Target, out var cached))
+        {
+            if (cached != null) row.Icon = cached;
+            return;
+        }
+        _icons.Load(row.Hit.Candidate.Target, image =>
+        {
+            if (image == null || _lifetime.IsCancellationRequested) return;
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (!_quitting && _resultVersion == resultVersion) row.Icon = image;
+            });
+        });
+    }
+
+    // 完整界面在首屏结果已经画出且输入停顿后，再按安全上限续填，避免连续打字时每键重扫 2000 条。
     private void ScheduleFullAutoFill()
     {
+        _autoFillTimer.Stop();
         if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
-        var version = _resultVersion;
-        var query = _resultQuery;
-        Dispatcher.BeginInvoke(() =>
-        {
-            if (_quitting || !IsVisible || _searching || _loading) return;
-            if (_resultVersion != version || _resultQuery != query) return;
-            if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
-            _limit = SearchChromeLayout.NextLimit(_chrome.Kind, _limit, _total);
-            _ = SearchAsync();
-        }, DispatcherPriority.Background);
+        _autoFillVersion = _resultVersion;
+        _autoFillQuery = _resultQuery;
+        _autoFillTimer.Start();
+    }
+
+    private void OnAutoFillTick(object? sender, EventArgs e)
+    {
+        _autoFillTimer.Stop();
+        if (_quitting || !IsVisible || _searching || _loading) return;
+        if (_resultVersion != _autoFillVersion || _resultQuery != _autoFillQuery) return;
+        if (!SearchChromeLayout.ShouldAutoFill(_chrome.Kind, _rows.Length, _total, _limit)) return;
+        _limit = SearchChromeLayout.NextLimit(_chrome.Kind, _limit, _total);
+        _ = SearchAsync();
     }
 
     private bool CurrentResults => SearchResultActivation.CanActivateDisplayed(
@@ -1015,6 +1057,7 @@ public partial class MainWindow : Window
         try { _update?.Cancel(); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { _store.Log(error); }
         _idleReclaim.Stop();
+        _autoFillTimer.Stop();
         _searchWarmup.Cancel();
         _lifetime.Cancel();
         _rustEngine?.Dispose();
