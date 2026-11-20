@@ -40,7 +40,7 @@ pwsh -File scripts/dev.ps1
 
 ## 使用发布版
 
-运行 [`releases/0.2.8/QBox.exe`](releases/0.2.8/QBox.exe)，默认使用 C# 搜索。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。需要对照时可运行 [0.2.6 的 Rust 默认版](releases/0.2.6/QBox.exe)；0.2.8 也可通过 `--search-engine rust` 切换，同目录需保留 `qbox_engine.dll`。
+运行 [`releases/0.2.8/QBox.exe`](releases/0.2.8/QBox.exe)，默认使用 C# 搜索。普通用户配置、历史、错误日志在 `%LOCALAPPDATA%\QBox`。先从托盘退出旧版，避免再次启动只唤回旧实例。Rust 搜索引擎（`--search-engine rust` / [0.2.6](releases/0.2.6/QBox.exe)）已暂时弃用，不再作为后续验证目标；如需历史对照，0.2.8 仍保留了 `--search-engine rust` 试验入口（同目录需保留 `qbox_engine.dll`）。
 
 另有可选的 [0.2.3-global.1 全局名称共享试用版](releases/0.2.3-global.1/README.md)，使用独立程序和数据目录，用于比较内存与查询体验。
 

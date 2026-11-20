@@ -63,7 +63,9 @@ dotnet run --project src/QBox.Cli -c Release --no-build -- search --index-direct
 
 `verify.ps1` 包含留出样本，非管理员即可运行。构建成功、自动检查、内核计时、实际输入法/GUI 和真实卷恢复是不同证据，分别记录；`dotnet test` 不会代替本仓库的检查入口。
 
-## Rust 搜索引擎试验
+## Rust 搜索引擎试验（已暂时弃用）
+
+> **状态说明**：Rust 搜索引擎目前已暂时弃用，后续不再进行 Rust 侧功能对齐或发布验证；日常开发与发行均以 C# 引擎为准。以下仅保留历史构建与运行说明。
 
 默认搜索仍使用 C#。`--search-engine rust` 可用于桌面程序和 CLI 的索引查询，加载或调用失败会记录原因并回退 C#；本轮尚未提供 macOS 版本。
 

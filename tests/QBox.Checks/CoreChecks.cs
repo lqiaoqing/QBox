@@ -486,6 +486,15 @@ internal static class CoreChecks
             True(!state.CanPublish(v1));
             True(state.Complete(v1, t0.AddMilliseconds(20), succeeded: true));
         });
+        checks.Run("状态栏一次性通知优先展示，持续警告不遮挡有效搜索耗时", () =>
+        {
+            Equal("已复制路径", StatusBarText.Format(null, false, "已复制路径", false, true, "3 ms · 10 项", "历史无法读取", "C: · 10 项"));
+            Equal("3 ms · 10 项", StatusBarText.Format(null, false, null, false, true, "3 ms · 10 项", "历史无法读取", "C: · 10 项"));
+            Equal("历史无法读取", StatusBarText.Format(null, false, null, false, false, "3 ms · 10 项", "历史无法读取", "C: · 10 项"));
+            Equal("C: · 10 项", StatusBarText.Format(null, false, null, false, false, "3 ms · 10 项", null, "C: · 10 项"));
+            Equal("正在准备更新…", StatusBarText.Format("正在准备更新…", true, "已复制路径", true, true, "3 ms · 10 项", "历史无法读取", "C: · 10 项"));
+            Equal("历史无法读取", StatusBarText.FirstNonEmpty(null, "", "历史无法读取", "其他"));
+        });
     }
 
     private sealed class FailingPersistence : IHistoryPersistence

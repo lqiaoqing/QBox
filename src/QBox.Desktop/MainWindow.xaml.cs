@@ -41,7 +41,7 @@ public partial class MainWindow : Window
     private HotkeyRegistration? _hotkey;
     private System.Windows.Forms.NotifyIcon? _tray;
     private IndexUpdateJob? _update;
-    private string? _updateText, _notice, _workerWarning;
+    private string? _updateText, _notice, _workerWarning, _indexWarning, _monitorWarning, _catalogWarning, _startupWarning;
     private string _snapshotText = "", _resultQuery = "";
     private long _inputVersion, _resultVersion;
     private int _limit = SearchChromeLayout.QuickResultCap, _total;
@@ -93,7 +93,7 @@ public partial class MainWindow : Window
         SizeChanged += OnWindowSizeChanged;
         _idleReclaim.Tick += OnIdleReclaim;
         Icon = (ImageSource)FindResource("AppIcon");
-        _notice = store.LoadError;
+        _startupWarning = store.LoadError;
         _rustRequested = options.SearchEngine == "rust";
     }
 
@@ -104,7 +104,7 @@ public partial class MainWindow : Window
         _hotkey = new(this, ToggleSearch);
         if (!_hotkey.Set(_settings.Hotkey) && !_hotkey.Set("Ctrl+Alt+Space") && !_hotkey.Set("Ctrl+Shift+Space"))
         {
-            _notice = "快捷键暂不可用，可从托盘或双击程序打开。";
+            _startupWarning ??= "快捷键暂不可用，可从托盘或双击程序打开。";
             _store.Log(new Win32Exception(_hotkey.LastError, "全局快捷键注册失败"));
         }
         HotkeyText.Text = "Enter 打开 · " + _hotkey.Display;
@@ -225,6 +225,7 @@ public partial class MainWindow : Window
         QueryBox.Text = "";
         _resultQuery = "";
         _selectionId = null; _selectionQuery = null;
+        _notice = null;
         _searchWarmup.Cancel();
         _inputVersion = _queries.Cancel();
         _icons.CancelPending();
@@ -383,7 +384,10 @@ public partial class MainWindow : Window
             _rustEngine = snapshot.Rust;
             if (previousRust != null) _ = Task.Run(previousRust.Dispose);
             Interlocked.Exchange(ref _rustDisabled, 0);
-            _notice = snapshot.RustWarning ?? snapshot.Warning ?? snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
+            _indexWarning = snapshot.RustWarning ?? snapshot.Warning ?? snapshot.Applications.Warning ?? snapshot.Live.Select(source => source.Warning).FirstOrDefault(w => w != null);
+            _monitorWarning = null;
+            _catalogWarning = null;
+            _notice = null;
             if (indexes.Length != 0)
             {
                 var volumes = string.Join(" · ", indexes.Select(i => i.Geometry.Root[..2]));
@@ -397,7 +401,7 @@ public partial class MainWindow : Window
         {
             if (!_loads.IsCurrent(request)) return;
             _store.Log(error);
-            _notice = "索引载入失败：" + error.Message;
+            _indexWarning = "索引载入失败：" + error.Message;
         }
         finally
         {
@@ -405,7 +409,7 @@ public partial class MainWindow : Window
             {
                 _loading = false;
                 if (IsVisible) StartSearchWarmup();
-                if (_indexes.Length == 0 && _applications.Count == 0) SetEmpty("还没有可用索引", _notice ?? "点击建立索引，收录磁盘上的文件、文件夹和应用。", true);
+                if (_indexes.Length == 0 && _applications.Count == 0) SetEmpty("还没有可用索引", _notice ?? _indexWarning ?? "点击建立索引，收录磁盘上的文件、文件夹和应用。", true);
                 else await SearchAsync();
                 RefreshStatus();
             }
@@ -415,6 +419,8 @@ public partial class MainWindow : Window
     private async void OnQueryChanged(object sender, TextChangedEventArgs e)
     {
         if (!_loaded || _quitting) return;
+        // 用户输入新查询时清除一次性操作提示，避免旧通知长期遮挡搜索耗时。
+        _notice = null;
         _limit = SearchChromeLayout.ResultLimit(_chrome.Kind);
         if (IsVisible && _chrome.OnQueryText(QueryBox.Text)) ApplyChrome();
         await SearchAsync();
@@ -483,7 +489,7 @@ public partial class MainWindow : Window
                 foreach (var index in indexes) index.View.SearchInto(collector, history, request.Token, replaced, representedExecutables);
                 return collector.Finish();
             }, request.Token);
-            if (Volatile.Read(ref _rustDisabled) != 0) _notice ??= "Rust 搜索引擎出错，已回退 C# 引擎。";
+            if (Volatile.Read(ref _rustDisabled) != 0) _indexWarning ??= "Rust 搜索引擎出错，已回退 C# 引擎。";
             // UI 线程上的版本复核同时约束展示和打开，取消来不及的旧查询也不能抢回结果。
             if (!_queries.IsCurrent(request) || _loading) return;
             // 续填期间用户仍可移动选中项，替换列表前读取最新选择。
@@ -751,8 +757,18 @@ public partial class MainWindow : Window
     {
         if (!IsInitialized) return;
         var snapshot = _snapshotText + (_realtime ? " · 实时更新" : "");
-        StatusText.Text = _updateText ?? (_loading ? "正在载入索引…" : _notice ?? _historyWarning ?? _workerWarning ??
-            (SearchProgress.ShowSearching(_searching, _silentRefresh) ? "正在搜索…" : QueryBox.Text.Length == 0 || _resultQuery != QueryBox.Text ? snapshot : $"{_searchElapsed.TotalMilliseconds:0} ms · {_total:N0} 项 · 显示 {_rows.Length} · {snapshot}"));
+        var persistentWarning = StatusBarText.FirstNonEmpty(_indexWarning, _monitorWarning, _catalogWarning, _historyWarning, _workerWarning, _startupWarning);
+        var hasCurrentResult = QueryBox.Text.Length != 0 && _resultQuery == QueryBox.Text;
+        var summary = $"{_searchElapsed.TotalMilliseconds:0} ms · {_total:N0} 项 · 显示 {_rows.Length} · {snapshot}";
+        StatusText.Text = StatusBarText.Format(
+            _updateText,
+            _loading,
+            _notice,
+            SearchProgress.ShowSearching(_searching, _silentRefresh),
+            hasCurrentResult,
+            summary,
+            persistentWarning,
+            snapshot);
         StatusText.ToolTip = StatusText.Text;
     }
 
@@ -804,6 +820,7 @@ public partial class MainWindow : Window
     private async Task UpdateAsync()
     {
         if (_update != null || _quitting) return;
+        _notice = null;
         try { _update = new(_options, _indexDirectory); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { _store.Log(error); _notice = "无法准备索引更新：" + error.Message; RefreshStatus(); return; }
@@ -877,6 +894,7 @@ public partial class MainWindow : Window
                         return before.Select(source => failed.Contains(source.Path) ? source : source.Refresh(_lifetime.Token)).ToArray();
                     }, _lifetime.Token);
                     if (!ReferenceEquals(before, _liveIndexes) || directory != _indexDirectory) continue;
+                    _monitorWarning = null;
                     if (after.Where((source, i) => !ReferenceEquals(source, before[i])).Any())
                     {
                         var contentChanged = after.Where((source, i) => !source.View.HasSameSearchContent(before[i].View)).Any();
@@ -906,7 +924,7 @@ public partial class MainWindow : Window
                 catch (IndexBaseChangedException) { await ReloadAsync(true); }
                 catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
                 {
-                    _notice = "实时索引暂不可读，保留上次结果：" + error.Message; RefreshStatus();
+                    _monitorWarning = "实时索引暂不可读，保留上次结果：" + error.Message; RefreshStatus();
                     await Task.Delay(2500, _lifetime.Token);
                 }
             }
@@ -951,9 +969,10 @@ public partial class MainWindow : Window
             if (changed) _shortcuts = result.Shortcuts;
             if (result.Applications.Warning == null)
             {
+                _catalogWarning = null;
                 if (!_applications.HasSameSearchContent(result.Applications)) { _applications = result.Applications; changed = true; }
             }
-            else _notice = result.Applications.Warning;
+            else _catalogWarning = result.Applications.Warning;
             if (_rustRequested && _rustEngine is { } rust && Volatile.Read(ref _rustDisabled) == 0)
             {
                 try
@@ -980,7 +999,7 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
-        { _store.Log(error); _notice = "应用列表稍后重试：" + error.Message; }
+        { _store.Log(error); _catalogWarning = "应用列表稍后重试：" + error.Message; }
         finally
         {
             if (_catalogState.Complete(capturedVersion, DateTimeOffset.UtcNow, succeeded) && !_quitting && !_lifetime.IsCancellationRequested)

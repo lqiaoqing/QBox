@@ -255,6 +255,7 @@ public partial class MainWindow
             HotkeyText.Text = "Enter 打开 · " + _hotkey.Display;
             if (_tray != null) _tray.Text = "QBox · " + _hotkey.Display;
             _notice = null;
+            _startupWarning = null;
         }
         else _notice = "该快捷键已被占用，当前快捷键保持为 " + _hotkey.Display;
         RefreshStatus();
