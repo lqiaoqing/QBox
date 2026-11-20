@@ -47,14 +47,27 @@ internal static class LiveIndexWorker
             while (true)
             {
                 cancellation.Token.ThrowIfCancellationRequested();
-                var ready = DriveInfo.GetDrives().Where(d => d.IsReady && d.DriveType == DriveType.Fixed && d.DriveFormat == "NTFS")
-                    .Select(d => d.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                foreach (var gone in sessions.Keys.Where(key => !ready.Contains(key)).ToArray())
+                var probe = FixedNtfsDriveProbe.Probe();
+                if (probe.EnumerationError != null)
+                {
+                    // 磁盘枚举本身出现瞬态故障时保留现有会话并等待下一轮重试，避免直接终止工作进程。
+                    Save("Watching", "磁盘枚举稍后重试：" + probe.EnumerationError);
+                    if (cancellation.Token.WaitHandle.WaitOne(750)) cancellation.Token.ThrowIfCancellationRequested();
+                    continue;
+                }
+                foreach (var (root, message) in probe.FailedRoots)
+                {
+                    if (sessions.Remove(root, out var failed)) failed.Dispose();
+                    drives[root] = new(root, "稍后重试，保留旧索引", 0, 0, message);
+                    if (!retry.TryGetValue(root, out var next) || next <= DateTimeOffset.UtcNow)
+                        retry[root] = DateTimeOffset.UtcNow.AddSeconds(30);
+                }
+                foreach (var gone in sessions.Keys.Where(key => !probe.ReadyRoots.Contains(key) && !probe.FailedRoots.ContainsKey(key)).ToArray())
                 {
                     sessions[gone].Dispose(); sessions.Remove(gone);
                     drives[gone] = new(gone, "磁盘离线，保留旧索引", 0, 0);
                 }
-                foreach (var root in ready)
+                foreach (var root in probe.ReadyRoots)
                 {
                     if (retry.TryGetValue(root, out var next) && next > DateTimeOffset.UtcNow) continue;
                     try

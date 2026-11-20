@@ -52,8 +52,8 @@ public partial class MainWindow : Window
     private ListBoxItem? _resultPressItem;
     private bool _monitorRunning;
     private bool _realtime;
-    private bool _catalogRefreshing;
-    private DateTimeOffset _catalogRefreshAt = DateTimeOffset.UtcNow;
+    private readonly CatalogRefreshState _catalogState = new(DateTimeOffset.UtcNow);
+    private static readonly TimeSpan CatalogRefreshInterval = TimeSpan.FromSeconds(30);
     private DateTimeOffset _indexRetryAt = DateTimeOffset.MaxValue;
     private int _indexPathCount;
     private HashSet<string> _failedIndexes = new(StringComparer.OrdinalIgnoreCase);
@@ -377,7 +377,7 @@ public partial class MainWindow : Window
             _failedIndexes = snapshot.Failures; _indexPathCount = snapshot.PathCount;
             _indexRetryAt = _failedIndexes.Count == 0 ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.AddSeconds(30);
             _shortcuts = snapshot.Shortcuts;
-            _catalogRefreshAt = DateTimeOffset.UtcNow;
+            _catalogState.MarkReloaded(DateTimeOffset.UtcNow);
             if (snapshot.Applications.Warning == null || _applications.Count == 0) _applications = snapshot.Applications;
             var previousRust = _rustEngine;
             _rustEngine = snapshot.Rust;
@@ -881,7 +881,7 @@ public partial class MainWindow : Window
                     {
                         var contentChanged = after.Where((source, i) => !source.View.HasSameSearchContent(before[i].View)).Any();
                         if (after.Where((source, i) => source.View.HasShortcutChangesFrom(before[i].View)).Any())
-                            _catalogRefreshAt = DateTimeOffset.MinValue;
+                            _catalogState.MarkShortcutSourceChanged();
                         if (contentChanged) MigrateHistory(before.Select(source => source.View).ToArray(), after.Select(source => source.View).ToArray());
                         _liveIndexes = after;
                         if (contentChanged && _rustRequested && _rustEngine is { } rust)
@@ -901,7 +901,7 @@ public partial class MainWindow : Window
                         // 即使查询文本未变，也取消旧视图的查询，防止更新后又展示已删除项。
                         if (contentChanged) await SearchAsync();
                     }
-                    if (!_catalogRefreshing && DateTimeOffset.UtcNow - _catalogRefreshAt > TimeSpan.FromSeconds(30)) _ = RefreshCatalogsAsync();
+                    if (_catalogState.ShouldStart(DateTimeOffset.UtcNow, CatalogRefreshInterval)) _ = RefreshCatalogsAsync();
                 }
                 catch (IndexBaseChangedException) { await ReloadAsync(true); }
                 catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException)
@@ -933,15 +933,20 @@ public partial class MainWindow : Window
 
     private async Task RefreshCatalogsAsync()
     {
-        if (_catalogRefreshing) return;
-        _catalogRefreshing = true;
+        if (!_catalogState.TryBegin(out var capturedVersion)) return;
         using var request = _catalogs.Begin();
-        var indexes = _indexes; var live = _liveIndexes.Select(source => source.View).ToArray();
+        var indexes = _indexes;
+        var liveSources = _liveIndexes;
+        var live = liveSources.Select(source => source.View).ToArray();
+        var succeeded = false;
         try
         {
             var result = await Task.Run(() => (Shortcuts: ShortcutCatalog.Load(live, request.Token),
                 Applications: PackagedApplicationCatalog.Load(request.Token)), request.Token);
-            if (!_catalogs.IsCurrent(request) || !ReferenceEquals(indexes, _indexes)) return;
+            // 采集期间若基础索引或实时索引（快捷方式来源）已更新，丢弃本次陈旧结果并等待立即重刷。
+            if (!_catalogs.IsCurrent(request) || !ReferenceEquals(indexes, _indexes) ||
+                !ReferenceEquals(liveSources, _liveIndexes) || !_catalogState.CanPublish(capturedVersion))
+                return;
             var changed = !_shortcuts.HasSameSearchContent(result.Shortcuts);
             if (changed) _shortcuts = result.Shortcuts;
             if (result.Applications.Warning == null)
@@ -958,6 +963,7 @@ public partial class MainWindow : Window
                     if (refresh == RustRefreshResult.BaseChanged)
                     {
                         await ReloadAsync(true);
+                        succeeded = true;
                         return;
                     }
                 }
@@ -970,11 +976,16 @@ public partial class MainWindow : Window
             }
             if (changed) await SearchAsync();
             else RefreshStatus();
+            succeeded = true;
         }
         catch (OperationCanceledException) { }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
         { _store.Log(error); _notice = "应用列表稍后重试：" + error.Message; }
-        finally { _catalogRefreshAt = DateTimeOffset.UtcNow; _catalogRefreshing = false; }
+        finally
+        {
+            if (_catalogState.Complete(capturedVersion, DateTimeOffset.UtcNow, succeeded) && !_quitting && !_lifetime.IsCancellationRequested)
+                _ = RefreshCatalogsAsync();
+        }
     }
 
     private void OnClosing(object? sender, CancelEventArgs e) { if (!_quitting) { e.Cancel = true; Hide(); } }

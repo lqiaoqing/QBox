@@ -454,6 +454,38 @@ internal static class CoreChecks
             True(result.Opened && result.HistoryError != null);
             Equal(0, history.Snapshot.Targets.Length);
         });
+        await checks.RunAsync("快捷方式刷新期间发生变更会拒绝旧结果并立即重刷", async () =>
+        {
+            var t0 = DateTimeOffset.UtcNow;
+            var state = new CatalogRefreshState(t0);
+            state.MarkShortcutSourceChanged();
+            True(state.ShouldStart(t0, TimeSpan.FromSeconds(30)));
+            True(state.TryBegin(out var v1));
+            True(!state.TryBegin(out _));
+
+            // 模拟后台采集期间，实时索引再次发生 .lnk 增删改。
+            await Task.Run(() => state.MarkShortcutSourceChanged());
+            True(!state.CanPublish(v1));
+            True(state.Complete(v1, t0.AddMilliseconds(50), succeeded: true));
+            True(state.ShouldStart(t0.AddMilliseconds(50), TimeSpan.FromSeconds(30)));
+
+            // 下一轮无并发变更时允许发布并重置 30 秒周期。
+            True(state.TryBegin(out var v2));
+            True(state.CanPublish(v2));
+            True(!state.Complete(v2, t0.AddMilliseconds(100), succeeded: true));
+            True(!state.ShouldStart(t0.AddSeconds(5), TimeSpan.FromSeconds(30)));
+            True(state.ShouldStart(t0.AddSeconds(31), TimeSpan.FromSeconds(30)));
+        });
+        checks.Run("索引全量重载使在途快捷方式刷新失效", () =>
+        {
+            var t0 = DateTimeOffset.UtcNow;
+            var state = new CatalogRefreshState(t0);
+            state.MarkShortcutSourceChanged();
+            True(state.TryBegin(out var v1));
+            state.MarkReloaded(t0.AddMilliseconds(10));
+            True(!state.CanPublish(v1));
+            True(state.Complete(v1, t0.AddMilliseconds(20), succeeded: true));
+        });
     }
 
     private sealed class FailingPersistence : IHistoryPersistence
